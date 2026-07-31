@@ -14,10 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
 
-type Modo = "entrar" | "cadastrar";
-
 export function PaginaEntrar() {
-  const [modo, setModo] = useState<Modo>("entrar");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState<string | null>(null);
@@ -30,22 +27,32 @@ export function PaginaEntrar() {
     setAvisos(null);
     setCarregando(true);
     try {
-      if (modo === "entrar") {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password: senha,
-        });
-        if (error) throw new Error(traduzirErro(error.message));
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password: senha,
-        });
-        if (error) throw new Error(traduzirErro(error.message));
-        setAvisos(
-          "Conta criada! Enviamos um link de confirmação para o seu e-mail. Confirme antes de entrar."
-        );
-      }
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password: senha,
+      });
+      if (error) throw new Error(traduzirErro(error.message));
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : "Algo deu errado. Tente novamente.");
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  async function esqueciSenha() {
+    if (!email) {
+      setErro("Digite seu e-mail acima para receber o link de redefinição.");
+      return;
+    }
+    setErro(null);
+    setAvisos(null);
+    setCarregando(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) throw new Error(traduzirErro(error.message));
+      setAvisos(
+        "Enviamos um link de redefinição de senha para o seu e-mail. Confira a caixa de entrada (e o spam)."
+      );
     } catch (err) {
       setErro(err instanceof Error ? err.message : "Algo deu errado. Tente novamente.");
     } finally {
@@ -60,14 +67,8 @@ export function PaginaEntrar() {
       </div>
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-xl">
-            {modo === "entrar" ? "Entrar na plataforma" : "Criar sua conta"}
-          </CardTitle>
-          <CardDescription>
-            {modo === "entrar"
-              ? "Acesse o seu Plano de 90 Dias."
-              : "Cadastre-se para começar o seu Plano de 90 Dias."}
-          </CardDescription>
+          <CardTitle className="text-xl">Entrar na plataforma</CardTitle>
+          <CardDescription>Acesse o seu Plano de 90 Dias.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={enviar} className="flex flex-col gap-4">
@@ -90,10 +91,10 @@ export function PaginaEntrar() {
                 type="password"
                 required
                 minLength={6}
-                autoComplete={modo === "entrar" ? "current-password" : "new-password"}
+                autoComplete="current-password"
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
-                placeholder="mínimo 6 caracteres"
+                placeholder="sua senha"
               />
             </div>
             {erro && (
@@ -109,45 +110,22 @@ export function PaginaEntrar() {
             )}
             <Button type="submit" disabled={carregando} className="w-full">
               {carregando && <Loader2 className="animate-spin" />}
-              {modo === "entrar" ? "Entrar" : "Criar conta"}
+              Entrar
             </Button>
           </form>
           <div className="mt-4 text-center text-sm text-muted-foreground">
-            {modo === "entrar" ? (
-              <>
-                Ainda não tem conta?{" "}
-                <button
-                  className="text-primary underline-offset-4 hover:underline"
-                  onClick={() => {
-                    setModo("cadastrar");
-                    setErro(null);
-                    setAvisos(null);
-                  }}
-                >
-                  Cadastre-se
-                </button>
-              </>
-            ) : (
-              <>
-                Já tem conta?{" "}
-                <button
-                  className="text-primary underline-offset-4 hover:underline"
-                  onClick={() => {
-                    setModo("entrar");
-                    setErro(null);
-                    setAvisos(null);
-                  }}
-                >
-                  Entre agora
-                </button>
-              </>
-            )}
+            <button
+              className="text-primary underline-offset-4 hover:underline"
+              onClick={() => void esqueciSenha()}
+            >
+              Esqueci minha senha
+            </button>
           </div>
         </CardContent>
       </Card>
       <p className="mt-6 max-w-sm text-center text-xs text-muted-foreground">
-        O acesso é liberado após a confirmação da sua compra. Se acabou de se cadastrar,
-        aguarde o e-mail de confirmação.
+        O acesso é liberado pelo time da Gestão Lucrativa após a confirmação da sua compra.
+        Se ainda não recebeu suas credenciais, fale com quem te atendeu.
       </p>
     </div>
   );

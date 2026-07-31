@@ -9,6 +9,7 @@ import {
   Lock,
   Rocket,
   Target,
+  Video,
   Zap,
 } from "lucide-react";
 
@@ -28,7 +29,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MODULOS, SEMANA_POR_NUMERO, type Campo, type SemanaConteudo } from "@/lib/conteudo";
 import { supabase } from "@/lib/supabase";
-import type { IndicadorSemana, ProgressoSemana } from "@/lib/types";
+import type { AulaSemana, IndicadorSemana, ProgressoSemana } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const DIAS_UTEIS = 22;
@@ -313,6 +314,8 @@ function ConteudoSemana({
             Objetivo: {semana.objetivo}
           </p>
         </div>
+
+        <BlocoAula semana={semana.numero} />
 
         <Card>
           <CardHeader>
@@ -712,6 +715,82 @@ function CampoForm({
         className={ehCalculado ? "cursor-not-allowed opacity-80" : undefined}
       />
     </div>
+  );
+}
+
+function extrairVideoId(url: string): string | null {
+  const match = url.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([\w-]{11})/
+  );
+  return match ? match[1] : null;
+}
+
+function BlocoAula({ semana }: { semana: number }) {
+  const [aula, setAula] = useState<AulaSemana | null>(null);
+  const [carregando, setCarregando] = useState(true);
+
+  useEffect(() => {
+    let ativo = true;
+    async function carregar() {
+      const { data } = await supabase
+        .from("aulas_semana")
+        .select("*")
+        .eq("semana", semana)
+        .maybeSingle();
+      if (!ativo) return;
+      setAula((data as AulaSemana | null) ?? null);
+      setCarregando(false);
+    }
+    void carregar();
+    return () => {
+      ativo = false;
+    };
+  }, [semana]);
+
+  if (carregando) return null;
+
+  const videoId = aula?.video_url ? extrairVideoId(aula.video_url) : null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Video className="h-4 w-4 text-primary" />
+          Vídeo-aula
+        </CardTitle>
+        {aula?.titulo && (
+          <CardDescription>
+            {aula.titulo}
+            {aula.duracao_minutos ? ` · ${aula.duracao_minutos} min` : ""}
+          </CardDescription>
+        )}
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        {videoId ? (
+          <div className="aspect-video w-full overflow-hidden rounded-lg border border-input">
+            <iframe
+              src={`https://www.youtube.com/embed/${videoId}`}
+              title={aula?.titulo ?? `Vídeo-aula da semana ${semana}`}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen
+              className="h-full w-full"
+            />
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-1.5 rounded-lg border border-dashed border-muted-foreground/40 px-4 py-10 text-center">
+            <Video className="h-6 w-6 text-muted-foreground" />
+            <p className="text-sm font-medium text-foreground/90">Aula em breve</p>
+            <p className="text-xs text-muted-foreground">
+              O vídeo desta semana ainda não foi publicado.
+            </p>
+          </div>
+        )}
+        <p className="text-xs text-muted-foreground">
+          Assista a aula antes de preencher os campos abaixo.
+        </p>
+      </CardContent>
+    </Card>
   );
 }
 

@@ -1,8 +1,10 @@
-import { LogOut } from "lucide-react";
+import { LogOut, ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
 
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
+import { useEhAdmin } from "@/hooks/useEhAdmin";
 import { supabase } from "@/lib/supabase";
 
 export function Layout({
@@ -12,6 +14,8 @@ export function Layout({
   children: ReactNode;
   nomeUsuario?: string | null;
 }) {
+  const { ehAdmin } = useEhAdmin();
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
@@ -20,6 +24,15 @@ export function Layout({
             <Logo />
           </a>
           <div className="flex items-center gap-3">
+            {ehAdmin && (
+              <Link
+                to="/admin"
+                className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                <ShieldCheck className="h-4 w-4" />
+                <span className="hidden sm:inline">Admin</span>
+              </Link>
+            )}
             {nomeUsuario && (
               <span className="hidden text-sm text-muted-foreground sm:block">
                 {nomeUsuario}

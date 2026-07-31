@@ -56,6 +56,20 @@ export function useAuth(recarregar = 0): EstadoAuth {
           setEstado({ fase: "sem_acesso", user, perfil });
           return;
         }
+
+        // Primeiro uso = ainda não existe diagnóstico inicial → onboarding
+        const { data: diagnostico } = await supabase
+          .from("diagnostico_inicial")
+          .select("id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (!ativo) return;
+        if (!diagnostico) {
+          setEstado({ fase: "onboarding", user, perfil });
+          return;
+        }
+
         setEstado({ fase: "logado", user, perfil });
       } catch {
         if (ativo) setEstado({ fase: "deslogado", user: null, perfil: null });

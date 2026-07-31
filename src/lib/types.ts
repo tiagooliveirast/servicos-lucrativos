@@ -7,6 +7,7 @@ export interface Perfil {
   cidade: string | null;
   estado: string | null;
   email_refriclube: string | null;
+  email: string | null;
   ultimo_acesso_at: string | null;
   created_at: string;
 }
@@ -91,4 +92,21 @@ export interface RadarEvento {
   resolvido: boolean;
   criado_em: string;
   resolvido_em: string | null;
+}
+
+export interface AulaSemana {
+  semana: number;
+  titulo: string;
+  video_url: string | null;
+  duracao_minutos: number | null;
+}
+
+export type TipoAtividade = "semana_concluida" | "painel_preenchido" | "radar_verde" | "plano_concluido";
+
+export interface AtividadeLog {
+  id: string;
+  user_id: string;
+  tipo: TipoAtividade;
+  descricao: string;
+  criado_em: string;
 }
