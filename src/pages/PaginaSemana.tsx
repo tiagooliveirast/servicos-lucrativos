@@ -1,0 +1,805 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, Navigate, useParams } from "react-router-dom";
+import {
+  AlertCircle,
+  ArrowLeft,
+  CheckCircle2,
+  Info,
+  Loader2,
+  Lock,
+  Rocket,
+  Target,
+  Zap,
+} from "lucide-react";
+
+import { Layout } from "@/components/Layout";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { MODULOS, SEMANA_POR_NUMERO, type Campo, type SemanaConteudo } from "@/lib/conteudo";
+import { supabase } from "@/lib/supabase";
+import type { IndicadorSemana, ProgressoSemana } from "@/lib/types";
+import { cn } from "@/lib/utils";
+
+const DIAS_UTEIS = 22;
+
+export function PaginaSemana({ userId }: { userId: string }) {
+  const { numero } = useParams();
+  const n = Number(numero);
+  const semana = SEMANA_POR_NUMERO.get(n);
+
+  const [progresso, setProgresso] = useState<ProgressoSemana | null>(null);
+  const [carregando, setCarregando] = useState(true);
+  const [naoEncontrada, setNaoEncontrada] = useState(false);
+
+  useEffect(() => {
+    let ativo = true;
+    async function carregar() {
+      const { data, error } = await supabase
+        .from("progresso_semanas")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("semana", n)
+        .maybeSingle();
+      if (!ativo) return;
+      if (error || !data) setNaoEncontrada(true);
+      else setProgresso(data);
+      setCarregando(false);
+    }
+    void carregar();
+    return () => {
+      ativo = false;
+    };
+  }, [userId, n]);
+
+  if (!semana) return <Navigate to="/" replace />;
+  if (carregando) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center py-24 text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
+  if (naoEncontrada) return <Navigate to="/" replace />;
+  if (progresso?.status === "bloqueada") return <Navigate to="/" replace />;
+
+  return (
+    <ConteudoSemana
+      semana={semana}
+      progresso={progresso!}
+      userId={userId}
+      aoConcluirLocalmente={() =>
+        setProgresso((p) =>
+          p ? { ...p, status: "concluida", concluida_em: new Date().toISOString() } : p
+        )
+      }
+    />
+  );
+}
+
+function ConteudoSemana({
+  semana,
+  progresso,
+  userId,
+  aoConcluirLocalmente,
+}: {
+  semana: SemanaConteudo;
+  progresso: ProgressoSemana;
+  userId: string;
+  aoConcluirLocalmente: () => void;
+}) {
+  const [respostas, setRespostas] = useState<Record<string, unknown>>(
+    progresso.respostas ?? {}
+  );
+  const [missoes, setMissoes] = useState<Record<string, boolean>>({});
+  const [indicador, setIndicador] = useState<{ antes: string; depois: string } | null>(null);
+  const [checklistFinal, setChecklistFinal] = useState(false);
+  const [salvoEm, setSalvoEm] = useState<string | null>(null);
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const [concluindo, setConcluindo] = useState(false);
+  const [concluida, setConcluida] = useState(progresso.status === "concluida");
+
+  useEffect(() => {
+    let ativo = true;
+    async function carregarDados() {
+      const [resMissoes, resIndicador] = await Promise.all([
+        supabase.from("missoes").select("*").eq("user_id", userId).eq("semana", semana.numero),
+        supabase
+          .from("indicadores_semana")
+          .select("*")
+          .eq("user_id", userId)
+          .eq("semana", semana.numero)
+          .eq("nome_indicador", semana.indicador?.nome ?? "")
+          .maybeSingle(),
+      ]);
+      if (!ativo) return;
+      if (resMissoes.data) {
+        const mapa: Record<string, boolean> = {};
+        for (const m of resMissoes.data) mapa[m.tipo] = m.concluida;
+        setMissoes(mapa);
+      }
+      const ind = resIndicador.data as IndicadorSemana | null;
+      if (ind) {
+        setIndicador({
+          antes: ind.valor_antes?.toString() ?? "",
+          depois: ind.valor_depois?.toString() ?? "",
+        });
+      }
+    }
+    void carregarDados();
+    return () => {
+      ativo = false;
+    };
+  }, [userId, semana.numero, semana.indicador?.nome]);
+
+  const calculados = useMemo(
+    () => calcularValores(semana.numero, respostas),
+    [semana.numero, respostas]
+  );
+
+  const salvar = useCallback(
+    async (novasRespostas: Record<string, unknown>) => {
+      setSalvando(true);
+      const { error } = await supabase
+        .from("progresso_semanas")
+        .upsert(
+          { user_id: userId, semana: semana.numero, respostas: novasRespostas },
+          { onConflict: "user_id,semana" }
+        );
+      setSalvando(false);
+      if (error) {
+        setErro("Não foi possível salvar. Verifique sua conexão.");
+      } else {
+        setErro(null);
+        setSalvoEm(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
+      }
+    },
+    [userId, semana.numero]
+  );
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const comCalculados = { ...respostas, ...calculados };
+      void salvar(comCalculados);
+    }, 700);
+    return () => clearTimeout(timer);
+  }, [respostas, calculados, salvar]);
+
+  function setCampo(id: string, valor: unknown) {
+    setRespostas((r) => ({ ...r, [id]: valor }));
+  }
+
+  async function alternarMissao(tipo: "principal" | "rapida") {
+    const novo = !missoes[tipo];
+    setMissoes((m) => ({ ...m, [tipo]: novo }));
+    const { error } = await supabase
+      .from("missoes")
+      .upsert(
+        {
+          user_id: userId,
+          semana: semana.numero,
+          tipo,
+          descricao: semana.missoes.find((m) => m.tipo === tipo)?.descricao ?? "",
+          concluida: novo,
+          concluida_em: novo ? new Date().toISOString() : null,
+        },
+        { onConflict: "user_id,semana,tipo" }
+      );
+    if (error) setErro("Não foi possível salvar a missão.");
+  }
+
+  async function atualizarIndicador(campo: "antes" | "depois", valor: string) {
+    const novo = { ...(indicador ?? { antes: "", depois: "" }), [campo]: valor };
+    setIndicador(novo);
+    if (!semana.indicador) return;
+    const { error } = await supabase
+      .from("indicadores_semana")
+      .upsert(
+        {
+          user_id: userId,
+          semana: semana.numero,
+          nome_indicador: semana.indicador.nome,
+          unidade: semana.indicador.unidade,
+          valor_antes: novo.antes === "" ? null : Number(novo.antes),
+          valor_depois: novo.depois === "" ? null : Number(novo.depois),
+          origem: "manual",
+          atualizado_em: new Date().toISOString(),
+        },
+        { onConflict: "user_id,semana,nome_indicador" }
+      );
+    if (error) setErro("Não foi possível salvar o indicador.");
+  }
+
+  async function concluirSemana() {
+    const validacao = validarCampos(semana, respostas, calculados, checklistFinal);
+    if (validacao) {
+      setErro(validacao);
+      return;
+    }
+    setErro(null);
+    setConcluindo(true);
+    try {
+      const agora = new Date().toISOString();
+      const comCalculados = { ...respostas, ...calculados };
+      const { error: erroSemana } = await supabase
+        .from("progresso_semanas")
+        .upsert(
+          {
+            user_id: userId,
+            semana: semana.numero,
+            status: "concluida",
+            concluida_em: agora,
+            respostas: comCalculados,
+          },
+          { onConflict: "user_id,semana" }
+        );
+      if (erroSemana) throw erroSemana;
+
+      if (semana.numero < 12) {
+        const { error: erroProxima } = await supabase
+          .from("progresso_semanas")
+          .update({ status: "em_andamento" })
+          .eq("user_id", userId)
+          .eq("semana", semana.numero + 1);
+        if (erroProxima) throw erroProxima;
+      }
+
+      if (semana.painelAoTerminar) {
+        const painel = semana.painelAoTerminar;
+        const { data: existente } = await supabase
+          .from("paineis_mensais")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("numero_painel", painel)
+          .maybeSingle();
+        if (!existente) {
+          const { error: erroPainel } = await supabase
+            .from("paineis_mensais")
+            .insert({ user_id: userId, numero_painel: painel });
+          if (erroPainel) throw erroPainel;
+        }
+      }
+
+      setConcluida(true);
+      aoConcluirLocalmente();
+    } catch {
+      setErro("Não foi possível concluir a semana. Tente novamente.");
+      setConcluindo(false);
+    }
+  }
+
+  const decisaoItens = semana.checklistDecisao?.itens ?? [];
+  const decisaoMarcadas = decisaoItens.filter((i) => respostas[i.id] === true).length;
+  const decisaoCompleta =
+    decisaoItens.length > 0 && decisaoMarcadas === decisaoItens.length;
+
+  const modulo = MODULOS.find((m) => m.numero === semana.modulo)!;
+
+  return (
+    <Layout>
+      <div className="flex flex-col gap-6">
+        <div>
+          <Button asChild variant="ghost" size="sm" className="-ml-2 text-muted-foreground">
+            <Link to="/">
+              <ArrowLeft />
+              Painel de semanas
+            </Link>
+          </Button>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Badge variant="outline" className="text-primary">
+              Semana {semana.numero}
+            </Badge>
+            <Badge variant="secondary">
+              Módulo {semana.modulo} — {modulo.titulo}
+            </Badge>
+            {concluida && <Badge variant="sucesso">Concluída</Badge>}
+          </div>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">{semana.titulo}</h1>
+          <p className="mt-2 flex items-start gap-2 text-sm text-muted-foreground">
+            <Target className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            Objetivo: {semana.objetivo}
+          </p>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">O conceito</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            {semana.explicacao.map((paragrafo, i) => (
+              <p key={i} className="text-sm leading-relaxed text-foreground/90">
+                {paragrafo}
+              </p>
+            ))}
+          </CardContent>
+        </Card>
+
+        {semana.dicas.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Info className="h-4 w-4 text-primary" />
+                Dicas de preenchimento
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              {semana.dicas.map((dica) => (
+                <div
+                  key={dica.titulo}
+                  className="rounded-lg border border-primary/25 bg-primary/5 p-4"
+                >
+                  <p className="text-sm font-semibold text-primary">{dica.titulo}</p>
+                  <p className="mt-1 text-sm text-foreground/90">{dica.texto}</p>
+                  {dica.exemplo && (
+                    <p className="mt-2 border-l-2 border-primary/40 pl-3 text-sm italic text-muted-foreground">
+                      {dica.exemplo}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Preenchimento</CardTitle>
+            <CardDescription>Suas respostas são salvas automaticamente.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-5">
+            {semana.campos.map((campo) => (
+              <CampoForm
+                key={campo.id}
+                campo={campo}
+                respostas={respostas}
+                calculados={calculados}
+                aoMudar={setCampo}
+              />
+            ))}
+            <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
+              {salvando && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {salvando ? "Salvando…" : salvoEm ? `Salvo às ${salvoEm}` : "Tudo salvo"}
+            </div>
+          </CardContent>
+        </Card>
+
+        {semana.missoes.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Rocket className="h-4 w-4 text-primary" />
+                Missões da semana
+              </CardTitle>
+              <CardDescription>Missões fazem a teoria virar resultado.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              {semana.missoes.map((missao) => (
+                <label
+                  key={missao.tipo}
+                  className={cn(
+                    "flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors",
+                    missoes[missao.tipo]
+                      ? "border-emerald-500/50 bg-emerald-500/5"
+                      : "border-input hover:bg-accent"
+                  )}
+                >
+                  <Checkbox
+                    checked={missoes[missao.tipo] ?? false}
+                    onCheckedChange={() => void alternarMissao(missao.tipo)}
+                    className="mt-0.5"
+                  />
+                  <span className="flex flex-col gap-1">
+                    <span
+                      className={cn(
+                        "inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide",
+                        missao.tipo === "principal"
+                          ? "bg-primary/20 text-primary"
+                          : "bg-secondary text-muted-foreground"
+                      )}
+                    >
+                      {missao.tipo === "principal" ? "Missão principal" : "Vitória rápida"}
+                    </span>
+                    <span className="text-sm text-foreground/90">{missao.descricao}</span>
+                  </span>
+                </label>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {semana.indicador && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Zap className="h-4 w-4 text-primary" />
+                Indicador da semana
+              </CardTitle>
+              <CardDescription>
+                {semana.indicador.nome} ({semana.indicador.unidade}) — {semana.indicador.dica}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="ind_antes">Antes (no início do plano)</Label>
+                  <Input
+                    id="ind_antes"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    inputMode="decimal"
+                    value={indicador?.antes ?? ""}
+                    placeholder={semana.indicador.unidade}
+                    onChange={(e) => void atualizarIndicador("antes", e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="ind_depois">Depois (ao final da semana)</Label>
+                  <Input
+                    id="ind_depois"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    inputMode="decimal"
+                    value={indicador?.depois ?? ""}
+                    placeholder={semana.indicador.unidade}
+                    onChange={(e) => void atualizarIndicador("depois", e.target.value)}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {semana.checklistDecisao && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Checklist de decisão</CardTitle>
+              <CardDescription>
+                Responda com honestidade para decidir o próximo passo do negócio.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              {decisaoItens.map((item) => (
+                <label
+                  key={item.id}
+                  className="flex cursor-pointer items-start gap-3 rounded-lg border border-input p-4 hover:bg-accent"
+                >
+                  <Checkbox
+                    checked={respostas[item.id] === true}
+                    onCheckedChange={(v) => setCampo(item.id, v === true)}
+                    className="mt-0.5"
+                  />
+                  <span className="text-sm text-foreground/90">{item.rotulo}</span>
+                </label>
+              ))}
+              {decisaoCompleta && (
+                <p className="flex items-start gap-2 rounded-lg border border-primary/40 bg-primary/10 p-4 text-sm text-primary">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                  {semana.checklistDecisao.sugestao}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Checklist de conclusão</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-input p-4 hover:bg-accent">
+              <Checkbox
+                checked={checklistFinal}
+                onCheckedChange={(v) => setChecklistFinal(v === true)}
+                className="mt-0.5"
+              />
+              <span className="text-sm text-foreground/90">{semana.checklistFinal}</span>
+            </label>
+          </CardContent>
+        </Card>
+
+        {erro && (
+          <p className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive-foreground">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            {erro}
+          </p>
+        )}
+
+        {concluida ? (
+          <div className="flex flex-col items-center gap-3 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-6 text-center">
+            <CheckCircle2 className="h-8 w-8 text-emerald-400" />
+            <p className="font-semibold">Semana {semana.numero} concluída!</p>
+            {semana.painelAoTerminar ? (
+              <Button asChild>
+                <Link to={`/painel/${semana.painelAoTerminar}`}>
+                  Preencher o Painel Mensal {semana.painelAoTerminar}
+                </Link>
+              </Button>
+            ) : (
+              <Button asChild>
+                <Link to="/">Voltar ao painel de semanas</Link>
+              </Button>
+            )}
+          </div>
+        ) : (
+          <Button onClick={() => void concluirSemana()} disabled={concluindo} className="h-11">
+            {concluindo && <Loader2 className="animate-spin" />}
+            Concluir semana {semana.numero}
+          </Button>
+        )}
+
+        {!concluida && (
+          <p className="-mt-3 flex items-start gap-2 text-xs text-muted-foreground">
+            <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            A semana só é concluída quando todos os campos obrigatórios estiverem preenchidos e o
+            checklist de conclusão marcado.
+          </p>
+        )}
+      </div>
+    </Layout>
+  );
+}
+
+function CampoForm({
+  campo,
+  respostas,
+  calculados,
+  aoMudar,
+}: {
+  campo: Campo;
+  respostas: Record<string, unknown>;
+  calculados: Record<string, number>;
+  aoMudar: (id: string, valor: unknown) => void;
+}) {
+  const obrigatorio = ("obrigatorio" in campo ? campo.obrigatorio : false) ?? false;
+
+  function valorTexto(id: string): string {
+    const v = respostas[id];
+    if (typeof v === "string") return v;
+    return v === null || v === undefined ? "" : String(v);
+  }
+
+  function valorNumero(id: string): string {
+    const v = respostas[id];
+    if (typeof v === "number") return String(v);
+    return typeof v === "string" ? v : "";
+  }
+
+  if (campo.tipo === "tabela") {
+    const linhas = Array.isArray(respostas[campo.id])
+      ? (respostas[campo.id] as Record<string, string | number>[])
+      : Array.from({ length: campo.linhasMin }, () => ({}) as Record<string, string | number>);
+    return (
+      <div className="flex flex-col gap-2">
+        <CampoRotulo campo={campo} obrigatorio={obrigatorio} />
+        <div className="flex flex-col gap-2">
+          {linhas.map((linha, i) => (
+            <div key={i} className="grid gap-2 rounded-lg border border-input p-3 sm:grid-cols-2">
+              {campo.colunas.map((coluna) => (
+                <div key={coluna.id} className="flex flex-col gap-1">
+                  <Label className="text-xs text-muted-foreground">{coluna.rotulo}</Label>
+                  <Input
+                    type={coluna.tipo === "numero" ? "number" : "text"}
+                    inputMode={coluna.tipo === "numero" ? "decimal" : undefined}
+                    step={coluna.tipo === "numero" ? "0.01" : undefined}
+                    min={coluna.tipo === "numero" ? "0" : undefined}
+                    value={String(linha[coluna.id] ?? "")}
+                    placeholder={coluna.tipo === "numero" ? "0,00" : ""}
+                    onChange={(e) => {
+                      const novo = [...linhas];
+                      novo[i] = { ...novo[i], [coluna.id]: e.target.value };
+                      aoMudar(campo.id, novo);
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          ))}
+          <div className="flex gap-2">
+            {linhas.length > campo.linhasMin && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => aoMudar(campo.id, linhas.slice(0, -1))}
+              >
+                Remover última linha
+              </Button>
+            )}
+            {linhas.length < campo.linhasMax && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => aoMudar(campo.id, [...linhas, {} as Record<string, string | number>])}
+              >
+                Adicionar linha ({linhas.length}/{campo.linhasMax})
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (campo.tipo === "tabela_fixa") {
+    const objeto = (respostas[campo.id] ?? {}) as Record<string, unknown>;
+    return (
+      <div className="flex flex-col gap-2">
+        <CampoRotulo campo={campo} obrigatorio={false} />
+        <div className="overflow-hidden rounded-lg border border-input">
+          {campo.linhas.map((linha, i) => (
+            <div
+              key={linha.id}
+              className={cn("flex items-center gap-3 px-3 py-2", i % 2 === 0 ? "bg-card" : "bg-muted/40")}
+            >
+              <span className="flex-1 text-sm text-foreground/90">{linha.rotulo}</span>
+              <Input
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min="0"
+                className="h-8 w-32 text-right"
+                value={typeof objeto[linha.id] === "number" ? String(objeto[linha.id]) : ""}
+                placeholder="0"
+                onChange={(e) => {
+                  const valor = e.target.value === "" ? null : Number(e.target.value);
+                  aoMudar(campo.id, { ...objeto, [linha.id]: valor });
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const ehCalculado = campo.id in calculados;
+  const valorCalculado = ehCalculado ? calculados[campo.id] : null;
+
+  if (campo.tipo === "textarea") {
+    return (
+      <div className="flex flex-col gap-2">
+        <CampoRotulo campo={campo} obrigatorio={obrigatorio} />
+        <Textarea value={valorTexto(campo.id)} onChange={(e) => aoMudar(campo.id, e.target.value)} rows={4} />
+      </div>
+    );
+  }
+
+  if (campo.tipo === "data") {
+    return (
+      <div className="flex flex-col gap-2">
+        <CampoRotulo campo={campo} obrigatorio={obrigatorio} />
+        <Input type="date" value={valorTexto(campo.id)} onChange={(e) => aoMudar(campo.id, e.target.value)} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <CampoRotulo campo={campo} obrigatorio={obrigatorio} />
+      <Input
+        type={campo.tipo === "numero" ? "number" : "text"}
+        inputMode={campo.tipo === "numero" ? "decimal" : undefined}
+        step={campo.tipo === "numero" ? "0.01" : undefined}
+        min={campo.tipo === "numero" ? "0" : undefined}
+        value={
+          ehCalculado && valorCalculado !== null
+            ? String(valorCalculado)
+            : campo.tipo === "numero"
+              ? valorNumero(campo.id)
+              : valorTexto(campo.id)
+        }
+        onChange={(e) => {
+          if (!ehCalculado) aoMudar(campo.id, e.target.value);
+        }}
+        disabled={ehCalculado}
+        placeholder={campo.placeholder}
+        className={ehCalculado ? "cursor-not-allowed opacity-80" : undefined}
+      />
+    </div>
+  );
+}
+
+function CampoRotulo({ campo, obrigatorio }: { campo: Campo; obrigatorio: boolean }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <Label>
+        {campo.rotulo}
+        {obrigatorio && <span className="text-primary"> *</span>}
+      </Label>
+      {"dica" in campo && campo.dica && (
+        <p className="text-xs text-muted-foreground">{campo.dica}</p>
+      )}
+    </div>
+  );
+}
+
+function calcularValores(semana: number, respostas: Record<string, unknown>): Record<string, number> {
+  const resultado: Record<string, number> = {};
+  const num = (id: string): number | null => {
+    const v = respostas[id];
+    if (typeof v === "number") return v;
+    if (typeof v === "string" && v !== "") return Number(v);
+    return null;
+  };
+
+  if (semana === 1) {
+    const custoVida = num("custo_vida");
+    const custosFixos = num("custos_fixos_negocio");
+    const lucro = num("lucro_desejado");
+    if (custoVida !== null && custosFixos !== null && lucro !== null) {
+      resultado.meta_minima = Math.round((custoVida + custosFixos + lucro) * 100) / 100;
+    }
+  }
+
+  if (semana === 4) {
+    const meta = num("meta_mensal");
+    if (meta !== null) {
+      resultado.meta_semanal = Math.round((meta / 4) * 100) / 100;
+      resultado.meta_diaria = Math.round((meta / DIAS_UTEIS) * 100) / 100;
+    }
+  }
+
+  if (semana === 10) {
+    const enviados = num("orcamentos_enviados");
+    const fechados = num("orcamentos_fechados");
+    if (enviados !== null && fechados !== null) {
+      resultado.taxa_conversao =
+        enviados > 0 ? Math.round((fechados / enviados) * 1000) / 10 : 0;
+    }
+  }
+
+  return resultado;
+}
+
+function validarCampos(
+  semana: SemanaConteudo,
+  respostas: Record<string, unknown>,
+  calculados: Record<string, number>,
+  checklistFinal: boolean
+): string | null {
+  if (!checklistFinal) return "Marque o checklist de conclusão para terminar a semana.";
+
+  for (const campo of semana.campos) {
+    const obrigatorio = ("obrigatorio" in campo ? campo.obrigatorio : false) ?? false;
+    if (!obrigatorio) continue;
+
+    if (campo.tipo === "tabela") {
+      const linhas = Array.isArray(respostas[campo.id])
+        ? (respostas[campo.id] as Record<string, unknown>[])
+        : [];
+      if (linhas.length === 0) return `Preencha o campo "${campo.rotulo}".`;
+      const incompleta = linhas.some((linha) =>
+        campo.colunas.some((c) => {
+          const v = linha[c.id];
+          return v === undefined || v === null || String(v).trim() === "";
+        })
+      );
+      if (incompleta) return `Preencha todas as células da "${campo.rotulo}".`;
+      continue;
+    }
+
+    if (campo.id in calculados) continue;
+
+    const v = respostas[campo.id];
+    const vazio = v === undefined || v === null || String(v).trim() === "";
+    if (vazio) return `Preencha o campo "${campo.rotulo}".`;
+  }
+
+  return null;
+}

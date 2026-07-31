@@ -1,0 +1,80 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 0.625rem;
+  --background: #0a0a0a;
+  --foreground: #f5f1e8;
+  --card: #141110;
+  --card-foreground: #f5f1e8;
+  --popover: #141110;
+  --popover-foreground: #f5f1e8;
+  --primary: #c9a227;
+  --primary-foreground: #0a0a0a;
+  --secondary: #26201a;
+  --secondary-foreground: #f5f1e8;
+  --muted: #201c18;
+  --muted-foreground: #a89f8f;
+  --accent: #2a231b;
+  --accent-foreground: #f5f1e8;
+  --destructive: #d64545;
+  --destructive-foreground: #f5f1e8;
+  --border: #2e2820;
+  --input: #3a332a;
+  --ring: #c9a227;
+  --sidebar: #141110;
+  --sidebar-foreground: #f5f1e8;
+  --sidebar-primary: #c9a227;
+  --sidebar-primary-foreground: #0a0a0a;
+  --sidebar-accent: #26201a;
+  --sidebar-accent-foreground: #f5f1e8;
+  --sidebar-border: #2e2820;
+  --sidebar-ring: #c9a227;
+  --chart-1: #c9a227;
+  --chart-2: #7d6b2f;
+  --chart-3: #f0d88a;
+  --chart-4: #4a3f1d;
+  --chart-5: #a8893a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+    outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
