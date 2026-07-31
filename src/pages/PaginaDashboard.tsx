@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
+  AlertCircle,
   BarChart3,
   BookOpen,
   CheckCircle2,
   ChevronRight,
   FileText,
+  Loader2,
   Lock,
   PlayCircle,
 } from "lucide-react";
@@ -35,9 +37,14 @@ export function PaginaDashboard({ perfil }: { perfil: Perfil }) {
   const navigate = useNavigate();
   const [semanas, setSemanas] = useState<ProgressoSemana[] | null>(null);
   const [paineis, setPaineis] = useState<PainelMensal[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState(false);
+  const [tentativa, setTentativa] = useState(0);
 
   useEffect(() => {
     let ativo = true;
+    setCarregando(true);
+    setErro(false);
     async function carregar() {
       const [resSemanas, resPaineis] = await Promise.all([
         supabase
@@ -50,14 +57,20 @@ export function PaginaDashboard({ perfil }: { perfil: Perfil }) {
           .order("numero_painel", { ascending: true }),
       ]);
       if (!ativo) return;
-      if (resSemanas.data) setSemanas(resSemanas.data);
-      if (resPaineis.data) setPaineis(resPaineis.data);
+      if (resSemanas.error || resPaineis.error) {
+        setErro(true);
+        setCarregando(false);
+        return;
+      }
+      setSemanas(resSemanas.data);
+      setPaineis(resPaineis.data);
+      setCarregando(false);
     }
     void carregar();
     return () => {
       ativo = false;
     };
-  }, []);
+  }, [tentativa]);
 
   const semanaPorNumero = new Map((semanas ?? []).map((s) => [s.semana, s]));
   const concluidas = (semanas ?? []).filter((s) => s.status === "concluida").length;
@@ -69,6 +82,27 @@ export function PaginaDashboard({ perfil }: { perfil: Perfil }) {
       <div className="flex flex-col gap-8">
         <RadarEmpresa userId={perfil.id} />
 
+        {carregando && (
+          <div className="flex items-center justify-center py-16 text-muted-foreground">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        )}
+
+        {erro && (
+          <div className="flex flex-col items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-10 text-center">
+            <AlertCircle className="h-6 w-6 text-destructive" />
+            <p className="text-sm text-foreground/90">
+              Não foi possível carregar seus dados agora. Verifique sua conexão e tente
+              novamente.
+            </p>
+            <Button variant="outline" onClick={() => setTentativa((t) => t + 1)}>
+              Tentar novamente
+            </Button>
+          </div>
+        )}
+
+        {!carregando && !erro && (
+          <>
         <section>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
             Olá, {perfil.nome?.split(" ")[0] ?? "profissional"}.
@@ -191,6 +225,8 @@ export function PaginaDashboard({ perfil }: { perfil: Perfil }) {
             </section>
           );
         })}
+          </>
+        )}
       </div>
     </Layout>
   );

@@ -9,6 +9,9 @@ import { useAuth } from "@/hooks/useAuth";
 const PaginaAcessoPendente = lazy(() =>
   import("@/pages/PaginaAcessoPendente").then((m) => ({ default: m.PaginaAcessoPendente }))
 );
+const PaginaAcessoInativo = lazy(() =>
+  import("@/pages/PaginaAcessoInativo").then((m) => ({ default: m.PaginaAcessoInativo }))
+);
 const PaginaAuthCallback = lazy(() =>
   import("@/pages/PaginaAuthCallback").then((m) => ({ default: m.PaginaAuthCallback }))
 );
@@ -81,6 +84,8 @@ export default function App() {
               <PaginaEntrar />
             ) : fase === "sem_acesso" ? (
               <PaginaAcessoPendente />
+            ) : fase === "acesso_inativo" ? (
+              <PaginaAcessoInativo />
             ) : fase === "onboarding" ? (
               <PaginaOnboarding aoConcluir={() => setRecarregar((r) => r + 1)} />
             ) : (

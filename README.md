@@ -15,14 +15,39 @@ do Manual da Empresa em PDF e o Radar da Empresa (alertas inteligentes e determi
 
 1. Crie um projeto **novo** no Supabase.
 2. Execute os arquivos `supabase/migrations/0001_inicial.sql`, `0002_radar_eventos.sql`,
-   `0003_aulas_semana.sql` e `0004_admin_atividade.sql` no SQL Editor do projeto,
-   **nesta ordem**.
+   `0003_aulas_semana.sql`, `0004_admin_atividade.sql` e `0005_acessos_ativos.sql` no SQL
+   Editor do projeto, **nesta ordem**.
 3. Crie o arquivo `.env` a partir de `.env.example` com `VITE_SUPABASE_URL` e
    `VITE_SUPABASE_ANON_KEY`.
 4. No Supabase: *Authentication > URL Configuration*, defina `Site URL` como
    `http://localhost:5173` (dev) / sua URL na Vercel (produção) e adicione a URL do
    callback `.../auth/callback`. Habilite confirmação de e-mail.
 5. `npm install && npm run dev`
+
+## Variáveis de ambiente
+
+| Variável | Onde | Finalidade |
+| --- | --- | --- |
+| `VITE_SUPABASE_URL` | `.env` local + Vercel | URL do projeto (front-end) |
+| `VITE_SUPABASE_ANON_KEY` | `.env` local + Vercel | Chave pública do front-end |
+| `SUPABASE_SERVICE_ROLE_KEY` | Secrets da Edge Function | Só no servidor (nunca no front/bundle) |
+| `VITE_REFRICLUBE_SECRET_KEY` | `.env` local + Vercel | Reservada p/ integração futura com o Refriclube |
+
+O deploy da branch `main` para produção está ativo na Vercel (mesmo padrão do Refriclube e
+do Viga Gestão).
+
+## Contato de suporte (rodapé)
+
+O rodapé mostra o canal de suporte definido em `src/lib/contato.ts` (WhatsApp/e-mail do
+Documento de Boas-vindas). Preencha os valores lá; deixe vazio para ocultar.
+
+## Desativar acesso de um aluno
+
+Na página `/admin/usuarios/{id}`, o botão "Desativar acesso" (com motivo) marca
+`acessos.ativo = false`. O aluno perde o acesso na próxima carga, mas os dados ficam
+preservados. O mesmo card permite reativar depois.
+
+## Checklist de teste manual (antes de liberar para os 3 usuários)
 
 ## Painel administrativo (`/admin`)
 
@@ -96,6 +121,22 @@ insert into acessos (email) values ('cliente@email.com');
 ```
 
 Sem a linha em `acessos`, o usuário logado vê a tela "Acesso em análise".
+
+## Checklist de teste manual (antes de liberar para os 3 usuários)
+
+1. Como admin: criar um novo acesso de teste em `/admin/novo-acesso` e copiar a senha gerada.
+2. Logar com essa conta nova → deve cair em `/onboarding` (primeira vez).
+3. Preencher o onboarding → deve cair em `/dashboard`, com Semana 1 em andamento e
+   Semanas 2–12 bloqueadas.
+4. Abrir a Semana 1, ver o vídeo (ou "Aula em breve" se ainda não houver link), preencher
+   os campos, marcar missões e o checklist, concluir → a Semana 2 deve desbloquear.
+5. Verificar que o Radar da Empresa aparece no Dashboard (mesmo sem nenhum alerta ainda).
+6. Avançar até a Semana 4 e preencher o Painel Mensal 1.
+7. Como admin: abrir `/admin/usuarios/{id}` do usuário de teste e conferir que os dados
+   batem com o que foi preenchido.
+8. Desativar o acesso do usuário de teste (`ativo = false`) e confirmar que, ao logar de
+   novo, aparece a tela de acesso inativo.
+9. Repetir tudo no celular (a partir de 360px de largura), não só no computador.
 
 ## Scripts
 

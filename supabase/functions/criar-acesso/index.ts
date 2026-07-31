@@ -93,7 +93,9 @@ Deno.serve(async (req) => {
     // ---- 4) Gravar perfil + liberar acesso ----
     const usuarioId = criado.user.id;
     await clienteAdmin.from("perfis").update({ nome, telefone, email }).eq("id", usuarioId);
-    await clienteAdmin.from("acessos").upsert({ email, liberado: true });
+    await clienteAdmin
+      .from("acessos")
+      .upsert({ user_id: usuarioId, email, ativo: true }, { onConflict: "user_id" });
 
     return responder(200, {
       email,

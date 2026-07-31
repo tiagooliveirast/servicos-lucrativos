@@ -78,8 +78,12 @@ export interface PainelMensal {
 }
 
 export interface Acesso {
-  email: string;
-  liberado: boolean;
+  user_id: string;
+  email: string | null;
+  ativo: boolean;
+  motivo_inativacao: string | null;
+  inativado_em: string | null;
+  created_at: string | null;
 }
 
 export interface RadarEvento {

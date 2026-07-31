@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
-import { ArrowLeft, BarChart3, CheckCircle2, Loader2 } from "lucide-react";
+import { AlertCircle, ArrowLeft, BarChart3, CheckCircle2, Loader2 } from "lucide-react";
 
 import { Layout } from "@/components/Layout";
 import { Badge } from "@/components/ui/badge";
@@ -40,17 +40,26 @@ export function PaginaPainel({ userId }: { userId: string }) {
   const [painel, setPainel] = useState<PainelMensal | null>(null);
   const [painelAnterior, setPainelAnterior] = useState<PainelMensal | null>(null);
   const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState(false);
+  const [tentativa, setTentativa] = useState(0);
 
   useEffect(() => {
     let ativo = true;
+    setCarregando(true);
+    setErro(false);
     async function carregar() {
-      const { data: semana } = await supabase
+      const { data: semana, error: erroSemana } = await supabase
         .from("progresso_semanas")
         .select("status")
         .eq("user_id", userId)
         .eq("semana", semanaChave)
         .maybeSingle();
       if (!ativo) return;
+      if (erroSemana) {
+        setErro(true);
+        setCarregando(false);
+        return;
+      }
       if (!semana || semana.status !== "concluida") {
         setLiberado(false);
         setCarregando(false);
@@ -70,9 +79,14 @@ export function PaginaPainel({ userId }: { userId: string }) {
               .eq("user_id", userId)
               .eq("numero_painel", n - 1)
               .maybeSingle()
-          : Promise.resolve({ data: null }),
+          : Promise.resolve({ data: null, error: null }),
       ]);
       if (!ativo) return;
+      if (resPainel.error || resAnterior.error) {
+        setErro(true);
+        setCarregando(false);
+        return;
+      }
       setPainel((resPainel.data as PainelMensal | null) ?? null);
       setPainelAnterior((resAnterior.data as PainelMensal | null) ?? null);
       setLiberado(true);
@@ -82,13 +96,29 @@ export function PaginaPainel({ userId }: { userId: string }) {
     return () => {
       ativo = false;
     };
-  }, [userId, n, semanaChave]);
+  }, [userId, n, semanaChave, tentativa]);
 
   if (carregando) {
     return (
       <Layout>
         <div className="flex items-center justify-center py-24 text-muted-foreground">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
+  if (erro) {
+    return (
+      <Layout>
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-10 text-center">
+          <AlertCircle className="h-6 w-6 text-destructive" />
+          <p className="text-sm text-foreground/90">
+            Não foi possível carregar seus dados agora. Verifique sua conexão e tente
+            novamente.
+          </p>
+          <Button variant="outline" onClick={() => setTentativa((t) => t + 1)}>
+            Tentar novamente
+          </Button>
         </div>
       </Layout>
     );

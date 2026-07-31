@@ -4,7 +4,13 @@ import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import type { Perfil } from "@/lib/types";
 
-export type FaseAuth = "carregando" | "deslogado" | "sem_acesso" | "onboarding" | "logado";
+export type FaseAuth =
+  | "carregando"
+  | "deslogado"
+  | "sem_acesso"
+  | "acesso_inativo"
+  | "onboarding"
+  | "logado";
 
 interface EstadoAuth {
   fase: FaseAuth;
@@ -47,13 +53,17 @@ export function useAuth(recarregar = 0): EstadoAuth {
 
         const { data: acesso } = await supabase
           .from("acessos")
-          .select("email")
-          .eq("email", user.email ?? "")
+          .select("ativo")
+          .eq("user_id", user.id)
           .maybeSingle();
 
         if (!ativo) return;
         if (!acesso) {
           setEstado({ fase: "sem_acesso", user, perfil });
+          return;
+        }
+        if (!acesso.ativo) {
+          setEstado({ fase: "acesso_inativo", user, perfil });
           return;
         }
 

@@ -3,7 +3,9 @@ import {
   ArrowLeft,
   Loader2,
   OctagonAlert,
+  ShieldBan,
   TrendingUp,
+  UserX,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -17,8 +19,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
 import type {
+  Acesso,
   DiagnosticoInicial,
   IndicadorSemana,
   PainelMensal,
@@ -49,18 +54,23 @@ interface DadosDetalhe {
   indicadores: IndicadorSemana[];
   paineis: PainelMensal[];
   radar: RadarEvento[];
+  acesso: Acesso | null;
 }
 
 export function PaginaAdminUsuarioDetalhe() {
   const { id } = useParams();
   const [dados, setDados] = useState<DadosDetalhe | null>(null);
   const [erro, setErro] = useState(false);
+  const [confirmando, setConfirmando] = useState(false);
+  const [motivo, setMotivo] = useState("");
+  const [salvando, setSalvando] = useState(false);
+  const [erroAcao, setErroAcao] = useState<string | null>(null);
 
   useEffect(() => {
     let ativo = true;
     async function carregar() {
       if (!id) return;
-      const [resPerfil, resDiagnostico, resProgresso, resIndicadores, resPaineis, resRadar] =
+      const [resPerfil, resDiagnostico, resProgresso, resIndicadores, resPaineis, resRadar, resAcesso] =
         await Promise.all([
           supabase.from("perfis").select("*").eq("id", id).maybeSingle(),
           supabase
@@ -89,6 +99,7 @@ export function PaginaAdminUsuarioDetalhe() {
             .eq("user_id", id)
             .order("criado_em", { ascending: false })
             .limit(50),
+          supabase.from("acessos").select("*").eq("user_id", id).maybeSingle(),
         ]);
       if (!ativo) return;
       if (
@@ -97,7 +108,8 @@ export function PaginaAdminUsuarioDetalhe() {
         resProgresso.error ||
         resIndicadores.error ||
         resPaineis.error ||
-        resRadar.error
+        resRadar.error ||
+        resAcesso.error
       ) {
         setErro(true);
         return;
@@ -109,6 +121,7 @@ export function PaginaAdminUsuarioDetalhe() {
         indicadores: resIndicadores.data as IndicadorSemana[],
         paineis: resPaineis.data as PainelMensal[],
         radar: resRadar.data as RadarEvento[],
+        acesso: (resAcesso.data as Acesso | null) ?? null,
       });
     }
     void carregar();
@@ -143,9 +156,47 @@ export function PaginaAdminUsuarioDetalhe() {
     );
   }
 
-  const { perfil, diagnostico, progresso, indicadores, paineis, radar } = dados;
+  const { perfil, diagnostico, progresso, indicadores, paineis, radar, acesso } = dados;
   const concluidas = progresso.filter((p) => p.status === "concluida").map((p) => p.semana);
   const pct = Math.round((concluidas.length / 12) * 100);
+
+  async function desativarAcesso() {
+    if (!id) return;
+    setSalvando(true);
+    setErroAcao(null);
+    const { error } = await supabase
+      .from("acessos")
+      .update({
+        ativo: false,
+        motivo_inativacao: motivo.trim() || null,
+        inativado_em: new Date().toISOString(),
+      })
+      .eq("user_id", id);
+    setSalvando(false);
+    if (error) {
+      setErroAcao("Não foi possível atualizar o acesso.");
+      return;
+    }
+    setConfirmando(false);
+    setMotivo("");
+    setDados((d) => (d ? { ...d, acesso: { ...(d.acesso ?? { user_id: id }), ativo: false, motivo_inativacao: motivo.trim() || null, inativado_em: new Date().toISOString() } as Acesso } : d));
+  }
+
+  async function reativarAcesso() {
+    if (!id) return;
+    setSalvando(true);
+    setErroAcao(null);
+    const { error } = await supabase
+      .from("acessos")
+      .update({ ativo: true, motivo_inativacao: null, inativado_em: null })
+      .eq("user_id", id);
+    setSalvando(false);
+    if (error) {
+      setErroAcao("Não foi possível atualizar o acesso.");
+      return;
+    }
+    setDados((d) => (d ? { ...d, acesso: { ...(d.acesso ?? { user_id: id }), ativo: true, motivo_inativacao: null, inativado_em: null } as Acesso } : d));
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -177,6 +228,86 @@ export function PaginaAdminUsuarioDetalhe() {
           {formatData(perfil.ultimo_acesso_at)}
         </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ShieldBan className="h-4 w-4 text-primary" />
+            Controle de acesso
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant={acesso?.ativo === false ? "destrutivo" : "sucesso"}>
+              {acesso?.ativo === false ? "Acesso inativo" : "Acesso ativo"}
+            </Badge>
+            {acesso?.inativado_em && (
+              <span className="text-xs text-muted-foreground">
+                Inativado em {formatData(acesso.inativado_em)}
+              </span>
+            )}
+          </div>
+          {acesso?.ativo === false && acesso.motivo_inativacao && (
+            <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm">
+              <span className="font-semibold">Motivo:</span> {acesso.motivo_inativacao}
+            </p>
+          )}
+          {!confirmando ? (
+            acesso?.ativo === false ? (
+              <Button variant="outline" onClick={() => void reativarAcesso()} disabled={salvando} className="w-fit">
+                {salvando && <Loader2 className="animate-spin" />}
+                Reativar acesso
+              </Button>
+            ) : (
+              <Button
+                variant="destructive"
+                onClick={() => setConfirmando(true)}
+                className="w-fit"
+              >
+                <UserX />
+                Desativar acesso
+              </Button>
+            )
+          ) : (
+            <div className="flex flex-col gap-3 rounded-lg border border-destructive/40 bg-destructive/5 p-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="motivo">
+                  Motivo da desativação <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="motivo"
+                  value={motivo}
+                  onChange={(e) => setMotivo(e.target.value)}
+                  placeholder="Ex: devolução da garantia condicional"
+                  autoFocus
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                O aluno perde o acesso imediatamente, mas os dados dele continuam salvos.
+              </p>
+              {erroAcao && (
+                <p className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive-foreground">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  {erroAcao}
+                </p>
+              )}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="destructive"
+                  disabled={salvando || motivo.trim() === ""}
+                  onClick={() => void desativarAcesso()}
+                >
+                  {salvando && <Loader2 className="animate-spin" />}
+                  Confirmar desativação
+                </Button>
+                <Button variant="outline" onClick={() => setConfirmando(false)} disabled={salvando}>
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

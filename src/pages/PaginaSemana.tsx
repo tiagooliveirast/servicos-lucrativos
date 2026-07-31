@@ -42,9 +42,13 @@ export function PaginaSemana({ userId }: { userId: string }) {
   const [progresso, setProgresso] = useState<ProgressoSemana | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [naoEncontrada, setNaoEncontrada] = useState(false);
+  const [erro, setErro] = useState(false);
+  const [tentativa, setTentativa] = useState(0);
 
   useEffect(() => {
     let ativo = true;
+    setCarregando(true);
+    setErro(false);
     async function carregar() {
       const { data, error } = await supabase
         .from("progresso_semanas")
@@ -53,7 +57,12 @@ export function PaginaSemana({ userId }: { userId: string }) {
         .eq("semana", n)
         .maybeSingle();
       if (!ativo) return;
-      if (error || !data) setNaoEncontrada(true);
+      if (error) {
+        setErro(true);
+        setCarregando(false);
+        return;
+      }
+      if (!data) setNaoEncontrada(true);
       else setProgresso(data);
       setCarregando(false);
     }
@@ -61,7 +70,7 @@ export function PaginaSemana({ userId }: { userId: string }) {
     return () => {
       ativo = false;
     };
-  }, [userId, n]);
+  }, [userId, n, tentativa]);
 
   if (!semana) return <Navigate to="/" replace />;
   if (carregando) {
@@ -69,6 +78,22 @@ export function PaginaSemana({ userId }: { userId: string }) {
       <Layout>
         <div className="flex items-center justify-center py-24 text-muted-foreground">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
+  if (erro) {
+    return (
+      <Layout>
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-10 text-center">
+          <AlertCircle className="h-6 w-6 text-destructive" />
+          <p className="text-sm text-foreground/90">
+            Não foi possível carregar seus dados agora. Verifique sua conexão e tente
+            novamente.
+          </p>
+          <Button variant="outline" onClick={() => setTentativa((t) => t + 1)}>
+            Tentar novamente
+          </Button>
         </div>
       </Layout>
     );

@@ -1,10 +1,11 @@
-import { LogOut, ShieldCheck } from "lucide-react";
+import { LogOut, MessageCircle, Mail, ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { useEhAdmin } from "@/hooks/useEhAdmin";
+import { CONTATO_SUPORTE } from "@/lib/contato";
 import { supabase } from "@/lib/supabase";
 
 export function Layout({
@@ -52,9 +53,35 @@ export function Layout({
       </header>
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
       <footer className="border-t py-4">
-        <p className="text-center text-xs text-muted-foreground">
-          Gestão Lucrativa — O Plano de 90 Dias
-        </p>
+        <div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-2 px-4">
+          <p className="text-center text-xs text-muted-foreground">
+            Gestão Lucrativa — O Plano de 90 Dias
+          </p>
+          {(CONTATO_SUPORTE.whatsapp || CONTATO_SUPORTE.email) && (
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              {CONTATO_SUPORTE.whatsapp && (
+                <a
+                  href={`https://wa.me/${CONTATO_SUPORTE.whatsapp}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 hover:text-foreground"
+                >
+                  <MessageCircle className="h-3.5 w-3.5" />
+                  Suporte no WhatsApp
+                </a>
+              )}
+              {CONTATO_SUPORTE.email && (
+                <a
+                  href={`mailto:${CONTATO_SUPORTE.email}`}
+                  className="flex items-center gap-1.5 hover:text-foreground"
+                >
+                  <Mail className="h-3.5 w-3.5" />
+                  {CONTATO_SUPORTE.email}
+                </a>
+              )}
+            </div>
+          )}
+        </div>
       </footer>
     </div>
   );
