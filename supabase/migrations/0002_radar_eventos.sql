@@ -31,9 +31,12 @@ create policy "usuario_atualiza_so_seus_eventos" on public.radar_eventos
   for update using (auth.uid() = user_id);
 
 create index if not exists idx_radar_user on public.radar_eventos(user_id);
--- no máximo um evento por regra por dia (protege contra duplicação)
+-- no máximo um evento por regra por dia (protege contra duplicação).
+-- O cast direto (criado_em::date) é STABLE em Postgres 14+ e não pode ser
+-- usado em índice; "AT TIME ZONE 'UTC'" torna a expressão IMMUTABLE e
+-- equivale ao "dia" na hora UTC em que o evento foi criado.
 create unique index if not exists idx_radar_user_regra_dia
-  on public.radar_eventos(user_id, regra_id, (criado_em::date));
+  on public.radar_eventos(user_id, regra_id, ((criado_em AT TIME ZONE 'UTC')::date));
 
 -- Último acesso do usuário (base da Regra 7 — usuário inativo).
 -- O client não consegue ler auth.users, então registramos aqui.

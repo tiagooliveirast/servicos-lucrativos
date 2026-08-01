@@ -138,7 +138,7 @@ export function useRadar(userId: string): EstadoRadar & { tentarNovamente: () =>
           supabase
             .from("radar_eventos")
             .upsert(paraInserir, {
-              onConflict: "user_id,regra_id,(criado_em::date)",
+              onConflict: "user_id,regra_id,((criado_em AT TIME ZONE 'UTC')::date)",
               ignoreDuplicates: true,
             })
             .then(() => undefined)
