@@ -130,7 +130,15 @@ export function PaginaAdminUsuarioDetalhe() {
     };
   }, [id]);
 
-  if (erro || !dados) {
+  if (!dados) {
+    return (
+      <div className="flex items-center justify-center py-16 text-muted-foreground">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (erro) {
     return (
       <p className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive-foreground">
         <AlertCircle className="h-4 w-4 shrink-0" />
@@ -145,14 +153,6 @@ export function PaginaAdminUsuarioDetalhe() {
         <AlertCircle className="h-4 w-4 shrink-0" />
         Aluno não encontrado.
       </p>
-    );
-  }
-
-  if (!dados) {
-    return (
-      <div className="flex items-center justify-center py-16 text-muted-foreground">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-      </div>
     );
   }
 
