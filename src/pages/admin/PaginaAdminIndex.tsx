@@ -1,6 +1,7 @@
 import { Activity, AlertCircle, Loader2, TrendingUp, Trophy, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
 import type { AtividadeLog, Perfil, ProgressoSemana } from "@/lib/types";
@@ -15,9 +16,12 @@ interface DadosAdmin {
 export function PaginaAdminIndex() {
   const [dados, setDados] = useState<DadosAdmin | null>(null);
   const [erro, setErro] = useState(false);
+  const [tentativa, setTentativa] = useState(0);
 
   useEffect(() => {
     let ativo = true;
+    setErro(false);
+    setDados(null);
     async function carregar() {
       const [resPerfis, resProgresso, resAtividade] = await Promise.all([
         supabase.from("perfis").select("id, nome, email, ultimo_acesso_at, created_at"),
@@ -43,14 +47,19 @@ export function PaginaAdminIndex() {
     return () => {
       ativo = false;
     };
-  }, []);
+  }, [tentativa]);
 
   if (erro) {
     return (
-      <p className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive-foreground">
-        <AlertCircle className="h-4 w-4 shrink-0" />
-        Não foi possível carregar os dados. Verifique sua conexão e tente novamente.
-      </p>
+      <div className="flex flex-col items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-10 text-center">
+        <AlertCircle className="h-6 w-6 text-destructive" />
+        <p className="text-sm text-foreground/90">
+          Não foi possível carregar os dados. Verifique sua conexão e tente novamente.
+        </p>
+        <Button variant="outline" onClick={() => setTentativa((t) => t + 1)}>
+          Tentar novamente
+        </Button>
+      </div>
     );
   }
 

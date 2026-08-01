@@ -15,11 +15,20 @@ export function PaginaAuthCallback() {
       navigate("/", { replace: true });
       return;
     }
+    let veioDeRecuperacao = false;
+    const { data: inscricao } = supabase.auth.onAuthStateChange((evento) => {
+      if (evento === "PASSWORD_RECOVERY") veioDeRecuperacao = true;
+    });
     supabase.auth
       .exchangeCodeForSession(codigo)
       .then(({ error }) => {
-        if (error) setErro("Não foi possível confirmar seu acesso. Tente entrar novamente.");
-        else navigate("/", { replace: true });
+        inscricao.subscription.unsubscribe();
+        if (error) {
+          setErro("Não foi possível confirmar seu acesso. Tente entrar novamente.");
+          return;
+        }
+        // Link "Esqueci minha senha": leva à tela para criar a senha nova.
+        navigate(veioDeRecuperacao ? "/nova-senha" : "/", { replace: true });
       })
       .catch(() => setErro("Não foi possível confirmar seu acesso. Tente entrar novamente."));
   }, [params, navigate]);

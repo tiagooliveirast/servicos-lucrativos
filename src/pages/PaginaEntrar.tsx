@@ -48,7 +48,9 @@ export function PaginaEntrar() {
     setAvisos(null);
     setCarregando(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      });
       if (error) throw new Error(traduzirErro(error.message));
       setAvisos(
         "Enviamos um link de redefinição de senha para o seu e-mail. Confira a caixa de entrada (e o spam)."

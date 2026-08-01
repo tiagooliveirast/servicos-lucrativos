@@ -16,13 +16,20 @@ const MS_DIA = 24 * 60 * 60 * 1000;
 interface EstadoRadar {
   carregando: boolean;
   alertas: AlertaRadar[];
+  erro: boolean;
 }
 
-export function useRadar(userId: string): EstadoRadar {
-  const [estado, setEstado] = useState<EstadoRadar>({ carregando: true, alertas: [] });
+export function useRadar(userId: string): EstadoRadar & { tentarNovamente: () => void } {
+  const [estado, setEstado] = useState<EstadoRadar>({
+    carregando: true,
+    alertas: [],
+    erro: false,
+  });
+  const [tentativa, setTentativa] = useState(0);
 
   useEffect(() => {
     let ativo = true;
+    setEstado((e) => ({ ...e, carregando: true, erro: false }));
 
     async function rodar() {
       const agora = new Date();
@@ -46,6 +53,13 @@ export function useRadar(userId: string): EstadoRadar {
 
       if (!ativo) return;
 
+      const falhou = rPerfil.error || rDiagnostico.error || rMissoes.error || rIndicadores.error ||
+        rSemanas.error || rPaineis.error || rEventos.error;
+      if (falhou) {
+        setEstado({ carregando: false, alertas: [], erro: true });
+        return;
+      }
+
       const dados: DadosRadar = {
         diagnostico: (rDiagnostico.data as DiagnosticoInicial | null) ?? null,
         semanas: (rSemanas.data ?? []) as ProgressoSemana[],
@@ -62,7 +76,7 @@ export function useRadar(userId: string): EstadoRadar {
 
       reconciliar(alertas, eventos, userId, agora);
 
-      if (ativo) setEstado({ carregando: false, alertas });
+      if (ativo) setEstado({ carregando: false, alertas, erro: false });
     }
 
     async function reconciliar(
@@ -160,7 +174,7 @@ export function useRadar(userId: string): EstadoRadar {
     return () => {
       ativo = false;
     };
-  }, [userId]);
+  }, [userId, tentativa]);
 
-  return estado;
+  return { ...estado, tentarNovamente: () => setTentativa((t) => t + 1) };
 }

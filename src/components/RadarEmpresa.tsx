@@ -1,5 +1,6 @@
 import { AlertTriangle, Loader2, OctagonAlert, Radar, Target, TrendingUp } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRadar } from "@/hooks/useRadar";
 import { missaoRecomendada, type AlertaRadar, type CategoriaRadar } from "@/lib/regras-radar";
@@ -36,7 +37,7 @@ const SECOES: {
 ];
 
 export function RadarEmpresa({ userId }: { userId: string }) {
-  const { carregando, alertas } = useRadar(userId);
+  const { carregando, alertas, erro, tentarNovamente } = useRadar(userId);
 
   if (carregando) {
     return (
@@ -54,7 +55,48 @@ export function RadarEmpresa({ userId }: { userId: string }) {
     );
   }
 
-  if (alertas.length === 0) return null;
+  if (erro) {
+    return (
+      <Card className="border-primary/40">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Radar className="h-4 w-4 text-primary" />
+            Radar da Empresa
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-start gap-3">
+            <p className="flex items-start gap-2 text-sm text-muted-foreground">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+              Não foi possível carregar o Radar da Empresa agora. Tente novamente.
+            </p>
+            <Button variant="outline" size="sm" onClick={tentarNovamente}>
+              Tentar novamente
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (alertas.length === 0) {
+    return (
+      <Card className="border-primary/40">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Radar className="h-4 w-4 text-primary" />
+            Radar da Empresa
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Nenhum alerta por enquanto. Continue preenchendo suas semanas — o Radar avisa
+            quando houver algo para corrigir ou comemorar.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const recomendada = missaoRecomendada(alertas);
 

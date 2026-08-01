@@ -772,7 +772,23 @@ function BlocoAula({ semana }: { semana: number }) {
     };
   }, [semana]);
 
-  if (carregando) return null;
+  if (carregando) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Video className="h-4 w-4 text-primary" />
+            Vídeo-aula
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center rounded-lg border border-dashed border-muted-foreground/40 px-4 py-10">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const videoId = aula?.video_url ? extrairVideoId(aula.video_url) : null;
 

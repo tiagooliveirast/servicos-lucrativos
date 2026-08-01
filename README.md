@@ -49,6 +49,8 @@ preservados. O mesmo card permite reativar depois.
 
 ## Checklist de teste manual (antes de liberar para os 3 usuários)
 
+O roteiro completo está no final deste arquivo, na seção "Checklist de teste manual".
+
 ## Painel administrativo (`/admin`)
 
 Área exclusiva para o dono da plataforma. Para ativá-la:
@@ -92,10 +94,16 @@ O caminho recomendado é a tela **/admin/novo-acesso** (cria a conta + senha tem
 perfil + libera o acesso). Manualmente, o equivalente é:
 
 ```sql
-insert into acessos (email) values ('cliente@email.com');
+insert into acessos (user_id) values ('uuid-do-usuario-criado');
 ```
 
 Sem a linha em `acessos` (ou sem conta criada), o usuário vê a tela "Acesso em análise".
+
+## Recuperação de senha
+
+O link "Esqueci minha senha" na tela de login usa o fluxo padrão do Supabase
+(`resetPasswordForEmail`). O e-mail enviado aponta para `/auth/callback`, que detecta o
+link de recuperação e leva o usuário à tela `/nova-senha` para definir a senha nova.
 
 ## Radar da Empresa
 
@@ -114,13 +122,9 @@ os dados do usuário (semanas, indicadores, painéis, acesso) com as regras do c
 
 ## Liberação de acesso (após compra na Hotmart)
 
-O acesso é manual: insira o e-mail do comprador na tabela `acessos`:
-
-```sql
-insert into acessos (email) values ('cliente@email.com');
-```
-
-Sem a linha em `acessos`, o usuário logado vê a tela "Acesso em análise".
+O acesso é manual: o caminho recomendado é a tela **/admin/novo-acesso** (cria a conta +
+senha temporária + perfil + libera o acesso). Sem a linha em `acessos`, o usuário logado
+vê a tela "Acesso em análise".
 
 ## Checklist de teste manual (antes de liberar para os 3 usuários)
 

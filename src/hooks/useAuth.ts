@@ -10,7 +10,8 @@ export type FaseAuth =
   | "sem_acesso"
   | "acesso_inativo"
   | "onboarding"
-  | "logado";
+  | "logado"
+  | "erro";
 
 interface EstadoAuth {
   fase: FaseAuth;
@@ -50,7 +51,6 @@ export function useAuth(recarregar = 0): EstadoAuth {
           setEstado({ fase: "onboarding", user, perfil: null });
           return;
         }
-
         const { data: acesso } = await supabase
           .from("acessos")
           .select("ativo")
@@ -82,7 +82,10 @@ export function useAuth(recarregar = 0): EstadoAuth {
 
         setEstado({ fase: "logado", user, perfil });
       } catch {
-        if (ativo) setEstado({ fase: "deslogado", user: null, perfil: null });
+        // Erro de rede/servidor: mantém o usuário com sessão, mas mostra
+        // uma tela de erro com opção de tentar novamente (em vez de
+        // tratar como deslogado e mostrar a tela de login).
+        if (ativo) setEstado({ fase: "erro", user, perfil: null });
       }
     }
 

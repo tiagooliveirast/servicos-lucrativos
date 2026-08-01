@@ -1,9 +1,10 @@
 import { lazy, Suspense, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 
 import { ExigirAdmin } from "@/components/ExigirAdmin";
 import { Logo } from "@/components/Logo";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 
 const PaginaAcessoPendente = lazy(() =>
@@ -23,6 +24,9 @@ const PaginaEntrar = lazy(() =>
 );
 const PaginaManual = lazy(() =>
   import("@/pages/PaginaManual").then((m) => ({ default: m.PaginaManual }))
+);
+const PaginaNovaSenha = lazy(() =>
+  import("@/pages/PaginaNovaSenha").then((m) => ({ default: m.PaginaNovaSenha }))
 );
 const PaginaOnboarding = lazy(() =>
   import("@/pages/PaginaOnboarding").then((m) => ({ default: m.PaginaOnboarding }))
@@ -59,6 +63,22 @@ function TelaCarregando() {
   );
 }
 
+function TelaErroSessao({ aoTentar }: { aoTentar: () => void }) {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4">
+      <div className="flex w-full max-w-md flex-col items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-6 py-10 text-center">
+        <AlertTriangle className="h-6 w-6 text-destructive" />
+        <p className="text-sm text-foreground/90">
+          Não foi possível carregar seus dados agora. Verifique sua conexão e tente novamente.
+        </p>
+        <Button variant="outline" onClick={aoTentar}>
+          Tentar novamente
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [recarregar, setRecarregar] = useState(0);
   const { fase, user, perfil } = useAuth(recarregar);
@@ -72,10 +92,21 @@ export default function App() {
     );
   }
 
+  if (fase === "erro") {
+    return <TelaErroSessao aoTentar={() => setRecarregar((r) => r + 1)} />;
+  }
+
   return (
     <Suspense fallback={<TelaCarregando />}>
       <Routes>
         <Route path="/auth/callback" element={<PaginaAuthCallback />} />
+
+        <Route
+          path="/nova-senha"
+          element={
+            fase === "logado" ? <PaginaNovaSenha /> : <Navigate to="/" replace />
+          }
+        />
 
         <Route
           path="/"
