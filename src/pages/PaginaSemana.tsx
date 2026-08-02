@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import {
   AlertCircle,
@@ -196,7 +196,13 @@ function ConteudoSemana({
     [userId, semana.numero]
   );
 
+  const jaCarregou = useRef(false);
+
   useEffect(() => {
+    if (!jaCarregou.current) {
+      jaCarregou.current = true;
+      return;
+    }
     const timer = setTimeout(() => {
       const comCalculados = { ...respostas, ...calculados };
       void salvar(comCalculados);
@@ -668,7 +674,7 @@ function CampoForm({
     const objeto = (respostas[campo.id] ?? {}) as Record<string, unknown>;
     return (
       <div className="flex flex-col gap-2">
-        <CampoRotulo campo={campo} obrigatorio={false} />
+        <CampoRotulo campo={campo} obrigatorio />
         <div className="overflow-hidden rounded-lg border border-input">
           {campo.linhas.map((linha, i) => (
             <div
@@ -745,7 +751,7 @@ function CampoForm({
 
 function extrairVideoId(url: string): string | null {
   const match = url.match(
-    /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([\w-]{11})/
+    /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/))([\w-]{11})/
   );
   return match ? match[1] : null;
 }
@@ -861,9 +867,16 @@ function calcularValores(semana: number, respostas: Record<string, unknown>): Re
   if (semana === 1) {
     const custoVida = num("custo_vida");
     const custosFixos = num("custos_fixos_negocio");
+    const despesasVariaveis = num("despesas_variaveis");
     const lucro = num("lucro_desejado");
-    if (custoVida !== null && custosFixos !== null && lucro !== null) {
-      resultado.meta_minima = Math.round((custoVida + custosFixos + lucro) * 100) / 100;
+    if (
+      custoVida !== null &&
+      custosFixos !== null &&
+      despesasVariaveis !== null &&
+      lucro !== null
+    ) {
+      resultado.meta_minima =
+        Math.round((custoVida + custosFixos + despesasVariaveis + lucro) * 100) / 100;
     }
   }
 
@@ -911,6 +924,17 @@ function validarCampos(
         })
       );
       if (incompleta) return `Preencha todas as células da "${campo.rotulo}".`;
+      continue;
+    }
+
+    if (campo.tipo === "tabela_fixa") {
+      const objeto = (respostas[campo.id] ?? {}) as Record<string, unknown>;
+      const incompleta = campo.linhas.some((linha) => {
+        const v = objeto[linha.id];
+        return v === undefined || v === null || String(v).trim() === "";
+      });
+      if (incompleta)
+        return `Preencha todos os itens da "${campo.rotulo}" antes de concluir.`;
       continue;
     }
 

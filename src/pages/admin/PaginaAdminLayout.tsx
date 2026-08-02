@@ -1,4 +1,4 @@
-import { LayoutDashboard, ShieldCheck, UserPlus, Users } from "lucide-react";
+import { LayoutDashboard, ShieldCheck, UserPlus, Users, Video } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 
 import { Layout } from "@/components/Layout";
@@ -8,6 +8,7 @@ const ITENS_NAV = [
   { para: "/admin", rotulo: "Visão geral", icone: LayoutDashboard, fim: true },
   { para: "/admin/usuarios", rotulo: "Usuários", icone: Users, fim: false },
   { para: "/admin/novo-acesso", rotulo: "Novo acesso", icone: UserPlus, fim: false },
+  { para: "/admin/aulas", rotulo: "Vídeo-aulas", icone: Video, fim: false },
 ];
 
 export function PaginaAdminLayout() {

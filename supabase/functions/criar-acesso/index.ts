@@ -92,10 +92,24 @@ Deno.serve(async (req) => {
 
     // ---- 4) Gravar perfil + liberar acesso ----
     const usuarioId = criado.user.id;
-    await clienteAdmin.from("perfis").update({ nome, telefone, email }).eq("id", usuarioId);
-    await clienteAdmin
+    const { error: erroPerfil } = await clienteAdmin
+      .from("perfis")
+      .update({ nome, telefone, email })
+      .eq("id", usuarioId);
+    if (erroPerfil) {
+      console.error("criar-acesso: falha ao gravar perfil", erroPerfil.message);
+      await clienteAdmin.auth.admin.deleteUser(usuarioId);
+      return responder(500, { erro: "Erro ao gravar o perfil. Tente novamente." });
+    }
+
+    const { error: erroAcesso } = await clienteAdmin
       .from("acessos")
       .upsert({ user_id: usuarioId, email, ativo: true }, { onConflict: "user_id" });
+    if (erroAcesso) {
+      console.error("criar-acesso: falha ao liberar acesso", erroAcesso.message);
+      await clienteAdmin.auth.admin.deleteUser(usuarioId);
+      return responder(500, { erro: "Erro ao liberar o acesso. Tente novamente." });
+    }
 
     return responder(200, {
       email,

@@ -26,7 +26,7 @@ import { Progress } from "@/components/ui/progress";
 import { MODULOS, SEMANAS } from "@/lib/conteudo";
 import { supabase } from "@/lib/supabase";
 import type { PainelMensal, Perfil, ProgressoSemana } from "@/lib/types";
-import { cn, formatBRL } from "@/lib/utils";
+import { cn, formatBRL, formatNumero } from "@/lib/utils";
 const STATUS_INFO = {
   bloqueada: { rotulo: "Bloqueada", icon: Lock, classes: "text-muted-foreground" },
   em_andamento: { rotulo: "Em andamento", icon: PlayCircle, classes: "text-amber-400" },
@@ -144,11 +144,13 @@ export function PaginaDashboard({ perfil }: { perfil: Perfil }) {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
                   <BarChart3 className="h-4 w-4 text-primary" />
-                  Painel Mensal mais recente
+                  Painéis mensais
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <UltimoPainel painel={paineis[paineis.length - 1]} />
+              <CardContent className="flex flex-col gap-3">
+                {paineis.map((painel) => (
+                  <UltimoPainel key={painel.numero_painel} painel={painel} />
+                ))}
               </CardContent>
             </Card>
           </section>
@@ -205,14 +207,16 @@ export function PaginaDashboard({ perfil }: { perfil: Perfil }) {
                       <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
                         {semana.objetivo}
                       </p>
-                      {status === "concluida" && (
-                        <p className="mt-2 text-xs text-emerald-400/80">
-                          Concluída em{" "}
-                          {new Date(
-                            semanaPorNumero.get(semana.numero)!.concluida_em!
-                          ).toLocaleDateString("pt-BR")}
-                        </p>
-                      )}
+                      {status === "concluida" && (() => {
+                        const concluidaEm = semanaPorNumero.get(semana.numero)?.concluida_em;
+                        if (!concluidaEm) return null;
+                        return (
+                          <p className="mt-2 text-xs text-emerald-400/80">
+                            Concluída em{" "}
+                            {new Date(concluidaEm).toLocaleDateString("pt-BR")}
+                          </p>
+                        );
+                      })()}
                       {clicavel && (
                         <span className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
                           Abrir semana <ChevronRight className="h-3 w-3" />
@@ -234,7 +238,7 @@ export function PaginaDashboard({ perfil }: { perfil: Perfil }) {
 
 function UltimoPainel({ painel }: { painel: PainelMensal }) {
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-4 rounded-lg border border-input p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="grid flex-1 grid-cols-2 gap-4 sm:grid-cols-4">
         <div>
           <p className="text-xs text-muted-foreground">Faturamento</p>
@@ -250,12 +254,12 @@ function UltimoPainel({ painel }: { painel: PainelMensal }) {
         </div>
         <div>
           <p className="text-xs text-muted-foreground">Clientes</p>
-          <p className="font-semibold">{painel.numero_clientes ?? "—"}</p>
+          <p className="font-semibold">{formatNumero(painel.numero_clientes)}</p>
         </div>
       </div>
       <Button asChild variant="outline">
         <Link to={`/painel/${painel.numero_painel}`}>
-          Abrir painel <ChevronRight className="h-4 w-4" />
+          Abrir Painel {painel.numero_painel} <ChevronRight className="h-4 w-4" />
         </Link>
       </Button>
     </div>

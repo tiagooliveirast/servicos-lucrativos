@@ -14,9 +14,9 @@ do Manual da Empresa em PDF e o Radar da Empresa (alertas inteligentes e determi
 ## Rodando localmente
 
 1. Crie um projeto **novo** no Supabase.
-2. Execute os arquivos `supabase/migrations/0001_inicial.sql`, `0002_radar_eventos.sql`,
-   `0003_aulas_semana.sql`, `0004_admin_atividade.sql` e `0005_acessos_ativos.sql` no SQL
-   Editor do projeto, **nesta ordem**.
+2. Execute os arquivos `supabase/migrations/` no SQL Editor do projeto, **em ordem
+   numérica** (`0001_inicial.sql` a `0010_remove_legado.sql`), ou rode
+   `supabase db push --linked` com o CLI (requer `supabase link`).
 3. Crie o arquivo `.env` a partir de `.env.example` com `VITE_SUPABASE_URL` e
    `VITE_SUPABASE_ANON_KEY`.
 4. No Supabase: *Authentication > URL Configuration*, defina `Site URL` como
@@ -59,7 +59,7 @@ O roteiro completo está no final deste arquivo, na seção "Checklist de teste 
 2. No SQL Editor, libere seu acesso e seu papel de admin (use o `id` do usuário criado):
 
 ```sql
-insert into acessos (email) values ('seu@email.com');
+insert into acessos (user_id) values ('uuid-do-seu-usuario');
 insert into admins (user_id) values ('uuid-do-seu-usuario');
 ```
 
@@ -72,6 +72,9 @@ insert into admins (user_id) values ('uuid-do-seu-usuario');
      painéis mensais e alertas do Radar (serve de base para a garantia condicional do curso).
    - **Novo acesso** — cria a conta do aluno na hora, com senha temporária para você
      copiar e enviar por WhatsApp/e-mail.
+   - **Vídeo-aulas** — cadastre o link do YouTube de cada uma das 12 semanas. Enquanto o
+     link estiver vazio, o aluno vê "Aula em breve" naquela semana (aceita `youtu.be`,
+     `youtube.com/watch`, `/embed` e `/shorts`).
 
 O banco registra sozinho o feed de atividade via triggers (nada de premiação/gamificação
 na tela do aluno nesta fase — o acompanhamento é seu, no admin).
@@ -90,14 +93,16 @@ cria o usuário com `email_confirm: true` — nenhuma chave secreta vai ao front
 
 ## Liberação de acesso (após compra na Hotmart)
 
-O caminho recomendado é a tela **/admin/novo-acesso** (cria a conta + senha temporária +
-perfil + libera o acesso). Manualmente, o equivalente é:
+O acesso é manual: o caminho recomendado é a tela **/admin/novo-acesso** (cria a conta +
+senha temporária + perfil + libera o acesso). Manualmente, o equivalente é criar a conta
+no Auth e rodar:
 
 ```sql
 insert into acessos (user_id) values ('uuid-do-usuario-criado');
 ```
 
-Sem a linha em `acessos` (ou sem conta criada), o usuário vê a tela "Acesso em análise".
+Sem a linha em `acessos` (ou sem conta criada), o usuário logado vê a tela "Acesso em
+análise".
 
 ## Recuperação de senha
 
@@ -120,27 +125,23 @@ os dados do usuário (semanas, indicadores, painéis, acesso) com as regras do c
   avaliações novas, conversão baixa, reserva pronta para contratar, usuário inativo,
   relatório mensal de evolução.
 
-## Liberação de acesso (após compra na Hotmart)
-
-O acesso é manual: o caminho recomendado é a tela **/admin/novo-acesso** (cria a conta +
-senha temporária + perfil + libera o acesso). Sem a linha em `acessos`, o usuário logado
-vê a tela "Acesso em análise".
-
 ## Checklist de teste manual (antes de liberar para os 3 usuários)
 
 1. Como admin: criar um novo acesso de teste em `/admin/novo-acesso` e copiar a senha gerada.
 2. Logar com essa conta nova → deve cair em `/onboarding` (primeira vez).
 3. Preencher o onboarding → deve cair em `/dashboard`, com Semana 1 em andamento e
    Semanas 2–12 bloqueadas.
-4. Abrir a Semana 1, ver o vídeo (ou "Aula em breve" se ainda não houver link), preencher
+4. Como admin: cadastrar o link de uma aula em `/admin/aulas` e conferir que o vídeo
+   aparece na semana correspondente.
+5. Abrir a Semana 1, ver o vídeo (ou "Aula em breve" se ainda não houver link), preencher
    os campos, marcar missões e o checklist, concluir → a Semana 2 deve desbloquear.
-5. Verificar que o Radar da Empresa aparece no Dashboard (mesmo sem nenhum alerta ainda).
-6. Avançar até a Semana 4 e preencher o Painel Mensal 1.
-7. Como admin: abrir `/admin/usuarios/{id}` do usuário de teste e conferir que os dados
+6. Verificar que o Radar da Empresa aparece no Dashboard (mesmo sem nenhum alerta ainda).
+7. Avançar até a Semana 4 e preencher o Painel Mensal 1.
+8. Como admin: abrir `/admin/usuarios/{id}` do usuário de teste e conferir que os dados
    batem com o que foi preenchido.
-8. Desativar o acesso do usuário de teste (`ativo = false`) e confirmar que, ao logar de
+9. Desativar o acesso do usuário de teste (`ativo = false`) e confirmar que, ao logar de
    novo, aparece a tela de acesso inativo.
-9. Repetir tudo no celular (a partir de 360px de largura), não só no computador.
+10. Repetir tudo no celular (a partir de 360px de largura), não só no computador.
 
 ## Scripts
 
@@ -160,7 +161,7 @@ src/hooks/useRadar.ts     → carrega dados e sincroniza eventos do Radar
 src/components/RadarEmpresa.tsx → card de alertas do dashboard
 src/components/ExigirAdmin.tsx → protege as rotas /admin/* no front
 src/pages/                → telas (auth, onboarding, dashboard, semana, painel, manual)
-src/pages/admin/          → painel administrativo (visão geral, usuários, novo acesso)
+src/pages/admin/          → painel administrativo (visão geral, usuários, novo acesso, vídeo-aulas)
 ```
 
 ## Segurança

@@ -141,13 +141,17 @@ function regraTicketMedioParado(d: DadosRadar): AlertaRadar | null {
   if (!semanaConcluida(d, 3)) return null;
   const ind = indicadorPorNome(d, "Ticket médio");
   if (!ind || ind.valor_antes === null) return null;
-  const parado = ind.valor_depois === null || ind.valor_depois <= ind.valor_antes;
+  // PostgREST devolve numeric como string — normaliza antes de comparar
+  const antes = Number(ind.valor_antes);
+  const depois = ind.valor_depois === null ? null : Number(ind.valor_depois);
+  if (!Number.isFinite(antes)) return null;
+  const parado = depois === null || !Number.isFinite(depois) || depois <= antes;
   if (!parado) return null;
 
   return {
     regraId: "ticket_medio_parado",
     categoria: "amarelo",
-    mensagem: `Seu ticket médio continua em torno de ${formatBRL(ind.valor_antes)}. Você já identificou serviços complementares na Semana 3, mas ainda não viu esse número subir.`,
+    mensagem: `Seu ticket médio continua em torno de ${formatBRL(antes)}. Você já identificou serviços complementares na Semana 3, mas ainda não viu esse número subir.`,
     missaoSugerida: "Ofereça um serviço complementar nos seus próximos 3 atendimentos.",
     prioridade: 1,
   };
@@ -236,7 +240,10 @@ function regraProntoParaContratar(d: DadosRadar): AlertaRadar | null {
   const reserva = painelMaisRecente(d)?.reserva_emergencia ?? null;
   if (custoMensal === null || custoMensal <= 0 || reserva === null) return null;
 
-  const diasReserva = Math.floor(reserva / custoMensal);
+  // Reserva ÷ custo mensal = meses de caixa. A meta do curso é 60 DIAS
+  // (≈ 2 meses), então o cálculo usa o custo diário (custo mensal ÷ 30).
+  const custoDiario = custoMensal / 30;
+  const diasReserva = Math.floor(reserva / custoDiario);
   if (diasReserva >= 60) {
     return {
       regraId: "pronto_para_contratar",
@@ -288,7 +295,7 @@ function contarTarefasSemanaAtual(d: DadosRadar): number {
 
   for (const campo of conteudo.campos) {
     const obrigatorio = ("obrigatorio" in campo ? campo.obrigatorio : false) ?? false;
-    if (!obrigatorio) continue;
+    if (!obrigatorio && campo.tipo !== "tabela_fixa") continue;
     if (campo.tipo === "tabela") {
       const linhas = Array.isArray(r[campo.id]) ? (r[campo.id] as Record<string, unknown>[]) : [];
       const completo =
@@ -299,6 +306,13 @@ function contarTarefasSemanaAtual(d: DadosRadar): number {
             return v !== undefined && v !== null && String(v).trim() !== "";
           })
         );
+      if (!completo) tarefas++;
+    } else if (campo.tipo === "tabela_fixa") {
+      const objeto = (r[campo.id] ?? {}) as Record<string, unknown>;
+      const completo = campo.linhas.every((linha) => {
+        const v = objeto[linha.id];
+        return v !== undefined && v !== null && String(v).trim() !== "";
+      });
       if (!completo) tarefas++;
     } else if (!CAMPOS_CALCULADOS.has(campo.id)) {
       const v = r[campo.id];

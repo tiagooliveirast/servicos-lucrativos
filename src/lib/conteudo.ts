@@ -108,20 +108,19 @@ export const SEMANAS: SemanaConteudo[] = [
       {
         titulo: "Seja honesto com os números",
         texto: "O diagnóstico só funciona com a realidade, não com o que você gostaria que fosse. Use valores reais do seu bolso e da conta do negócio.",
-        exemplo: "Custo de vida R$ 4.000 + custos fixos R$ 1.500 + lucro desejado R$ 2.500 = meta mínima de R$ 8.000/mês.",
+        exemplo: "Custo de vida R$ 4.000 + custos fixos R$ 1.000 + despesas variáveis R$ 500 + lucro desejado R$ 2.500 = meta mínima de R$ 8.000/mês.",
       },
       {
         titulo: "Fixo x variável",
-        texto: "Despesas fixas existem mesmo sem atender ninguém (conta, aluguel, internet). As variáveis dependem do volume de serviço (material, combustível).",
+        texto: "Custos fixos existem mesmo sem atender ninguém (conta, aluguel, internet). As despesas variáveis dependem do volume de serviço (material, combustível). Os dois entram no cálculo da sua meta mínima.",
       },
     ],
     campos: [
       { id: "custo_vida", rotulo: "Custo de vida pessoal mensal", tipo: "numero", obrigatorio: true, placeholder: "R$" },
-      { id: "custos_fixos_negocio", rotulo: "Custos fixos do negócio por mês", tipo: "numero", obrigatorio: true, placeholder: "R$" },
-      { id: "despesas_fixas", rotulo: "Despesas fixas do mês", tipo: "numero", obrigatorio: true, placeholder: "R$" },
-      { id: "despesas_variaveis", rotulo: "Despesas variáveis do mês", tipo: "numero", obrigatorio: true, placeholder: "R$" },
+      { id: "custos_fixos_negocio", rotulo: "Custos fixos do negócio por mês", tipo: "numero", obrigatorio: true, placeholder: "R$", dica: "Somente as despesas que existem mesmo sem atender ninguém (conta, aluguel, internet)." },
+      { id: "despesas_variaveis", rotulo: "Despesas variáveis do mês", tipo: "numero", obrigatorio: true, placeholder: "R$", dica: "Dependem do volume de serviço (material, combustível)." },
       { id: "lucro_desejado", rotulo: "Lucro desejado por mês", tipo: "numero", obrigatorio: true, placeholder: "R$", dica: "Quanto você quer lucrar de verdade por mês? Esse número entra no cálculo da meta mínima." },
-      { id: "meta_minima", rotulo: "Meta mínima mensal (custo de vida + custo do negócio + lucro desejado)", tipo: "numero", obrigatorio: true, placeholder: "calculado automaticamente", dica: "Valor calculado automaticamente. É o mínimo que você precisa faturar por mês." },
+      { id: "meta_minima", rotulo: "Meta mínima mensal (custo de vida + custos do negócio + lucro desejado)", tipo: "numero", obrigatorio: true, placeholder: "calculado automaticamente", dica: "Valor calculado automaticamente. É o mínimo que você precisa faturar por mês." },
     ],
     missoes: [
       { tipo: "principal", descricao: "Fazer o diagnóstico financeiro completo." },
@@ -133,7 +132,7 @@ export const SEMANAS: SemanaConteudo[] = [
       dica: "Informe o faturamento bruto do último mês — o valor real, da conta ou da agenda.",
     },
     checklistFinal: "Preenchi todos os campos e sei a minha meta mínima mensal.",
-    camposManual: ["custo_vida", "custos_fixos_negocio", "despesas_fixas", "despesas_variaveis", "meta_minima"],
+    camposManual: ["custo_vida", "custos_fixos_negocio", "despesas_variaveis", "lucro_desejado", "meta_minima"],
   },
   {
     numero: 2,

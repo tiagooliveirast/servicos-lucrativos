@@ -111,7 +111,7 @@ export function PaginaOnboarding({ aoConcluir }: { aoConcluir: () => void }) {
       setErro("Preencha todos os campos obrigatórios para continuar.");
       return;
     }
-    setPasso((p) => Math.min(p + 1, 2));
+    setPasso((p) => Math.min(p + 1, PASSOS.length - 1));
   }
 
   function voltar() {
@@ -160,7 +160,7 @@ export function PaginaOnboarding({ aoConcluir }: { aoConcluir: () => void }) {
       };
       const { error: erroDiag } = await supabase
         .from("diagnostico_inicial")
-        .insert(diagnostico);
+        .upsert(diagnostico, { onConflict: "user_id" });
       if (erroDiag) throw erroDiag;
 
       const semanas = Array.from({ length: 12 }, (_, i) => ({
@@ -170,7 +170,7 @@ export function PaginaOnboarding({ aoConcluir }: { aoConcluir: () => void }) {
       }));
       const { error: erroSemanas } = await supabase
         .from("progresso_semanas")
-        .insert(semanas);
+        .upsert(semanas, { onConflict: "user_id,semana" });
       if (erroSemanas) throw erroSemanas;
 
       aoConcluir();

@@ -54,6 +54,9 @@ const PaginaAdminUsuarioDetalhe = lazy(() =>
     default: m.PaginaAdminUsuarioDetalhe,
   }))
 );
+const PaginaAdminAulas = lazy(() =>
+  import("@/pages/admin/PaginaAdminAulas").then((m) => ({ default: m.PaginaAdminAulas }))
+);
 
 function TelaCarregando() {
   return (
@@ -174,6 +177,7 @@ export default function App() {
           <Route path="usuarios" element={<PaginaAdminUsuarios />} />
           <Route path="usuarios/:id" element={<PaginaAdminUsuarioDetalhe />} />
           <Route path="novo-acesso" element={<PaginaAdminNovoAcesso />} />
+          <Route path="aulas" element={<PaginaAdminAulas />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

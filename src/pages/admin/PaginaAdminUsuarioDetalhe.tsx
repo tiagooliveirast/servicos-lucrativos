@@ -172,17 +172,22 @@ export function PaginaAdminUsuarioDetalhe() {
     if (!id) return;
     setSalvando(true);
     setErroAcao(null);
-    const { error } = await supabase
+    const { error, data } = await supabase
       .from("acessos")
       .update({
         ativo: false,
         motivo_inativacao: motivo.trim() || null,
         inativado_em: new Date().toISOString(),
       })
-      .eq("user_id", id);
+      .eq("user_id", id)
+      .select("user_id");
     setSalvando(false);
-    if (error) {
-      setErroAcao("Não foi possível atualizar o acesso.");
+    if (error || !data || data.length === 0) {
+      setErroAcao(
+        error
+          ? "Não foi possível atualizar o acesso."
+          : "Nenhum registro de acesso encontrado para este aluno."
+      );
       return;
     }
     setConfirmando(false);
@@ -194,13 +199,18 @@ export function PaginaAdminUsuarioDetalhe() {
     if (!id) return;
     setSalvando(true);
     setErroAcao(null);
-    const { error } = await supabase
+    const { error, data } = await supabase
       .from("acessos")
       .update({ ativo: true, motivo_inativacao: null, inativado_em: null })
-      .eq("user_id", id);
+      .eq("user_id", id)
+      .select("user_id");
     setSalvando(false);
-    if (error) {
-      setErroAcao("Não foi possível atualizar o acesso.");
+    if (error || !data || data.length === 0) {
+      setErroAcao(
+        error
+          ? "Não foi possível atualizar o acesso."
+          : "Nenhum registro de acesso encontrado para este aluno."
+      );
       return;
     }
     setDados((d) => (d ? { ...d, acesso: { ...(d.acesso ?? { user_id: id }), ativo: true, motivo_inativacao: null, inativado_em: null } as Acesso } : d));
@@ -231,6 +241,11 @@ export function PaginaAdminUsuarioDetalhe() {
           {perfil.telefone ? ` · ${perfil.telefone}` : ""}
           {perfil.cidade ? ` · ${perfil.cidade}${perfil.estado ? `/${perfil.estado}` : ""}` : ""}
         </p>
+        {perfil.email_refriclube && (
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Refriclube: {perfil.email_refriclube}
+          </p>
+        )}
         <p className="mt-0.5 text-xs text-muted-foreground">
           Início: {formatData(perfil.created_at)} · Último acesso:{" "}
           {formatData(perfil.ultimo_acesso_at)}
@@ -332,13 +347,19 @@ export function PaginaAdminUsuarioDetalhe() {
                 const valor = diagnostico[campo.chave];
                 let texto = "—";
                 if (typeof valor === "boolean") texto = valor ? "Sim" : "Não";
-                else if (typeof valor === "number") {
-                  texto = ["faturamento_atual", "lucro_atual", "ticket_medio"].includes(
-                    campo.chave
-                  )
-                    ? formatBRL(valor)
-                    : formatNumero(valor);
-                } else if (valor !== null && valor !== undefined) texto = String(valor);
+                else if (valor !== null && valor !== undefined) {
+                  if (["faturamento_atual", "lucro_atual", "ticket_medio"].includes(campo.chave)) {
+                    // O PostgREST devolve colunas numeric como string
+                    texto = formatBRL(valor as number | string);
+                  } else if (
+                    typeof valor === "number" ||
+                    (typeof valor === "string" && valor.trim() !== "")
+                  ) {
+                    texto = formatNumero(valor as number | string);
+                  } else {
+                    texto = String(valor);
+                  }
+                }
                 return (
                   <div key={campo.chave}>
                     <dt className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -434,36 +455,63 @@ export function PaginaAdminUsuarioDetalhe() {
             <p className="text-sm text-muted-foreground">Nenhum painel liberado ainda.</p>
           ) : (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-              {paineis.map((painel) => (
-                <div key={painel.numero_painel} className="rounded-lg border border-input p-4">
-                  <p className="text-sm font-semibold">Painel Mensal {painel.numero_painel}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {painel.preenchido_em ? formatData(painel.preenchido_em) : "Ainda não preenchido"}
-                  </p>
-                  <dl className="mt-3 flex flex-col gap-1.5 text-sm">
-                    <div className="flex justify-between">
-                      <dt className="text-muted-foreground">Faturamento</dt>
-                      <dd className="font-medium tabular-nums">{formatBRL(painel.faturamento_atual)}</dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt className="text-muted-foreground">Lucro</dt>
-                      <dd className="font-medium tabular-nums">{formatBRL(painel.lucro)}</dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt className="text-muted-foreground">Ticket médio</dt>
-                      <dd className="font-medium tabular-nums">{formatBRL(painel.ticket_medio)}</dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt className="text-muted-foreground">Conversão</dt>
-                      <dd className="font-medium tabular-nums">{formatPorcento(painel.taxa_conversao)}</dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt className="text-muted-foreground">Reserva</dt>
-                      <dd className="font-medium tabular-nums">{formatBRL(painel.reserva_emergencia)}</dd>
-                    </div>
-                  </dl>
-                </div>
-              ))}
+              {paineis.map((painel) => {
+                // Um painel criado automaticamente pela conclusão da semana tem
+                // preenchido_em com default now() — o sinal real de preenchimento
+                // é o faturamento informado (mesmo critério usado na página do aluno).
+                const preenchido = painel.faturamento_atual != null;
+                return (
+                  <div key={painel.numero_painel} className="rounded-lg border border-input p-4">
+                    <p className="text-sm font-semibold">Painel Mensal {painel.numero_painel}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {preenchido ? formatData(painel.preenchido_em) : "Ainda não preenchido"}
+                    </p>
+                    <dl className="mt-3 flex flex-col gap-1.5 text-sm">
+                      <div className="flex justify-between">
+                        <dt className="text-muted-foreground">Meta mensal</dt>
+                        <dd className="font-medium tabular-nums">{formatBRL(painel.meta_mensal)}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-muted-foreground">Faturamento</dt>
+                        <dd className="font-medium tabular-nums">{formatBRL(painel.faturamento_atual)}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-muted-foreground">Lucro</dt>
+                        <dd className="font-medium tabular-nums">{formatBRL(painel.lucro)}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-muted-foreground">Ticket médio</dt>
+                        <dd className="font-medium tabular-nums">{formatBRL(painel.ticket_medio)}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-muted-foreground">Clientes</dt>
+                        <dd className="font-medium tabular-nums">{formatNumero(painel.numero_clientes)}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-muted-foreground">Orçamentos</dt>
+                        <dd className="font-medium tabular-nums">{formatNumero(painel.numero_orcamentos)}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-muted-foreground">Conversão</dt>
+                        <dd className="font-medium tabular-nums">{formatPorcento(painel.taxa_conversao)}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-muted-foreground">Avaliações Google</dt>
+                        <dd className="font-medium tabular-nums">{formatNumero(painel.avaliacoes_google)}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-muted-foreground">Reserva</dt>
+                        <dd className="font-medium tabular-nums">{formatBRL(painel.reserva_emergencia)}</dd>
+                      </div>
+                      {painel.observacao && (
+                        <p className="mt-1 rounded-md bg-muted/50 px-2.5 py-1.5 text-xs text-foreground/80">
+                          {painel.observacao}
+                        </p>
+                      )}
+                    </dl>
+                  </div>
+                );
+              })}
             </div>
           )}
         </CardContent>
@@ -496,6 +544,9 @@ export function PaginaAdminUsuarioDetalhe() {
                   )}
                   <div className="flex flex-col gap-0.5">
                     <p className="text-sm text-foreground/90">{evento.mensagem}</p>
+                    {evento.missao_sugerida && (
+                      <p className="text-xs text-primary">{evento.missao_sugerida}</p>
+                    )}
                     <p className="text-xs text-muted-foreground">
                       {formatData(evento.criado_em)}
                       {evento.resolvido ? " · resolvido" : ""}

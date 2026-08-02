@@ -124,7 +124,7 @@ export interface DadosManual {
 }
 
 const CAMPOS_MONEY = new Set([
-  "custo_vida", "custos_fixos_negocio", "despesas_fixas", "despesas_variaveis",
+  "custo_vida", "custos_fixos_negocio", "despesas_variaveis",
   "lucro_desejado", "meta_minima", "meta_mensal", "meta_semanal", "meta_diaria",
   "faturamento_atual", "lucro", "ticket_medio", "reserva_emergencia",
   "preco_atual", "preco_correto",
@@ -139,7 +139,9 @@ function formatarNumero(campoId: string, valor: number): string {
 }
 
 function formatarData(valor: string): string {
-  return new Date(valor).toLocaleDateString("pt-BR");
+  const d = new Date(valor);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("pt-BR");
 }
 
 function textoCampo(semana: SemanaConteudo, campoId: string, respostas: Record<string, unknown>): string | null {

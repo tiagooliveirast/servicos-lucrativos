@@ -5,33 +5,45 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatBRL(valor: number | null | undefined): string {
-  if (valor === null || valor === undefined || Number.isNaN(valor)) return "—";
+type ValorNumerico = number | string | null | undefined;
+
+function paraNumero(valor: ValorNumerico): number | null {
+  if (valor === null || valor === undefined) return null;
+  const n = typeof valor === "number" ? valor : Number(valor);
+  return Number.isFinite(n) ? n : null;
+}
+
+export function formatBRL(valor: ValorNumerico): string {
+  const n = paraNumero(valor);
+  if (n === null) return "—";
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
-  }).format(valor);
+  }).format(n);
 }
 
-export function formatNumero(valor: number | null | undefined): string {
-  if (valor === null || valor === undefined || Number.isNaN(valor)) return "—";
-  return new Intl.NumberFormat("pt-BR").format(valor);
+export function formatNumero(valor: ValorNumerico): string {
+  const n = paraNumero(valor);
+  if (n === null) return "—";
+  return new Intl.NumberFormat("pt-BR").format(n);
 }
 
-export function formatPorcento(valor: number | null | undefined): string {
-  if (valor === null || valor === undefined || Number.isNaN(valor)) return "—";
-  return `${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(valor)}%`;
+export function formatPorcento(valor: ValorNumerico): string {
+  const n = paraNumero(valor);
+  if (n === null) return "—";
+  return `${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(n)}%`;
 }
 
 export function formatData(data: string | null | undefined): string {
   if (!data) return "—";
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "long" }).format(
-    new Date(data)
-  );
+  const d = new Date(data);
+  if (Number.isNaN(d.getTime())) return "—";
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "long" }).format(d);
 }
 
 export function formatarQuando(iso: string): string {
   const data = new Date(iso);
+  if (Number.isNaN(data.getTime())) return "—";
   const agora = new Date();
   const inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
   const inicioData = new Date(data.getFullYear(), data.getMonth(), data.getDate());

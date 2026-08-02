@@ -207,13 +207,22 @@ function PainelForm({
       setSalvando(false);
       if (!error) {
         setSalvoEm(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
-        setCompleto(true);
+        // Só marca "Preenchido" quando o faturamento foi de fato informado —
+        // salvar um painel vazio não conta como preenchimento.
+        const faturamento = novosValores.faturamento_atual;
+        setCompleto(faturamento !== undefined && faturamento !== "");
       }
     },
     [userId, numero]
   );
 
+  const jaCarregou = useRef(false);
+
   useEffect(() => {
+    if (!jaCarregou.current) {
+      jaCarregou.current = true;
+      return;
+    }
     const timer = setTimeout(() => {
       void salvar(valores, observacao);
     }, 700);
@@ -317,6 +326,12 @@ function PainelForm({
   );
 }
 
+function paraNumero(valor: number | string | null | undefined): number | null {
+  if (valor === null || valor === undefined) return null;
+  const n = typeof valor === "number" ? valor : Number(valor);
+  return Number.isFinite(n) ? n : null;
+}
+
 function Comparativo({
   painelAtual,
   painelAnterior,
@@ -338,11 +353,15 @@ function Comparativo({
       </div>
       {CAMPOS_PAINEL.map((campo) => {
         const anterior = painelAnterior
-          ? campo.mascara(painelAnterior[campo.id as keyof PainelMensal] as number | null)
+          ? campo.mascara(
+              paraNumero(painelAnterior[campo.id as keyof PainelMensal] as number | string | null)
+            )
           : "—";
         const atual =
           painelAtual
-            ? campo.mascara(painelAtual[campo.id as keyof PainelMensal] as number | null)
+            ? campo.mascara(
+                paraNumero(painelAtual[campo.id as keyof PainelMensal] as number | string | null)
+              )
             : valores[campo.id] !== undefined && valores[campo.id] !== ""
               ? campo.mascara(Number(valores[campo.id]))
               : "—";
@@ -363,7 +382,10 @@ function inicializar(painel: PainelMensal | null): Record<string, string> {
   const resultado: Record<string, string> = {};
   for (const campo of CAMPOS_PAINEL) {
     const v = painel[campo.id as keyof PainelMensal];
-    if (typeof v === "number") resultado[campo.id] = String(v);
+    // O PostgREST devolve colunas numeric como string; ambos são aceitos.
+    if (typeof v === "number" || typeof v === "string") {
+      if (v !== "") resultado[campo.id] = String(v);
+    }
   }
   return resultado;
 }
