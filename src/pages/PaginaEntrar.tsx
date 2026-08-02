@@ -126,7 +126,7 @@ export function PaginaEntrar() {
         </CardContent>
       </Card>
       <p className="mt-6 max-w-sm text-center text-xs text-muted-foreground">
-        O acesso é liberado pelo time da Gestão Lucrativa após a confirmação da sua compra.
+        O acesso é liberado pela equipe Serviços Lucrativos após a confirmação da sua compra.
         Se ainda não recebeu suas credenciais, fale com quem te atendeu.
       </p>
     </div>

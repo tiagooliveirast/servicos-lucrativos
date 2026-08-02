@@ -244,7 +244,7 @@ function DocumentoManual({ dados }: { dados: DadosManual }) {
   const paineisColunas = [1, 2, 3].map((n) => dados.paineis.find((p) => p.numero_painel === n) ?? null);
 
   return (
-    <Document title={`Manual da Empresa — ${empresa.nome_empresa ?? "Gestão Lucrativa"}`}>
+    <Document title={`Manual da Empresa — ${empresa.nome_empresa ?? "Serviços Lucrativos"}`}>
       <Page size="A4" style={estilos.pagina}>
         <View style={estilos.capa}>
           <Text style={estilos.capaMarca}>Serviços Lucrativos — O Plano de 90 Dias</Text>
@@ -301,7 +301,7 @@ function DocumentoManual({ dados }: { dados: DadosManual }) {
           <LinhaPainel key={campo.id} campo={campo} paineis={paineisColunas} />
         ))}
         <Text style={estilos.rodape}>
-          Gestão Lucrativa — Serviços Lucrativos: O Plano de 90 Dias. Manual gerado em{" "}
+          Serviços Lucrativos: O Plano de 90 Dias. Manual gerado em{" "}
           {new Date().toLocaleDateString("pt-BR")}.
         </Text>
       </Page>

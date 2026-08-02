@@ -19,7 +19,7 @@ export function Logo({ className }: { className?: string }) {
         </svg>
       </span>
       <span className="text-lg font-bold tracking-tight text-foreground">
-        Gestão <span className="text-primary">Lucrativa</span>
+        Serviços <span className="text-primary">Lucrativos</span>
       </span>
     </div>
   );

@@ -55,7 +55,7 @@ export function Layout({
       <footer className="border-t py-4">
         <div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-2 px-4">
           <p className="text-center text-xs text-muted-foreground">
-            Gestão Lucrativa — O Plano de 90 Dias
+            Serviços Lucrativos — O Plano de 90 Dias
           </p>
           {(CONTATO_SUPORTE.whatsapp || CONTATO_SUPORTE.email) && (
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
