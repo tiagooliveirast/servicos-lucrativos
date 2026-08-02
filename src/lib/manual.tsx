@@ -1,7 +1,7 @@
 import { Document, Page, StyleSheet, Text, View, pdf } from "@react-pdf/renderer";
 import type { ReactElement } from "react";
 
-import { SEMANAS, type SemanaConteudo } from "@/lib/conteudo";
+import { SEMANAS, TEXTO_FECHAMENTO, type SemanaConteudo } from "@/lib/conteudo";
 import type { DiagnosticoInicial, PainelMensal, ProgressoSemana } from "@/lib/types";
 import { formatBRL } from "@/lib/utils";
 
@@ -124,13 +124,15 @@ export interface DadosManual {
 }
 
 const CAMPOS_MONEY = new Set([
-  "custo_vida", "custos_fixos_negocio", "despesas_variaveis",
-  "lucro_desejado", "meta_minima", "meta_mensal", "meta_semanal", "meta_diaria",
-  "faturamento_atual", "lucro", "ticket_medio", "reserva_emergencia",
-  "preco_atual", "preco_correto",
+  "f1_custo_vida", "f1_custo_negocio", "f1_lucro_desejado", "f1_meta_minima",
+  "p4_meta_mensal", "p4_meta_semanal", "p4_meta_diaria",
+  "p2_servico_1_preco_atual", "p2_servico_1_preco_correto",
+  "p2_servico_2_preco_atual", "p2_servico_2_preco_correto",
+  "p2_servico_3_preco_atual", "p2_servico_3_preco_correto",
+  "p11_ticket_medio", "p11_lucro_mes",
 ]);
 
-const CAMPOS_PERCENT = new Set(["taxa_conversao", "margem"]);
+const CAMPOS_PERCENT = new Set(["p10_taxa_conversao", "p11_margem_lucro"]);
 
 function formatarNumero(campoId: string, valor: number): string {
   if (CAMPOS_MONEY.has(campoId)) return formatBRL(valor);
@@ -202,6 +204,29 @@ function montarItens(
   semana: SemanaConteudo,
   respostas: Record<string, unknown>
 ): ItemManual[] {
+  // Semana 2: agrupa as 12 células dos 3 serviços em um item por serviço.
+  if (semana.numero === 2) {
+    const itens: ItemManual[] = [];
+    const camposServico: { sufixo: string; rotulo: string; money: boolean }[] = [
+      { sufixo: "nome", rotulo: "Serviço", money: false },
+      { sufixo: "tempo", rotulo: "Tempo gasto", money: false },
+      { sufixo: "preco_atual", rotulo: "Preço atual", money: true },
+      { sufixo: "preco_correto", rotulo: "Preço correto", money: true },
+    ];
+    for (let s = 1; s <= 3; s++) {
+      const partes: string[] = [];
+      for (const campo of camposServico) {
+        const id = `p2_servico_${s}_${campo.sufixo}`;
+        const v = respostas[id];
+        if (v === null || v === undefined || String(v).trim() === "") continue;
+        const valor = campo.money ? formatBRL(Number(v)) : String(v);
+        partes.push(`${campo.rotulo}: ${valor}`);
+      }
+      if (partes.length > 0) itens.push({ rotulo: `Serviço ${s}`, texto: partes.join(" · ") });
+    }
+    return itens;
+  }
+
   const itens: ItemManual[] = [];
   for (const campoId of semana.camposManual) {
     const texto = textoCampo(semana, campoId, respostas);
@@ -302,6 +327,10 @@ function DocumentoManual({ dados }: { dados: DadosManual }) {
         {PAINEIS_CAMPOS.map((campo) => (
           <LinhaPainel key={campo.id} campo={campo} paineis={paineisColunas} />
         ))}
+        <View style={{ marginTop: 24, borderTopWidth: 0.5, borderTopColor: "#DDD8CC", paddingTop: 12 }}>
+          <Text style={estilos.rotulo}>Serviços Lucrativos — O Plano de 90 Dias</Text>
+          <Text style={estilos.valor}>{TEXTO_FECHAMENTO}</Text>
+        </View>
         <Text style={estilos.rodape}>
           Serviços Lucrativos: O Plano de 90 Dias. Manual gerado em{" "}
           {new Date().toLocaleDateString("pt-BR")}.

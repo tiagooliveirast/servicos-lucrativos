@@ -43,6 +43,7 @@ export interface Missao {
   user_id: string;
   semana: number;
   tipo: "principal" | "rapida";
+  indice: number;
   descricao: string;
   concluida: boolean;
   concluida_em: string | null;

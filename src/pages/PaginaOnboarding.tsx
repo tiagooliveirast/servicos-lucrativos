@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ESTADOS, TEMPO_MERCADO_OPCOES } from "@/lib/conteudo";
+import { COMO_USAR_ESTE_PLANO, ESTADOS, PARA_QUEM_E_ESTE_PLANO, TEMPO_MERCADO_OPCOES } from "@/lib/conteudo";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
@@ -62,6 +62,7 @@ const INICIAL: DadosOnboarding = {
 };
 
 const PASSOS = [
+  { titulo: "Para começar", descricao: "Leia com atenção antes de iniciar o plano." },
   { titulo: "Seus dados", descricao: "Como você quer ser chamado e como entramos em contato." },
   { titulo: "Sua empresa", descricao: "O básico do seu negócio para o diagnóstico." },
   { titulo: "Situação financeira", descricao: "Os números de hoje — honestos, sem vergonha." },
@@ -120,7 +121,7 @@ export function PaginaOnboarding({ aoConcluir }: { aoConcluir: () => void }) {
   }
 
   async function concluir() {
-    if (!validarPasso(2, dados)) {
+    if (!validarPasso(3, dados)) {
       setErro("Preencha os campos obrigatórios antes de começar.");
       return;
     }
@@ -207,6 +208,27 @@ export function PaginaOnboarding({ aoConcluir }: { aoConcluir: () => void }) {
         </CardHeader>
         <CardContent>
           {passo === 0 && (
+            <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-2">
+                <p className="text-sm font-semibold text-primary">Para quem é este plano</p>
+                {PARA_QUEM_E_ESTE_PLANO.map((paragrafo) => (
+                  <p key={paragrafo.slice(0, 40)} className="text-sm leading-relaxed text-foreground/90">
+                    {paragrafo}
+                  </p>
+                ))}
+              </div>
+              <div className="flex flex-col gap-2">
+                <p className="text-sm font-semibold text-primary">Como usar este plano</p>
+                <ul className="flex list-disc flex-col gap-1.5 pl-5 text-sm leading-relaxed text-foreground/90">
+                  {COMO_USAR_ESTE_PLANO.map((item) => (
+                    <li key={item.slice(0, 40)}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {passo === 1 && (
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="nome">
@@ -271,7 +293,7 @@ export function PaginaOnboarding({ aoConcluir }: { aoConcluir: () => void }) {
             </div>
           )}
 
-          {passo === 1 && (
+          {passo === 2 && (
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="nome_empresa">
@@ -330,7 +352,7 @@ export function PaginaOnboarding({ aoConcluir }: { aoConcluir: () => void }) {
             </div>
           )}
 
-          {passo === 2 && (
+          {passo === 3 && (
             <div className="flex flex-col gap-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="flex flex-col gap-2">
@@ -424,7 +446,7 @@ export function PaginaOnboarding({ aoConcluir }: { aoConcluir: () => void }) {
               <ArrowLeft />
               Voltar
             </Button>
-            {passo < 2 ? (
+            {passo < 3 ? (
               <Button type="button" onClick={passar}>
                 Continuar
                 <ArrowRight />
@@ -444,14 +466,17 @@ export function PaginaOnboarding({ aoConcluir }: { aoConcluir: () => void }) {
 
 function validarPasso(passo: number, dados: DadosOnboarding): boolean {
   if (passo === 0) {
-    return dados.nome.trim().length > 0;
+    return true;
   }
   if (passo === 1) {
+    return dados.nome.trim().length > 0;
+  }
+  if (passo === 2) {
     if (!dados.nome_empresa.trim() || !dados.area_atuacao.trim()) return false;
     if (!dados.possui_cnpj || !dados.possui_funcionarios || !dados.trabalha_sozinho) return false;
     return true;
   }
-  if (passo === 2) {
+  if (passo === 3) {
     return dados.faturamento_atual !== "";
   }
   return true;

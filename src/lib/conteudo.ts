@@ -9,20 +9,23 @@ export const MODULOS: Modulo[] = [
   {
     numero: 1,
     titulo: "Fundação Financeira",
-    dias: "Dias 1-30",
-    descricao: "Você descobre seu número real, corrige preços, aumenta o ticket médio e define metas que cabem no dia a dia.",
+    dias: "Dias 1 a 30",
+    descricao:
+      "Objetivo do módulo: sair do escuro financeiro. Ao final destes 30 dias você vai saber exatamente quanto precisa faturar, cobrar o preço certo, saber seu ticket médio e ter um painel pra acompanhar tudo isso mês a mês.",
   },
   {
     numero: 2,
     titulo: "Operação Lucrativa",
-    dias: "Dias 31-60",
-    descricao: "Você profissionaliza o atendimento, documenta seu processo, organiza sua agenda e cria um pós-venda que gera resultado.",
+    dias: "Dias 31 a 60",
+    descricao:
+      "Objetivo do módulo: transformar sua operação em algo padronizado, que roda bem mesmo nos dias corridos, sem depender só da sua memória.",
   },
   {
     numero: 3,
     titulo: "Crescimento e Escala",
-    dias: "Dias 61-90",
-    descricao: "Você atrai clientes novos com método, melhora a conversão, constrói autoridade e decide o próximo ciclo.",
+    dias: "Dias 61 a 90",
+    descricao:
+      "Objetivo do módulo: crescer com intenção. Captar mais, converter melhor, medir tudo, e decidir com clareza o que vem depois dos 90 dias.",
   },
 ];
 
@@ -41,6 +44,12 @@ export type Campo =
       dica?: string;
       exemplo?: string;
       placeholder?: string;
+      /** Campos com o mesmo `lado` consecutivo são renderizados lado a lado. */
+      lado?: string;
+      /** Número de colunas da grade quando `lado` estiver definido. */
+      grade?: number;
+      /** Se definido, o grupo de campos com o mesmo valor renderiza dentro de uma caixa com este título. */
+      caixa?: string;
     }
   | {
       id: string;
@@ -70,7 +79,7 @@ export interface MissaoConteudo {
 export interface IndicadorConteudo {
   nome: string;
   unidade: string;
-  dica: string;
+  dica?: string;
 }
 
 export interface ItemDecisao {
@@ -81,11 +90,15 @@ export interface ItemDecisao {
 export interface SemanaConteudo {
   numero: number;
   titulo: string;
+  tituloCurto: string;
   modulo: number;
   objetivo: string;
   explicacao: string[];
   dicas: { titulo: string; texto: string; exemplo?: string }[];
+  rotuloSeccao?: string;
   campos: Campo[];
+  camposAposMissoes?: Campo[];
+  nota?: string;
   missoes: MissaoConteudo[];
   indicador?: IndicadorConteudo;
   checklistFinal: string;
@@ -94,421 +107,508 @@ export interface SemanaConteudo {
   camposManual: string[];
 }
 
+// ------------------------------------------------------------------
+// Textos fixos (aparecem uma vez, fora das semanas)
+// ------------------------------------------------------------------
+
+export const SUBTITULO_PRODUTO =
+  "Guia prático para o prestador de serviço autônomo organizar a gestão, aumentar o faturamento e sair do caos financeiro em 90 dias.";
+
+export const PARA_QUEM_E_ESTE_PLANO = [
+  "Este material foi feito para o profissional autônomo prestador de serviço — qualquer área: beleza, estética, saúde, reformas, tecnologia, educação, consultoria, manutenção, ou qualquer outro ofício. Se você vive do seu trabalho e sente que trabalha demais e sobra pouco no fim do mês, este plano é para você.",
+  "Este plano é o companheiro do curso. Cada semana aqui corresponde a uma aula do curso Serviços Lucrativos — a aula ensina o conceito, esta página é onde você aplica no seu próprio negócio. Não pule para o plano sem assistir a aula da semana primeiro.",
+];
+
+export const COMO_USAR_ESTE_PLANO = [
+  "Assista a aula da semana primeiro. Depois, abra esta página e preencha.",
+  "Cada semana termina com uma Missão prática — não é opcional, é o que gera a mudança real.",
+  "Sempre que houver um Indicador da semana, registre o número antes de começar e depois de aplicar.",
+  "A cada 30 dias, você para para preencher o Painel Mensal — isso mostra sua evolução em números.",
+  "Não existe resposta errada. O objetivo é registrar sua realidade, não uma realidade ideal.",
+  "Reserve sempre o mesmo dia da semana para isso. 20 a 30 minutos já bastam.",
+];
+
+export const TEXTO_FECHAMENTO =
+  "Este plano funciona para qualquer profissional autônomo prestador de serviço, independente da área de atuação. O que muda de um profissional para outro são os detalhes técnicos do ofício — o processo de organizar, precificar, converter e crescer é o mesmo.";
+
+// ------------------------------------------------------------------
+// As 12 semanas
+// ------------------------------------------------------------------
+
+const SERVICO_1 = "Serviço 1";
+const SERVICO_2 = "Serviço 2";
+const SERVICO_3 = "Serviço 3";
+
 export const SEMANAS: SemanaConteudo[] = [
   {
     numero: 1,
     titulo: "Diagnóstico Financeiro Completo",
+    tituloCurto: "Diagnóstico financeiro",
     modulo: 1,
-    objetivo: "Sair do escuro e saber exatamente o seu número real.",
+    objetivo: "sair do escuro e saber exatamente seu número real",
     explicacao: [
-      "Você não consegue melhorar o que não mede. Nesta semana vamos tirar o seu negócio do escuro: somar o que você precisa para viver, o que o negócio custa para rodar e o que você quer lucrar.",
-      "O resultado é a sua meta mínima mensal — o número que você jamais pode faturar abaixo. A partir dele, todas as próximas semanas fazem sentido.",
+      "Antes de organizar qualquer coisa, você precisa saber onde está pisando. Vamos juntar, numa única semana, tudo que forma o seu diagnóstico financeiro completo.",
     ],
     dicas: [
       {
-        titulo: "Seja honesto com os números",
-        texto: "O diagnóstico só funciona com a realidade, não com o que você gostaria que fosse. Use valores reais do seu bolso e da conta do negócio.",
-        exemplo: "Custo de vida R$ 4.000 + custos fixos R$ 1.000 + despesas variáveis R$ 500 + lucro desejado R$ 2.500 = meta mínima de R$ 8.000/mês.",
+        titulo: "Dica de preenchimento 1",
+        texto: "Liste tudo que você gasta por mês pra viver, sem contar nada do trabalho.",
+        exemplo:
+          "aluguel R$ 900 + mercado R$ 600 + luz/água/internet R$ 350 + transporte R$ 300 = R$ 2.150",
       },
       {
-        titulo: "Fixo x variável",
-        texto: "Custos fixos existem mesmo sem atender ninguém (conta, aluguel, internet). As despesas variáveis dependem do volume de serviço (material, combustível). Os dois entram no cálculo da sua meta mínima.",
+        titulo: "Dica de preenchimento 2",
+        texto: "Agora liste o que você gasta só por causa do trabalho: ferramentas, combustível, materiais, manutenção, aluguel de sala, se tiver.",
+      },
+      {
+        titulo: "Dica de preenchimento 3",
+        texto: "Despesa fixa é o que você paga todo mês sem variar. Despesa variável muda conforme o volume de trabalho (combustível, material usado por serviço).",
+      },
+      {
+        titulo: "Dica de preenchimento 4",
+        texto: "Some tudo acima e adicione a margem de lucro que você quer. Esse é seu Número de Sobrevivência — sua meta mínima todo mês.",
+        exemplo: "R$ 2.150 + R$ 850 + R$ 1.000 de lucro desejado = R$ 4.000 de meta mínima mensal",
       },
     ],
     campos: [
-      { id: "custo_vida", rotulo: "Custo de vida pessoal mensal", tipo: "numero", obrigatorio: true, placeholder: "R$" },
-      { id: "custos_fixos_negocio", rotulo: "Custos fixos do negócio por mês", tipo: "numero", obrigatorio: true, placeholder: "R$", dica: "Somente as despesas que existem mesmo sem atender ninguém (conta, aluguel, internet)." },
-      { id: "despesas_variaveis", rotulo: "Despesas variáveis do mês", tipo: "numero", obrigatorio: true, placeholder: "R$", dica: "Dependem do volume de serviço (material, combustível)." },
-      { id: "lucro_desejado", rotulo: "Lucro desejado por mês", tipo: "numero", obrigatorio: true, placeholder: "R$", dica: "Quanto você quer lucrar de verdade por mês? Esse número entra no cálculo da meta mínima." },
-      { id: "meta_minima", rotulo: "Meta mínima mensal (custo de vida + custos do negócio + lucro desejado)", tipo: "numero", obrigatorio: true, placeholder: "calculado automaticamente", dica: "Valor calculado automaticamente. É o mínimo que você precisa faturar por mês." },
+      { id: "custo_vida_pessoal", rotulo: "Meu custo de vida pessoal mensal:", tipo: "textarea", obrigatorio: true },
+      { id: "custos_fixos_negocio", rotulo: "Meus custos fixos do negócio:", tipo: "textarea", obrigatorio: true },
+      { id: "despesas_fixas", rotulo: "Despesas fixas do mês", tipo: "textarea", obrigatorio: true, lado: "despesas", grade: 2 },
+      { id: "despesas_variaveis", rotulo: "Despesas variáveis do mês", tipo: "textarea", obrigatorio: true, lado: "despesas", grade: 2 },
+      { id: "f1_custo_vida", rotulo: "Custo de vida", tipo: "numero", obrigatorio: true, placeholder: "R$", lado: "meta", grade: 4 },
+      { id: "f1_custo_negocio", rotulo: "Custo do negócio", tipo: "numero", obrigatorio: true, placeholder: "R$", lado: "meta" },
+      { id: "f1_lucro_desejado", rotulo: "Lucro desejado", tipo: "numero", obrigatorio: true, placeholder: "R$", lado: "meta" },
+      { id: "f1_meta_minima", rotulo: "= Meta mínima", tipo: "numero", placeholder: "calculado automaticamente", lado: "meta" },
     ],
     missoes: [
-      { tipo: "principal", descricao: "Fazer o diagnóstico financeiro completo." },
-      { tipo: "rapida", descricao: "Mandar mensagem para 5 clientes antigos OU aumentar o preço de 1 serviço em 10% ainda hoje." },
+      { tipo: "principal", descricao: "Vitória rápida, ainda hoje: mande mensagem pra 5 clientes antigos perguntando se está tudo bem — ou aumente o preço de 1 serviço em 10% no seu próximo orçamento." },
+      { tipo: "rapida", descricao: "Anote o resultado dessa ação abaixo, mesmo que pareça pequeno." },
+    ],
+    camposAposMissoes: [
+      { id: "vitoria_rapida_resultado", rotulo: "O que aconteceu com minha vitória rápida:", tipo: "textarea" },
     ],
     indicador: {
       nome: "Faturamento do último mês",
       unidade: "R$",
-      dica: "Informe o faturamento bruto do último mês — o valor real, da conta ou da agenda.",
     },
-    checklistFinal: "Preenchi todos os campos e sei a minha meta mínima mensal.",
-    camposManual: ["custo_vida", "custos_fixos_negocio", "despesas_variaveis", "lucro_desejado", "meta_minima"],
+    checklistFinal: "Preenchi meu diagnóstico com números reais, não estimativas no chute",
+    camposManual: [
+      "custo_vida_pessoal",
+      "custos_fixos_negocio",
+      "despesas_fixas",
+      "despesas_variaveis",
+      "f1_custo_vida",
+      "f1_custo_negocio",
+      "f1_lucro_desejado",
+      "f1_meta_minima",
+    ],
   },
   {
     numero: 2,
     titulo: "Precificação Corrigida",
+    tituloCurto: "Precificação",
     modulo: 1,
-    objetivo: "Parar de cobrar no olho.",
+    objetivo: "parar de cobrar no olho e saber seu preço real",
     explicacao: [
-      "Quase todo profissional autônomo cobra \"no olho\": compara com a concorrência, arredonda, aceita o que o cliente oferece. O resultado é serviço caro de executar sendo vendido barato.",
-      "Nesta semana você calcula o preço certo de cada serviço — o que cobre o material, o seu tempo e ainda gera lucro. Se o preço atual é menor que o custo, você está pagando para trabalhar.",
+      "Cobrar por instinto é o erro mais comum de quem trabalha sozinho. O preço precisa cobrir seu custo, seu tempo, e ainda deixar lucro.",
     ],
     dicas: [
       {
-        titulo: "Fórmula do preço correto",
-        texto: "Preço correto = custo do material + valor da sua hora × horas gastas + margem de lucro.",
-        exemplo: "Material R$ 50 + 3h de trabalho (R$ 60/h) + 30% de margem = R$ 284, o mínimo a cobrar.",
-      },
-      {
-        titulo: "Valorize seu tempo",
-        texto: "Divida quanto você quer ganhar por mês pelas horas produtivas do mês — esse é o valor mínimo da sua hora.",
+        titulo: "Dica de preenchimento",
+        texto: "Some: tempo gasto (valor da sua hora) + material usado + deslocamento + margem de lucro.",
+        exemplo: "1h30 de trabalho (R$40/hora = R$60) + material R$30 + deslocamento R$20 + 30% de lucro (R$33) = preço final R$143",
       },
     ],
+    rotuloSeccao: "Preencha para até 3 dos seus principais serviços:",
     campos: [
-      {
-        id: "tabela_servicos",
-        rotulo: "Tabela de serviços (até 3)",
-        tipo: "tabela",
-        colunas: [
-          { id: "nome", rotulo: "Nome do serviço", tipo: "texto" },
-          { id: "tempo_gasto", rotulo: "Tempo gasto", tipo: "texto" },
-          { id: "preco_atual", rotulo: "Preço atual (R$)", tipo: "numero" },
-          { id: "preco_correto", rotulo: "Preço correto (R$)", tipo: "numero" },
-        ],
-        linhasMin: 1,
-        linhasMax: 3,
-        obrigatorio: true,
-        dica: "Preencha pelo menos 1 serviço (ideal: os 3 principais). No \"preço correto\", aplique a fórmula: material + horas × valor da hora + margem.",
-      },
+      { id: "p2_servico_1_nome", rotulo: "Serviço", tipo: "texto", obrigatorio: true, lado: "s1", grade: 4, caixa: SERVICO_1 },
+      { id: "p2_servico_1_tempo", rotulo: "Tempo gasto", tipo: "texto", obrigatorio: true, lado: "s1", caixa: SERVICO_1 },
+      { id: "p2_servico_1_preco_atual", rotulo: "Preço atual", tipo: "numero", obrigatorio: true, placeholder: "R$", lado: "s1", caixa: SERVICO_1 },
+      { id: "p2_servico_1_preco_correto", rotulo: "Preço correto", tipo: "numero", obrigatorio: true, placeholder: "R$", lado: "s1", caixa: SERVICO_1 },
+      { id: "p2_servico_2_nome", rotulo: "Serviço", tipo: "texto", lado: "s2", grade: 4, caixa: SERVICO_2 },
+      { id: "p2_servico_2_tempo", rotulo: "Tempo gasto", tipo: "texto", lado: "s2", caixa: SERVICO_2 },
+      { id: "p2_servico_2_preco_atual", rotulo: "Preço atual", tipo: "numero", placeholder: "R$", lado: "s2", caixa: SERVICO_2 },
+      { id: "p2_servico_2_preco_correto", rotulo: "Preço correto", tipo: "numero", placeholder: "R$", lado: "s2", caixa: SERVICO_2 },
+      { id: "p2_servico_3_nome", rotulo: "Serviço", tipo: "texto", lado: "s3", grade: 4, caixa: SERVICO_3 },
+      { id: "p2_servico_3_tempo", rotulo: "Tempo gasto", tipo: "texto", lado: "s3", caixa: SERVICO_3 },
+      { id: "p2_servico_3_preco_atual", rotulo: "Preço atual", tipo: "numero", placeholder: "R$", lado: "s3", caixa: SERVICO_3 },
+      { id: "p2_servico_3_preco_correto", rotulo: "Preço correto", tipo: "numero", placeholder: "R$", lado: "s3", caixa: SERVICO_3 },
     ],
     missoes: [
-      { tipo: "principal", descricao: "Recalcular o preço de pelo menos 3 serviços." },
-      { tipo: "rapida", descricao: "Aplicar o novo preço no próximo orçamento real." },
+      { tipo: "principal", descricao: "Recalcule o preço de pelo menos 3 serviços essa semana." },
+      { tipo: "rapida", descricao: "Aplique o novo preço já no seu próximo orçamento — não espere o mês virar." },
     ],
     indicador: {
-      nome: "Preço médio dos 3 principais serviços",
+      nome: "Preço médio dos meus 3 principais serviços",
       unidade: "R$",
-      dica: "Some os preços corretos dos 3 principais serviços e divida por 3.",
     },
-    checklistFinal: "Recalculei o preço de pelo menos 3 serviços.",
-    camposManual: ["tabela_servicos"],
+    checklistFinal: "Já apliquei o preço novo em pelo menos 1 orçamento real",
+    camposManual: [
+      "p2_servico_1_nome",
+      "p2_servico_1_tempo",
+      "p2_servico_1_preco_atual",
+      "p2_servico_1_preco_correto",
+      "p2_servico_2_nome",
+      "p2_servico_2_tempo",
+      "p2_servico_2_preco_atual",
+      "p2_servico_2_preco_correto",
+      "p2_servico_3_nome",
+      "p2_servico_3_tempo",
+      "p2_servico_3_preco_atual",
+      "p2_servico_3_preco_correto",
+    ],
   },
   {
     numero: 3,
     titulo: "Ticket Médio",
+    tituloCurto: "Ticket médio",
     modulo: 1,
-    objetivo: "Aumentar quanto cada cliente já paga, sem precisar de cliente novo.",
+    objetivo: "aumentar o quanto cada cliente já paga, sem precisar de cliente novo",
     explicacao: [
-      "Seu cliente já confia em você. Mais fácil do que conquistar cliente novo é aumentar o quanto cada cliente paga por atendimento.",
-      "Serviços complementares transformam um atendimento em dois ou três — e o ticket médio sobe junto. Escolha os complementos que o cliente já precisa naturalmente depois do seu serviço principal.",
+      "Ticket médio é quanto, em média, cada cliente paga por atendimento. Aumentar seu ticket médio é quase sempre mais fácil do que buscar cliente novo — e muda muito seu resultado no fim do mês.",
     ],
     dicas: [
       {
-        titulo: "Complementos naturais",
-        texto: "Pense no que o cliente precisa logo depois do seu serviço principal.",
-        exemplo: "Quem troca um chuveiro costuma aceitar a revisão da parte elétrica junto.",
+        titulo: "Dica de preenchimento",
+        texto: "Pense em serviços complementares que você já sabe fazer e pode oferecer junto do serviço principal.",
+        exemplo: "quem instala ar-condicionado pode oferecer limpeza, PMOC, parte elétrica, dreno, manutenção preventiva; quem conserta geladeira pode oferecer limpeza de condensador, estabilizador, troca de filtro, contrato preventivo; quem corta cabelo pode oferecer barba, hidratação, pomada",
       },
     ],
+    rotuloSeccao: "Liste 3 serviços complementares que você pode passar a oferecer:",
     campos: [
-      { id: "complemento_1", rotulo: "Serviço complementar 1", tipo: "texto", obrigatorio: true },
-      { id: "complemento_2", rotulo: "Serviço complementar 2", tipo: "texto", obrigatorio: true },
-      { id: "complemento_3", rotulo: "Serviço complementar 3", tipo: "texto", obrigatorio: true },
+      { id: "p3_complemento_1", rotulo: "Complemento 1:", tipo: "textarea", obrigatorio: true },
+      { id: "p3_complemento_2", rotulo: "Complemento 2:", tipo: "textarea", obrigatorio: true },
+      { id: "p3_complemento_3", rotulo: "Complemento 3:", tipo: "textarea", obrigatorio: true },
     ],
     missoes: [
-      { tipo: "principal", descricao: "Oferecer o complemento para os próximos 5 clientes atendidos." },
-      { tipo: "rapida", descricao: "Anotar quantos aceitaram." },
+      { tipo: "principal", descricao: "Ofereça o complemento pros próximos 5 clientes que você atender essa semana." },
+      { tipo: "rapida", descricao: "Anote quantos aceitaram." },
+    ],
+    camposAposMissoes: [
+      { id: "p3_aceitaram_complemento", rotulo: "De 5 clientes que recebi essa semana, quantos aceitaram o complemento:", tipo: "numero", placeholder: "0 a 5" },
     ],
     indicador: {
-      nome: "Ticket médio",
+      nome: "Meu ticket médio",
       unidade: "R$",
-      dica: "Ticket médio = faturamento total ÷ número de atendimentos do período.",
+      dica: "Ticket médio = faturamento total dividido pelo número de atendimentos. Exemplo: R$ 4.000 de faturamento ÷ 20 atendimentos = ticket médio de R$ 200",
     },
-    checklistFinal: "Ofereci complementos aos próximos 5 clientes e anotei quantos aceitaram.",
-    camposManual: ["complemento_1", "complemento_2", "complemento_3"],
+    checklistFinal: "Ofereci o complemento pra pelo menos 5 clientes de verdade",
+    camposManual: ["p3_complemento_1", "p3_complemento_2", "p3_complemento_3"],
   },
   {
     numero: 4,
     titulo: "Metas e Painel Financeiro",
+    tituloCurto: "Metas e painel",
     modulo: 1,
-    objetivo: "Quebrar a meta grande em algo que cabe no dia a dia.",
+    objetivo: "quebrar sua meta grande em algo que cabe no dia a dia",
     explicacao: [
-      "Meta grande assusta e trava. Nesta semana você quebra a sua meta mensal em metas semanais e diárias — números que cabem no seu dia a dia e que você consegue atacar de verdade.",
-      "Ao concluir, o seu primeiro Painel Mensal é liberado: ele reúne os indicadores do seu Módulo 1.",
+      "Meta mensal é importante, mas o cérebro trabalha melhor com metas menores e mais próximas. Vamos quebrar sua meta em semana e em dia — e montar o painel que você vai atualizar todo mês.",
     ],
     dicas: [
       {
-        titulo: "Como dividir",
-        texto: "Meta semanal = meta mensal ÷ 4. Meta diária = meta mensal ÷ dias úteis do mês (aprox. 22).",
-        exemplo: "Meta mensal de R$ 10.000 ÷ 4 = R$ 2.500 por semana; ÷ 22 dias = ~R$ 455 por dia.",
+        titulo: "Dica de preenchimento",
+        texto: "Pegue sua meta mínima mensal (Semana 1) e divida por 4 semanas, depois por dias úteis.",
+        exemplo: "meta de R$ 12.000 por mês ÷ 4 semanas = R$ 3.000 por semana ÷ 5 dias úteis = R$ 600 por dia",
       },
     ],
     campos: [
-      { id: "meta_mensal", rotulo: "Meta mensal", tipo: "numero", obrigatorio: true, placeholder: "R$" },
-      { id: "meta_semanal", rotulo: "Meta semanal (meta mensal ÷ 4)", tipo: "numero", obrigatorio: true, placeholder: "calculado automaticamente" },
-      { id: "meta_diaria", rotulo: "Meta diária (meta mensal ÷ dias úteis)", tipo: "numero", obrigatorio: true, placeholder: "calculado automaticamente" },
+      { id: "p4_meta_mensal", rotulo: "Minha meta mensal", tipo: "numero", obrigatorio: true, placeholder: "R$", lado: "metas", grade: 3 },
+      { id: "p4_meta_semanal", rotulo: "÷ Por semana", tipo: "numero", placeholder: "calculado automaticamente", lado: "metas" },
+      { id: "p4_meta_diaria", rotulo: "÷ Por dia", tipo: "numero", placeholder: "calculado automaticamente", lado: "metas" },
     ],
     missoes: [
-      { tipo: "principal", descricao: "Preencher o primeiro Painel Mensal (libera automaticamente ao concluir esta semana)." },
+      { tipo: "principal", descricao: "Vire a página e preencha seu primeiro Painel Mensal." },
+      { tipo: "rapida", descricao: "Marque na agenda o mesmo dia, daqui a 30 dias, pra preencher o próximo." },
     ],
-    checklistFinal: "Defini minhas metas mensal, semanal e diária.",
+    checklistFinal: "Minha meta semanal e diária estão anotadas em lugar visível",
     painelAoTerminar: 1,
-    camposManual: ["meta_mensal", "meta_semanal", "meta_diaria"],
+    camposManual: ["p4_meta_mensal", "p4_meta_semanal", "p4_meta_diaria"],
   },
   {
     numero: 5,
     titulo: "Experiência do Cliente e Tempo Produtivo",
+    tituloCurto: "Experiência e tempo",
     modulo: 2,
-    objetivo: "Melhorar a experiência de quem contrata e descobrir para onde vai o tempo.",
+    objetivo: "melhorar a experiência de quem te contrata e descobrir pra onde seu tempo está indo",
     explicacao: [
-      "O cliente sente a diferença entre um atendimento profissional e um improvisado — e paga mais caro pelo primeiro. Como você atende, apresenta e explica o orçamento define o valor percebido do seu serviço.",
-      "Ao mesmo tempo, o tempo é o recurso mais escasso do profissional. Nesta semana você cronometra um dia real e descobre exatamente para onde ele está indo.",
+      "Primeiro, como o cliente te percebe do início ao fim do atendimento. Segundo, quanto do seu tempo de trabalho é realmente produtivo.",
     ],
     dicas: [
       {
-        titulo: "Cronometre a verdade",
-        texto: "Cronometre um dia real de trabalho, sem \"melhorar\" os números. O objetivo é ver a verdade.",
-        exemplo: "2h dirigindo + 1h esperando cliente + 1h30 em orçamentos + 1h comprando material = quase 6h improdutivas na semana.",
+        titulo: "Dica de preenchimento 1",
+        texto: "Pense em cada ponto de contato com o cliente e como você quer que ele aconteça.",
+        exemplo: "atendimento: educado e pontual | apresentação: uniforme ou roupa limpa e identificação | comunicação: linguagem clara, sem termo técnico difícil | orçamento: explicado, não só o número",
+      },
+      {
+        titulo: "Dica de preenchimento 2",
+        texto: "Pense numa semana comum e estime quanto tempo você gasta em cada coisa. Não precisa ser exato.",
       },
     ],
     campos: [
-      { id: "padrao_atendimento", rotulo: "Padrão de atendimento", tipo: "textarea", obrigatorio: true, dica: "Como você recebe o cliente: pontualidade, apresentação, tom de voz, postura." },
-      { id: "apresentacao", rotulo: "Apresentação", tipo: "textarea", dica: "O que você fala sobre você e o seu trabalho nos primeiros minutos." },
-      { id: "comunicacao", rotulo: "Comunicação", tipo: "textarea", dica: "Como você mantém o cliente informado durante o serviço." },
-      { id: "explica_orcamento", rotulo: "Como você explica o orçamento", tipo: "textarea", dica: "Item a item, mostrando valor antes do preço." },
-      { id: "horas_dirigindo", rotulo: "Horas por semana dirigindo", tipo: "numero", obrigatorio: true, placeholder: "horas" },
-      { id: "horas_esperando", rotulo: "Horas por semana esperando cliente", tipo: "numero", obrigatorio: true, placeholder: "horas" },
-      { id: "horas_orcamento", rotulo: "Horas por semana fazendo orçamento", tipo: "numero", obrigatorio: true, placeholder: "horas" },
-      { id: "horas_material", rotulo: "Horas por semana comprando material", tipo: "numero", obrigatorio: true, placeholder: "horas" },
+      { id: "p5_padrao_atendimento", rotulo: "Meu padrão de atendimento", tipo: "textarea", obrigatorio: true, lado: "padroes", grade: 2 },
+      { id: "p5_apresentacao", rotulo: "Minha apresentação", tipo: "textarea", lado: "padroes" },
+      { id: "p5_comunicacao", rotulo: "Minha comunicação", tipo: "textarea", lado: "padroes" },
+      { id: "p5_explicacao_orcamento", rotulo: "Como explico o orçamento", tipo: "textarea", lado: "padroes" },
+      { id: "p5_horas_dirigindo", rotulo: "Dirigindo (h/semana)", tipo: "numero", obrigatorio: true, placeholder: "horas", lado: "horas", grade: 2 },
+      { id: "p5_horas_esperando", rotulo: "Esperando cliente (h)", tipo: "numero", obrigatorio: true, placeholder: "horas", lado: "horas" },
+      { id: "p5_horas_orcamento", rotulo: "Fazendo orçamento (h)", tipo: "numero", obrigatorio: true, placeholder: "horas", lado: "horas" },
+      { id: "p5_horas_comprando", rotulo: "Comprando peça/material (h)", tipo: "numero", obrigatorio: true, placeholder: "horas", lado: "horas" },
     ],
     missoes: [
-      { tipo: "principal", descricao: "Cronometrar um dia real de trabalho." },
-      { tipo: "rapida", descricao: "Anotar o que descobriu." },
+      { tipo: "principal", descricao: "Escolha 1 dia essa semana e cronometre de verdade: quanto tempo foi execução, quanto foi deslocamento/espera." },
     ],
-    checklistFinal: "Cronometrei um dia de trabalho e anotei as descobertas.",
-    camposManual: ["padrao_atendimento", "horas_dirigindo", "horas_esperando", "horas_orcamento", "horas_material"],
+    camposAposMissoes: [
+      { id: "p5_descoberta_cronometragem", rotulo: "O que descobri cronometrando meu dia:", tipo: "textarea" },
+    ],
+    checklistFinal: "Sei hoje, de verdade, quantas horas por semana são produtivas",
+    camposManual: [
+      "p5_padrao_atendimento",
+      "p5_apresentacao",
+      "p5_comunicacao",
+      "p5_explicacao_orcamento",
+      "p5_horas_dirigindo",
+      "p5_horas_esperando",
+      "p5_horas_orcamento",
+      "p5_horas_comprando",
+    ],
   },
   {
     numero: 6,
     titulo: "Processo Completo (POP)",
+    tituloCurto: "Processo (POP)",
     modulo: 2,
-    objetivo: "Documentar como você atende, do início ao fim.",
+    objetivo: "documentar do seu jeito como você atende, do início ao pós-atendimento",
     explicacao: [
-      "Processo não é burocracia, é previsibilidade. Quando você documenta o passo a passo do seu atendimento, todo serviço fica com a mesma qualidade — e você consegue ensinar alguém a fazer igual a você.",
-      "Escreva como se um novo funcionário fosse executar: sem pular passo.",
+      "POP significa Procedimento Operacional Padrão. Agora que você já ajustou a experiência do cliente (Semana 5), documente o processo completo: atendimento, execução e cobrança.",
     ],
     dicas: [
       {
-        titulo: "Escreva em ordem",
-        texto: "Do primeiro contato até o pós-venda, em sequência.",
-        exemplo: "1. Receber contato → 2. Agendar visita → 3. Avaliar serviço → 4. Enviar orçamento → 5. Executar → 6. Pós-venda.",
+        titulo: "Dica de preenchimento",
+        texto: "Escreva na ordem em que realmente acontece, do primeiro contato até o pagamento.",
+        exemplo: "cliente chama -> confirmo horário -> chego e me apresento -> diagnóstico -> explico problema e preço -> executo -> confiro tudo -> cobro e agradeço",
       },
     ],
     campos: [
-      { id: "passo_1", rotulo: "Passo 1", tipo: "texto", obrigatorio: true },
-      { id: "passo_2", rotulo: "Passo 2", tipo: "texto", obrigatorio: true },
-      { id: "passo_3", rotulo: "Passo 3", tipo: "texto", obrigatorio: true },
-      { id: "passo_4", rotulo: "Passo 4", tipo: "texto" },
-      { id: "passo_5", rotulo: "Passo 5", tipo: "texto" },
-      { id: "passo_6", rotulo: "Passo 6", tipo: "texto" },
+      { id: "p6_passo_1", rotulo: "Passo 1:", tipo: "textarea", obrigatorio: true },
+      { id: "p6_passo_2", rotulo: "Passo 2:", tipo: "textarea", obrigatorio: true },
+      { id: "p6_passo_3", rotulo: "Passo 3:", tipo: "textarea", obrigatorio: true },
+      { id: "p6_passo_4", rotulo: "Passo 4:", tipo: "textarea" },
+      { id: "p6_passo_5", rotulo: "Passo 5:", tipo: "textarea" },
+      { id: "p6_passo_6", rotulo: "Passo 6:", tipo: "textarea" },
     ],
+    nota: "Use também o Template de POP separado (documento próprio) se quiser um espaço maior pra detalhar cada passo com calma.",
     missoes: [
-      { tipo: "principal", descricao: "Usar esse processo, sem pular passo, no próximo atendimento real." },
+      { tipo: "principal", descricao: "Use esse processo, na íntegra, no seu próximo atendimento — sem pular nenhum passo." },
     ],
-    checklistFinal: "Usei o processo no próximo atendimento real, sem pular passo.",
-    camposManual: ["passo_1", "passo_2", "passo_3", "passo_4", "passo_5", "passo_6"],
+    checklistFinal: "Apliquei o processo completo em pelo menos 1 atendimento real",
+    camposManual: ["p6_passo_1", "p6_passo_2", "p6_passo_3", "p6_passo_4", "p6_passo_5", "p6_passo_6"],
   },
   {
     numero: 7,
     titulo: "Agenda Inteligente",
+    tituloCurto: "Agenda inteligente",
     modulo: 2,
-    objetivo: "Organizar a rota para perder menos tempo e gastar menos combustível.",
+    objetivo: "organizar sua rota pra perder menos tempo e gastar menos combustível",
     explicacao: [
-      "Quem atende em vários lugares perde horas no trânsito e litros de combustível indo e voltando. O \"vai e volta\" é o maior ladrão de produtividade do autônomo.",
-      "Planejar a agenda por região, antes de sair de casa, transforma o seu dia de trabalho em uma rota eficiente.",
+      "Muita gente perde dinheiro sem perceber, cruzando a cidade inteira no mesmo dia. Uma agenda organizada por região economiza tempo, combustível, e cabe mais atendimento no seu dia.",
     ],
     dicas: [
       {
-        titulo: "Agrupe por região",
-        texto: "Coloque bairros próximos no mesmo dia e evite o vai e volta.",
-        exemplo: "Segunda = zona norte inteira, terça = zona sul, e assim por diante.",
+        titulo: "Dica de preenchimento",
+        texto: "Agrupe atendimentos da mesma região no mesmo dia, sempre que possível.",
+        exemplo: "segunda: bairros do lado norte | quarta: bairros do lado sul | evita ida e volta no mesmo dia",
       },
     ],
+    rotuloSeccao: "Organize sua próxima semana por região:",
     campos: [
-      { id: "agenda_seg", rotulo: "Segunda-feira — região/bairros", tipo: "textarea", obrigatorio: true },
-      { id: "agenda_ter", rotulo: "Terça-feira — região/bairros", tipo: "textarea", obrigatorio: true },
-      { id: "agenda_qua", rotulo: "Quarta-feira — região/bairros", tipo: "textarea", obrigatorio: true },
-      { id: "agenda_qui", rotulo: "Quinta-feira — região/bairros", tipo: "textarea", obrigatorio: true },
-      { id: "agenda_sex", rotulo: "Sexta-feira — região/bairros", tipo: "textarea", obrigatorio: true },
+      { id: "p7_segunda", rotulo: "Segunda", tipo: "textarea", dica: "Região/bairro planejado", obrigatorio: true, lado: "dias", grade: 2 },
+      { id: "p7_terca", rotulo: "Terça", tipo: "textarea", dica: "Região/bairro planejado", obrigatorio: true, lado: "dias" },
+      { id: "p7_quarta", rotulo: "Quarta", tipo: "textarea", dica: "Região/bairro planejado", obrigatorio: true, lado: "dias" },
+      { id: "p7_quinta", rotulo: "Quinta", tipo: "textarea", dica: "Região/bairro planejado", obrigatorio: true, lado: "dias" },
+      { id: "p7_sexta", rotulo: "Sexta", tipo: "textarea", dica: "Região/bairro planejado", obrigatorio: true, lado: "dias" },
     ],
     missoes: [
-      { tipo: "principal", descricao: "Montar a agenda da próxima semana por região antes de sair de casa." },
+      { tipo: "principal", descricao: "Monte sua agenda da próxima semana por região antes de sair de casa na segunda-feira." },
     ],
     indicador: {
       nome: "Tempo estimado de deslocamento por semana",
       unidade: "horas",
-      dica: "Estime o total de horas de deslocamento da semana (dirigindo + esperando cliente).",
     },
-    checklistFinal: "Montei a agenda da próxima semana por região.",
-    camposManual: ["agenda_seg", "agenda_ter", "agenda_qua", "agenda_qui", "agenda_sex"],
+    checklistFinal: "Minha agenda da próxima semana já está organizada por região",
+    camposManual: ["p7_segunda", "p7_terca", "p7_quarta", "p7_quinta", "p7_sexta"],
   },
   {
     numero: 8,
     titulo: "Pós-venda",
+    tituloCurto: "Pós-venda",
     modulo: 2,
-    objetivo: "Continuar gerando resultado depois que o atendimento termina.",
+    objetivo: "continuar gerando resultado depois que o atendimento termina",
     explicacao: [
-      "O atendimento termina, mas o relacionamento não. As mensagens de 24 horas, 7, 30 e 90 dias mantêm você na memória do cliente, geram avaliações e indicações — e trazem o cliente de volta.",
-      "Cada mensagem tem um objetivo: resolver problema (24h), medir satisfação (7d), colher indicação (30d), trazer de volta (90d).",
+      "A maioria para no momento do pagamento. Mas é o pós-venda que traz recomendação, avaliação positiva e cliente que volta. Vamos montar sua sequência.",
     ],
     dicas: [
       {
-        titulo: "As 4 mensagens",
-        texto: "Escreva já, salve como modelo e reutilize em todo cliente.",
-        exemplo: "24h: \"Olá, tudo certo com o serviço de ontem?\" — 90d: \"Está na hora de uma revisão, posso verificar?\"",
+        titulo: "Dica de preenchimento",
+        texto: "Defina uma mensagem curta pra cada momento da sequência de pós-venda.",
+        exemplo: "24h depois: \"Oi, tudo certo com o serviço?\" | 7 dias: pesquisa rápida de satisfação | 30 dias: pedido de indicação | 90 dias: nova oferta ou lembrete de manutenção",
       },
     ],
     campos: [
-      { id: "msg_24h", rotulo: "Mensagem de 24 horas depois", tipo: "textarea", obrigatorio: true, dica: "Objetivo: resolver qualquer problema logo após o serviço." },
-      { id: "msg_7d", rotulo: "Mensagem de 7 dias depois (pesquisa)", tipo: "textarea", obrigatorio: true, dica: "Objetivo: medir satisfação e pedir avaliação." },
-      { id: "msg_30d", rotulo: "Mensagem de 30 dias depois (indicação)", tipo: "textarea", obrigatorio: true, dica: "Objetivo: pedir indicação de forma natural." },
-      { id: "msg_90d", rotulo: "Mensagem de 90 dias depois (nova oferta)", tipo: "textarea", obrigatorio: true, dica: "Objetivo: trazer o cliente de volta com uma nova oferta." },
+      { id: "p8_mensagem_24h", rotulo: "Minha mensagem de 24 horas depois:", tipo: "textarea", obrigatorio: true },
+      { id: "p8_mensagem_7dias", rotulo: "Minha mensagem de 7 dias depois (pesquisa de satisfação):", tipo: "textarea", obrigatorio: true },
+      { id: "p8_mensagem_30dias", rotulo: "Minha mensagem de 30 dias depois (pedido de indicação):", tipo: "textarea", obrigatorio: true },
+      { id: "p8_mensagem_90dias", rotulo: "Minha mensagem de 90 dias depois (nova oferta):", tipo: "textarea", obrigatorio: true },
     ],
     missoes: [
-      { tipo: "principal", descricao: "Aplicar a sequência completa nos últimos 5 clientes já atendidos." },
+      { tipo: "principal", descricao: "Aplique a sequência completa nos últimos 5 clientes que você já atendeu." },
     ],
-    checklistFinal: "Apliquei a sequência de pós-venda nos últimos 5 clientes.",
+    checklistFinal: "Apliquei a sequência de pós-venda em pelo menos 5 clientes reais",
     painelAoTerminar: 2,
-    camposManual: ["msg_24h", "msg_7d", "msg_30d", "msg_90d"],
+    camposManual: ["p8_mensagem_24h", "p8_mensagem_7dias", "p8_mensagem_30dias", "p8_mensagem_90dias"],
   },
   {
     numero: 9,
     titulo: "Captação de Clientes",
+    tituloCurto: "Captação",
     modulo: 3,
-    objetivo: "Ter um processo ativo de atrair cliente novo.",
+    objetivo: "ter um processo ativo de atrair cliente novo, não depender só de sorte",
     explicacao: [
-      "Cliente novo não cai do céu: é consequência de um processo ativo de captação. Nesta semana você escolhe os canais onde os seus clientes realmente estão — e cria a frase padrão para pedir indicação, o canal mais barato e mais eficaz que existe.",
-      "Prefira 1-2 canais bem feitos do que cinco onde ninguém te vê.",
+      "Defina de onde vêm, ou deveriam vir, seus próximos clientes. Não é sobre fazer de tudo, é escolher 2 ou 3 canais e trabalhar bem neles.",
     ],
     dicas: [
       {
-        titulo: "Frase de indicação",
-        texto: "Tenha uma frase pronta para usar sempre que terminar um bom atendimento.",
-        exemplo: "\"Cada vez que eu atendo um cliente novo, peço: se você conhece alguém que precise desse serviço, me indica?\"",
+        titulo: "Dica de preenchimento",
+        texto: "Canal é o caminho que o cliente usa pra te encontrar. Escolha no máximo 3.",
+        exemplo: "indicação de cliente satisfeito, grupo de WhatsApp de bairro, Instagram com fotos do antes/depois",
       },
     ],
     campos: [
-      { id: "canal_1", rotulo: "Canal de captação 1", tipo: "texto", obrigatorio: true, placeholder: "ex.: Instagram" },
-      { id: "canal_2", rotulo: "Canal de captação 2", tipo: "texto", placeholder: "ex.: indicação" },
-      { id: "canal_3", rotulo: "Canal de captação 3", tipo: "texto", placeholder: "ex.: Google Meu Negócio" },
-      { id: "frase_indicacao", rotulo: "Frase padrão para pedir indicação", tipo: "textarea", obrigatorio: true },
+      { id: "p9_canal_1", rotulo: "Canal 1", tipo: "texto", obrigatorio: true, placeholder: "ex.: indicação", lado: "canais", grade: 3 },
+      { id: "p9_canal_2", rotulo: "Canal 2", tipo: "texto", placeholder: "ex.: WhatsApp", lado: "canais" },
+      { id: "p9_canal_3", rotulo: "Canal 3", tipo: "texto", placeholder: "ex.: Instagram", lado: "canais" },
+      { id: "p9_frase_indicacao", rotulo: "Minha frase pra pedir indicação a um cliente satisfeito:", tipo: "textarea", obrigatorio: true },
     ],
     missoes: [
-      { tipo: "principal", descricao: "Divulgar em pelo menos 3 momentos nos canais escolhidos essa semana." },
-      { tipo: "rapida", descricao: "Pedir indicação a pelo menos 10 clientes." },
+      { tipo: "principal", descricao: "Publique ou divulgue seu trabalho pelo menos 3 vezes essa semana nos canais escolhidos." },
+      { tipo: "rapida", descricao: "Peça indicação, de forma direta, a pelo menos 10 clientes." },
     ],
-    checklistFinal: "Divulguei 3 vezes nos canais escolhidos e pedi indicações a 10 clientes.",
-    camposManual: ["canal_1", "canal_2", "canal_3", "frase_indicacao"],
+    checklistFinal: "Divulguei nos canais escolhidos e pedi indicação de verdade",
+    camposManual: ["p9_canal_1", "p9_canal_2", "p9_canal_3", "p9_frase_indicacao"],
   },
   {
     numero: 10,
     titulo: "Conversão de Orçamento",
+    tituloCurto: "Conversão",
     modulo: 3,
-    objetivo: "Descobrir quantos orçamentos viram serviço fechado, e melhorar essa taxa.",
+    objetivo: "descobrir quantos orçamentos viram serviço fechado, e melhorar essa taxa",
     explicacao: [
-      "Enviar orçamento não é o fim, é a metade. A maioria dos orçamentos se perde por falta de follow-up — o cliente esquece, encontra outro, adia.",
-      "Medindo a taxa de conversão você descobre onde está vazando. E com follow-up de 100% dos orçamentos em aberto, você tapa o buraco.",
+      "De cada 10 orçamentos que você envia, quantos fecham? A maioria nunca calculou isso — e é um dos números que mais muda o faturamento quando você presta atenção nele.",
     ],
     dicas: [
       {
-        titulo: "Follow-up que funciona",
-        texto: "Follow-up não é \"encher o saco\": é dar informação nova (prazo, disponibilidade, condição).",
-        exemplo: "Taxa de conversão = 8 fechados ÷ 20 enviados = 40%.",
+        titulo: "Dica de preenchimento 1",
+        texto: "Liste os últimos orçamentos que você enviou e marque quais fecharam.",
+        exemplo: "enviei 10 orçamentos no mês, 4 fecharam = taxa de conversão de 40%",
+      },
+      {
+        titulo: "Dica de preenchimento 2",
+        texto: "Formas simples de aumentar conversão: responder rápido (primeiras horas), explicar o valor do serviço e não só o preço, e fazer um follow-up educado depois de 2-3 dias sem resposta.",
       },
     ],
     campos: [
-      { id: "orcamentos_enviados", rotulo: "Orçamentos enviados no mês", tipo: "numero", obrigatorio: true },
-      { id: "orcamentos_fechados", rotulo: "Orçamentos fechados no mês", tipo: "numero", obrigatorio: true },
-      { id: "taxa_conversao", rotulo: "Taxa de conversão (fechados ÷ enviados)", tipo: "numero", obrigatorio: true, placeholder: "calculado automaticamente", dica: "Valor calculado automaticamente em %." },
-      { id: "mensagem_followup", rotulo: "Mensagem padrão de follow-up", tipo: "textarea", obrigatorio: true },
+      { id: "p10_orcamentos_enviados", rotulo: "Orçamentos enviados (mês)", tipo: "numero", obrigatorio: true, lado: "conv", grade: 3 },
+      { id: "p10_orcamentos_fechados", rotulo: "Fechados", tipo: "numero", obrigatorio: true, lado: "conv" },
+      { id: "p10_taxa_conversao", rotulo: "Taxa de conversão (%)", tipo: "numero", placeholder: "calculado automaticamente", lado: "conv" },
+      { id: "p10_followup_padrao", rotulo: "Meu follow-up padrão pra orçamento sem resposta:", tipo: "textarea", obrigatorio: true },
     ],
     missoes: [
-      { tipo: "principal", descricao: "Fazer follow-up de 100% dos orçamentos em aberto essa semana." },
+      { tipo: "principal", descricao: "Faça o follow-up de todos os orçamentos em aberto essa semana, sem exceção." },
     ],
     indicador: {
-      nome: "Taxa de conversão de orçamentos",
+      nome: "Minha taxa de conversão de orçamentos",
       unidade: "%",
-      dica: "Taxa de conversão = orçamentos fechados ÷ orçamentos enviados × 100.",
     },
-    checklistFinal: "Fiz follow-up de 100% dos orçamentos em aberto.",
-    camposManual: ["orcamentos_enviados", "orcamentos_fechados", "taxa_conversao", "mensagem_followup"],
+    checklistFinal: "Fiz follow-up de 100% dos orçamentos em aberto",
+    camposManual: ["p10_orcamentos_enviados", "p10_orcamentos_fechados", "p10_taxa_conversao", "p10_followup_padrao"],
   },
   {
     numero: 11,
     titulo: "Indicadores e Autoridade",
+    tituloCurto: "Indicadores e autoridade",
     modulo: 3,
-    objetivo: "Medir o negócio de verdade e ser mais lembrado na região.",
+    objetivo: "medir seu negócio de verdade e ser mais lembrado na sua região",
     explicacao: [
-      "O que não é medido não é gerenciado. Os 10 indicadores desta semana mostram a saúde real do negócio — receita, lucro, margem, captação e satisfação.",
-      "E autoridade na região — Google Meu Negócio atualizado com avaliações e fotos de antes/depois — é o que faz o cliente te escolher antes da concorrência.",
+      "Você já mede faturamento e ticket médio. Agora vamos olhar o quadro completo de indicadores — e dar os primeiros passos pra ser mais reconhecido no seu bairro/cidade.",
+      "Preencha o que você tem hoje pra cada indicador:",
     ],
     dicas: [
       {
-        titulo: "Avaliação no momento certo",
-        texto: "Peça a avaliação no momento de maior satisfação, logo após o serviço. E tire foto de antes/depois em todo serviço — é a sua vitrine.",
+        titulo: "Dica de preenchimento",
+        texto: "Autoridade não precisa virar um curso de marketing. Três passos simples já ajudam bastante.",
+        exemplo: "cadastrar/atualizar seu Google Meu Negócio, tirar foto antes/depois dos serviços, pedir avaliação pros últimos clientes satisfeitos",
       },
     ],
     campos: [
-      {
-        id: "tabela_indicadores",
-        rotulo: "Tabela com 10 indicadores",
-        tipo: "tabela_fixa",
-        linhas: [
-          { id: "num_orcamentos", rotulo: "Nº de orçamentos" },
-          { id: "num_vendas", rotulo: "Nº de vendas" },
-          { id: "ticket_medio", rotulo: "Ticket médio (R$)" },
-          { id: "lucro", rotulo: "Lucro (R$)" },
-          { id: "margem", rotulo: "Margem (%)" },
-          { id: "clientes_novos", rotulo: "Clientes novos" },
-          { id: "clientes_antigos", rotulo: "Clientes antigos recuperados" },
-          { id: "indicacoes", rotulo: "Indicações" },
-          { id: "avaliacoes_google", rotulo: "Avaliações no Google" },
-          { id: "tempo_atendimento", rotulo: "Tempo médio por atendimento (horas)" },
-        ],
-      },
+      { id: "p11_orcamentos_mes", rotulo: "Nº de orçamentos no mês", tipo: "numero", obrigatorio: true, lado: "indicadores", grade: 2 },
+      { id: "p11_vendas_fechadas", rotulo: "Nº de vendas fechadas", tipo: "numero", obrigatorio: true, lado: "indicadores" },
+      { id: "p11_ticket_medio", rotulo: "Ticket médio (R$)", tipo: "numero", obrigatorio: true, lado: "indicadores" },
+      { id: "p11_lucro_mes", rotulo: "Lucro do mês (R$)", tipo: "numero", obrigatorio: true, lado: "indicadores" },
+      { id: "p11_margem_lucro", rotulo: "Margem de lucro (%)", tipo: "numero", obrigatorio: true, lado: "indicadores" },
+      { id: "p11_clientes_novos", rotulo: "Clientes novos no mês", tipo: "numero", obrigatorio: true, lado: "indicadores" },
+      { id: "p11_clientes_recuperados", rotulo: "Clientes antigos recuperados", tipo: "numero", obrigatorio: true, lado: "indicadores" },
+      { id: "p11_indicacoes", rotulo: "Indicações recebidas", tipo: "numero", obrigatorio: true, lado: "indicadores" },
+      { id: "p11_avaliacoes_google", rotulo: "Avaliações no Google", tipo: "numero", obrigatorio: true, lado: "indicadores" },
+      { id: "p11_tempo_medio_atendimento", rotulo: "Tempo médio por atendimento", tipo: "numero", obrigatorio: true, lado: "indicadores" },
     ],
     missoes: [
-      { tipo: "principal", descricao: "Cadastrar/atualizar o Google Meu Negócio." },
-      { tipo: "rapida", descricao: "Pedir avaliação a 3 clientes satisfeitos e tirar foto de antes/depois no próximo serviço." },
+      { tipo: "principal", descricao: "Cadastre ou atualize seu perfil no Google Meu Negócio." },
+      { tipo: "rapida", descricao: "Peça avaliação a pelo menos 3 clientes satisfeitos recentes." },
+      { tipo: "rapida", descricao: "Tire foto de antes/depois no seu próximo serviço." },
     ],
-    checklistFinal: "Cadastrei o Google Meu Negócio, pedi avaliações e preenchi os 10 indicadores.",
-    camposManual: ["tabela_indicadores"],
+    checklistFinal: "Completei as 3 missões de autoridade dessa semana",
+    camposManual: [
+      "p11_orcamentos_mes",
+      "p11_vendas_fechadas",
+      "p11_ticket_medio",
+      "p11_lucro_mes",
+      "p11_margem_lucro",
+      "p11_clientes_novos",
+      "p11_clientes_recuperados",
+      "p11_indicacoes",
+      "p11_avaliacoes_google",
+      "p11_tempo_medio_atendimento",
+    ],
   },
   {
     numero: 12,
     titulo: "Escala e Fechamento",
+    tituloCurto: "Escala e fechamento",
     modulo: 3,
-    objetivo: "Decidir com clareza o que vem depois dos 90 dias.",
+    objetivo: "decidir com clareza o que vem depois dos 90 dias",
     explicacao: [
-      "Os 90 dias terminaram. Agora é hora de olhar para trás, medir o que mudou e decidir com clareza o próximo ciclo.",
-      "Responda o checklist de decisão com honestidade: se os três itens estiverem marcados, o seu negócio já tem sinais de escala — e o próximo passo pode ser montar um time.",
+      "Revise tudo que você preencheu nas 11 semanas anteriores. Você tem hoje: diagnóstico financeiro, precificação corrigida, ticket médio, processo documentado, agenda organizada, pós-venda ativo, captação, conversão e indicadores completos.",
     ],
-    dicas: [
-      {
-        titulo: "Objetivo com data e número",
-        texto: "O próximo objetivo precisa de data e número: \"em 90 dias, faturar R$ X com N clientes\".",
-        exemplo: "Se bate a meta há 2 meses + tem processo documentado + mais demanda do que consegue atender, é hora de contratar.",
-      },
-    ],
+    dicas: [],
     campos: [
-      { id: "conquista_90dias", rotulo: "Maior conquista dos 90 dias", tipo: "textarea", obrigatorio: true },
-      { id: "melhorar_proximo", rotulo: "O que ainda precisa melhorar", tipo: "textarea", obrigatorio: true },
-      { id: "proximo_objetivo", rotulo: "Próximo objetivo", tipo: "textarea", obrigatorio: true, dica: "Escreva com data e número: \"em 90 dias, faturar R$ X com N clientes\"." },
-      { id: "data_objetivo", rotulo: "Data do próximo objetivo", tipo: "data", obrigatorio: true },
+      { id: "p12_conquista", rotulo: "Minha maior conquista nesses 90 dias (com números, se possível):", tipo: "textarea", obrigatorio: true },
+      { id: "p12_melhorar", rotulo: "O que ainda preciso melhorar:", tipo: "textarea", obrigatorio: true },
+      { id: "p12_proximo_objetivo", rotulo: "Meu próximo objetivo para os próximos 90 dias:", tipo: "textarea", obrigatorio: true },
     ],
     checklistDecisao: {
       itens: [
-        { id: "decisao_meta_minima", rotulo: "Já bato a meta mínima há 2 meses" },
-        { id: "decisao_processo", rotulo: "Tenho processo documentado" },
-        { id: "decisao_clientes", rotulo: "Tenho mais cliente do que consigo atender sozinho" },
+        { id: "decisao_meta_minima", rotulo: "Já bati minha meta mínima de forma consistente nos últimos 2 meses" },
+        { id: "decisao_processo", rotulo: "Tenho processo documentado (POP) pronto para ser ensinado a outra pessoa" },
+        { id: "decisao_clientes", rotulo: "Tenho fluxo de clientes maior do que consigo atender sozinho" },
       ],
-      sugestao: "Os 3 sinais de escala estão presentes: é hora de considerar a contratação de ajuda para o próximo ciclo.",
+      sugestao:
+        "Se você marcou os três itens acima, provavelmente está pronto pra considerar formar equipe: contratar um ajudante, que aprende seu processo documentado e, quando estiver pronto, vira profissional pleno — liberando espaço pra você contratar um novo ajudante. Se não marcou, o foco continua sendo consolidar o que já está rodando.",
     },
     missoes: [
-      { tipo: "principal", descricao: "Escrever e assumir o próximo objetivo de 90 dias, com data." },
+      { tipo: "principal", descricao: "Escreva e assuma, com data, seu próximo objetivo de 90 dias — mesmo que seja só consolidar." },
     ],
-    checklistFinal: "Escrevi e assumi meu próximo objetivo de 90 dias, com data.",
+    checklistFinal: "Tenho clareza do meu próximo passo e já marquei na agenda",
     painelAoTerminar: 3,
-    camposManual: ["conquista_90dias", "melhorar_proximo", "proximo_objetivo", "data_objetivo"],
+    camposManual: ["p12_conquista", "p12_melhorar", "p12_proximo_objetivo"],
   },
 ];
 

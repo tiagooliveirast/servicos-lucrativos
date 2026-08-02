@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SUBTITULO_PRODUTO } from "@/lib/conteudo";
 import { supabase } from "@/lib/supabase";
 
 export function PaginaEntrar() {
@@ -64,8 +65,9 @@ export function PaginaEntrar() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
-      <div className="mb-8">
+      <div className="mb-8 flex flex-col items-center gap-3">
         <Logo className="scale-110" />
+        <p className="max-w-md text-center text-sm text-muted-foreground">{SUBTITULO_PRODUTO}</p>
       </div>
       <Card className="w-full max-w-sm">
         <CardHeader>

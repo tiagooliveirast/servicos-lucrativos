@@ -32,8 +32,6 @@ import { supabase } from "@/lib/supabase";
 import type { AulaSemana, IndicadorSemana, ProgressoSemana } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const DIAS_UTEIS = 22;
-
 export function PaginaSemana({ userId }: { userId: string }) {
   const { numero } = useParams();
   const n = Number(numero);
@@ -154,7 +152,7 @@ function ConteudoSemana({
       if (!ativo) return;
       if (resMissoes.data) {
         const mapa: Record<string, boolean> = {};
-        for (const m of resMissoes.data) mapa[m.tipo] = m.concluida;
+        for (const m of resMissoes.data) mapa[`${m.tipo}:${m.indice}`] = m.concluida;
         setMissoes(mapa);
       }
       const ind = resIndicador.data as IndicadorSemana | null;
@@ -214,9 +212,12 @@ function ConteudoSemana({
     setRespostas((r) => ({ ...r, [id]: valor }));
   }
 
-  async function alternarMissao(tipo: "principal" | "rapida") {
-    const novo = !missoes[tipo];
-    setMissoes((m) => ({ ...m, [tipo]: novo }));
+  async function alternarMissao(tipo: "principal" | "rapida", indice: number) {
+    const missao = semana.missoes[indice];
+    if (!missao || missao.tipo !== tipo) return;
+    const chave = `${tipo}:${indice}`;
+    const novo = !missoes[chave];
+    setMissoes((m) => ({ ...m, [chave]: novo }));
     const { error } = await supabase
       .from("missoes")
       .upsert(
@@ -224,11 +225,12 @@ function ConteudoSemana({
           user_id: userId,
           semana: semana.numero,
           tipo,
-          descricao: semana.missoes.find((m) => m.tipo === tipo)?.descricao ?? "",
+          indice,
+          descricao: missao.descricao,
           concluida: novo,
           concluida_em: novo ? new Date().toISOString() : null,
         },
-        { onConflict: "user_id,semana,tipo" }
+        { onConflict: "user_id,semana,tipo,indice" }
       );
     if (error) setErro("Não foi possível salvar a missão.");
   }
@@ -314,9 +316,6 @@ function ConteudoSemana({
   }
 
   const decisaoItens = semana.checklistDecisao?.itens ?? [];
-  const decisaoMarcadas = decisaoItens.filter((i) => respostas[i.id] === true).length;
-  const decisaoCompleta =
-    decisaoItens.length > 0 && decisaoMarcadas === decisaoItens.length;
 
   const modulo = MODULOS.find((m) => m.numero === semana.modulo)!;
 
@@ -340,6 +339,9 @@ function ConteudoSemana({
             {concluida && <Badge variant="sucesso">Concluída</Badge>}
           </div>
           <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">{semana.titulo}</h1>
+          <p className="mt-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Corresponde à Aula {semana.numero} do curso
+          </p>
           <p className="mt-2 flex items-start gap-2 text-sm text-muted-foreground">
             <Target className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             Objetivo: {semana.objetivo}
@@ -350,7 +352,7 @@ function ConteudoSemana({
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">O conceito</CardTitle>
+            <CardTitle className="text-base">Nesta semana</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             {semana.explicacao.map((paragrafo, i) => (
@@ -394,15 +396,23 @@ function ConteudoSemana({
             <CardDescription>Suas respostas são salvas automaticamente.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-5">
-            {semana.campos.map((campo) => (
-              <CampoForm
-                key={campo.id}
-                campo={campo}
+            {semana.rotuloSeccao && (
+              <p className="text-sm font-medium text-foreground/90">{semana.rotuloSeccao}</p>
+            )}
+            {agruparCampos(semana.campos).map((grupo, i) => (
+              <GrupoCampos
+                key={`${grupo.caixa ?? grupo.lado ?? "campo"}-${i}`}
+                grupo={grupo}
                 respostas={respostas}
                 calculados={calculados}
                 aoMudar={setCampo}
               />
             ))}
+            {semana.nota && (
+              <p className="rounded-lg border border-primary/25 bg-primary/5 p-4 text-sm text-foreground/90">
+                {semana.nota}
+              </p>
+            )}
             <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
               {salvando && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               {salvando ? "Salvando…" : salvoEm ? `Salvo às ${salvoEm}` : "Tudo salvo"}
@@ -420,35 +430,54 @@ function ConteudoSemana({
               <CardDescription>Missões fazem a teoria virar resultado.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
-              {semana.missoes.map((missao) => (
-                <label
-                  key={missao.tipo}
-                  className={cn(
-                    "flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors",
-                    missoes[missao.tipo]
-                      ? "border-emerald-500/50 bg-emerald-500/5"
-                      : "border-input hover:bg-accent"
-                  )}
-                >
-                  <Checkbox
-                    checked={missoes[missao.tipo] ?? false}
-                    onCheckedChange={() => void alternarMissao(missao.tipo)}
-                    className="mt-0.5"
-                  />
-                  <span className="flex flex-col gap-1">
-                    <span
-                      className={cn(
-                        "inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide",
-                        missao.tipo === "principal"
-                          ? "bg-primary/20 text-primary"
-                          : "bg-secondary text-muted-foreground"
-                      )}
-                    >
-                      {missao.tipo === "principal" ? "Missão principal" : "Vitória rápida"}
+              {semana.missoes.map((missao, indice) => {
+                const chave = `${missao.tipo}:${indice}`;
+                return (
+                  <label
+                    key={chave}
+                    className={cn(
+                      "flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors",
+                      missoes[chave]
+                        ? "border-emerald-500/50 bg-emerald-500/5"
+                        : "border-input hover:bg-accent"
+                    )}
+                  >
+                    <Checkbox
+                      checked={missoes[chave] ?? false}
+                      onCheckedChange={() => void alternarMissao(missao.tipo, indice)}
+                      className="mt-0.5"
+                    />
+                    <span className="flex flex-col gap-1">
+                      <span
+                        className={cn(
+                          "inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide",
+                          missao.tipo === "principal"
+                            ? "bg-primary/20 text-primary"
+                            : "bg-secondary text-muted-foreground"
+                        )}
+                      >
+                        {missao.tipo === "principal" ? "Missão principal" : "Vitória rápida"}
+                      </span>
+                      <span className="text-sm text-foreground/90">{missao.descricao}</span>
                     </span>
-                    <span className="text-sm text-foreground/90">{missao.descricao}</span>
-                  </span>
-                </label>
+                  </label>
+                );
+              })}
+            </CardContent>
+          </Card>
+        )}
+
+        {semana.camposAposMissoes && semana.camposAposMissoes.length > 0 && (
+          <Card>
+            <CardContent className="flex flex-col gap-5 pt-6">
+              {agruparCampos(semana.camposAposMissoes).map((grupo, i) => (
+                <GrupoCampos
+                  key={`${grupo.caixa ?? grupo.lado ?? "campo"}-${i}`}
+                  grupo={grupo}
+                  respostas={respostas}
+                  calculados={calculados}
+                  aoMudar={setCampo}
+                />
               ))}
             </CardContent>
           </Card>
@@ -462,13 +491,14 @@ function ConteudoSemana({
                 Indicador da semana
               </CardTitle>
               <CardDescription>
-                {semana.indicador.nome} ({semana.indicador.unidade}) — {semana.indicador.dica}
+                {semana.indicador.nome} ({semana.indicador.unidade})
+                {semana.indicador.dica ? ` — ${semana.indicador.dica}` : ""}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="ind_antes">Antes (no início do plano)</Label>
+                  <Label htmlFor="ind_antes">Antes</Label>
                   <Input
                     id="ind_antes"
                     type="number"
@@ -481,7 +511,7 @@ function ConteudoSemana({
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="ind_depois">Depois (ao final da semana)</Label>
+                  <Label htmlFor="ind_depois">Depois</Label>
                   <Input
                     id="ind_depois"
                     type="number"
@@ -507,6 +537,9 @@ function ConteudoSemana({
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
+              <p className="text-sm text-muted-foreground">
+                Marque os itens que já são verdade no seu negócio hoje.
+              </p>
               {decisaoItens.map((item) => (
                 <label
                   key={item.id}
@@ -520,7 +553,7 @@ function ConteudoSemana({
                   <span className="text-sm text-foreground/90">{item.rotulo}</span>
                 </label>
               ))}
-              {decisaoCompleta && (
+              {semana.checklistDecisao.sugestao && (
                 <p className="flex items-start gap-2 rounded-lg border border-primary/40 bg-primary/10 p-4 text-sm text-primary">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
                   {semana.checklistDecisao.sugestao}
@@ -585,6 +618,72 @@ function ConteudoSemana({
         )}
       </div>
     </Layout>
+  );
+}
+
+interface GrupoCampos {
+  lado?: string;
+  caixa?: string;
+  colunas: number;
+  campos: Campo[];
+}
+
+function agruparCampos(campos: Campo[]): GrupoCampos[] {
+  const grupos: GrupoCampos[] = [];
+  for (const campo of campos) {
+    const lado = "lado" in campo ? campo.lado : undefined;
+    const caixa = "caixa" in campo ? campo.caixa : undefined;
+    const chave = `${caixa ?? ""}|${lado ?? ""}`;
+    const ultimo = grupos[grupos.length - 1];
+    const colunas = "grade" in campo && campo.grade ? campo.grade : 1;
+    if (chave !== "|" && ultimo && ultimo.caixa === caixa && ultimo.lado === lado) {
+      ultimo.campos.push(campo);
+    } else {
+      grupos.push({ lado, caixa, colunas, campos: [campo] });
+    }
+  }
+  return grupos;
+}
+
+function gradeClasse(colunas: number): string {
+  if (colunas >= 4) return "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4";
+  if (colunas === 3) return "grid grid-cols-1 gap-4 sm:grid-cols-3";
+  if (colunas === 2) return "grid grid-cols-1 gap-4 sm:grid-cols-2";
+  return "flex flex-col gap-5";
+}
+
+function GrupoCampos({
+  grupo,
+  respostas,
+  calculados,
+  aoMudar,
+}: {
+  grupo: GrupoCampos;
+  respostas: Record<string, unknown>;
+  calculados: Record<string, number>;
+  aoMudar: (id: string, valor: unknown) => void;
+}) {
+  const conteudo = (
+    <div className={gradeClasse(grupo.colunas)}>
+      {grupo.campos.map((campo) => (
+        <CampoForm
+          key={campo.id}
+          campo={campo}
+          respostas={respostas}
+          calculados={calculados}
+          aoMudar={aoMudar}
+        />
+      ))}
+    </div>
+  );
+
+  if (!grupo.caixa) return conteudo;
+
+  return (
+    <div className="rounded-lg border border-input p-4">
+      <p className="mb-3 text-sm font-semibold text-foreground/90">{grupo.caixa}</p>
+      {conteudo}
+    </div>
   );
 }
 
@@ -865,34 +964,29 @@ function calcularValores(semana: number, respostas: Record<string, unknown>): Re
   };
 
   if (semana === 1) {
-    const custoVida = num("custo_vida");
-    const custosFixos = num("custos_fixos_negocio");
-    const despesasVariaveis = num("despesas_variaveis");
-    const lucro = num("lucro_desejado");
-    if (
-      custoVida !== null &&
-      custosFixos !== null &&
-      despesasVariaveis !== null &&
-      lucro !== null
-    ) {
-      resultado.meta_minima =
-        Math.round((custoVida + custosFixos + despesasVariaveis + lucro) * 100) / 100;
+    const custoVida = num("f1_custo_vida");
+    const custoNegocio = num("f1_custo_negocio");
+    const lucro = num("f1_lucro_desejado");
+    if (custoVida !== null && custoNegocio !== null && lucro !== null) {
+      resultado.f1_meta_minima =
+        Math.round((custoVida + custoNegocio + lucro) * 100) / 100;
     }
   }
 
   if (semana === 4) {
-    const meta = num("meta_mensal");
+    const meta = num("p4_meta_mensal");
     if (meta !== null) {
-      resultado.meta_semanal = Math.round((meta / 4) * 100) / 100;
-      resultado.meta_diaria = Math.round((meta / DIAS_UTEIS) * 100) / 100;
+      const semanal = meta / 4;
+      resultado.p4_meta_semanal = Math.round(semanal * 100) / 100;
+      resultado.p4_meta_diaria = Math.round((semanal / 5) * 100) / 100;
     }
   }
 
   if (semana === 10) {
-    const enviados = num("orcamentos_enviados");
-    const fechados = num("orcamentos_fechados");
+    const enviados = num("p10_orcamentos_enviados");
+    const fechados = num("p10_orcamentos_fechados");
     if (enviados !== null && fechados !== null) {
-      resultado.taxa_conversao =
+      resultado.p10_taxa_conversao =
         enviados > 0 ? Math.round((fechados / enviados) * 1000) / 10 : 0;
     }
   }

@@ -36,7 +36,7 @@ const PESO_CATEGORIA: Record<CategoriaRadar, number> = {
   verde: 2,
 };
 
-const CAMPOS_CALCULADOS = new Set(["meta_minima", "meta_semanal", "meta_diaria", "taxa_conversao"]);
+const CAMPOS_CALCULADOS = new Set(["f1_meta_minima", "p4_meta_semanal", "p4_meta_diaria", "p10_taxa_conversao"]);
 
 function diasEntre(agora: Date, data: string | null): number | null {
   if (!data) return null;
@@ -92,7 +92,7 @@ function numeroDe(respostas: Record<string, unknown>, id: string): number | null
 
 function taxaConversao(d: DadosRadar): number | null {
   let taxa: number | null = null;
-  const ind = indicadorPorNome(d, "Taxa de conversão de orçamentos");
+  const ind = indicadorPorNome(d, "Minha taxa de conversão de orçamentos");
   if (ind) taxa = ind.valor_depois ?? ind.valor_antes;
   const recente = painelMaisRecente(d);
   if (recente && recente.taxa_conversao !== null) taxa = recente.taxa_conversao;
@@ -109,21 +109,15 @@ function regraPrecoDesatualizado(d: DadosRadar): AlertaRadar | null {
   if (missaoConcluida(d, 2, "rapida")) return null;
 
   const r = respostasSemana(d, 2);
-  const linhas = Array.isArray(r.tabela_servicos)
-    ? (r.tabela_servicos as Record<string, unknown>[])
-    : [];
-  const servico = linhas.find((l) => {
-    const atual = l.preco_atual;
-    const correto = l.preco_correto;
-    return (
-      atual !== undefined && atual !== null && String(atual).trim() !== "" &&
-      correto !== undefined && correto !== null && String(correto).trim() !== ""
-    );
-  });
+  const servico = [1, 2, 3]
+    .map((n) => ({
+      precoAtual: numeroDe(r, `p2_servico_${n}_preco_atual`),
+      precoCorreto: numeroDe(r, `p2_servico_${n}_preco_correto`),
+    }))
+    .find((s) => s.precoAtual !== null && s.precoCorreto !== null);
   if (!servico) return null;
-  const precoAtual = Number(servico.preco_atual);
-  const precoCorreto = Number(servico.preco_correto);
-  if (!Number.isFinite(precoAtual) || !Number.isFinite(precoCorreto)) return null;
+  const precoAtual = servico.precoAtual as number;
+  const precoCorreto = servico.precoCorreto as number;
 
   return {
     regraId: "preco_desatualizado",
@@ -139,7 +133,7 @@ function regraPrecoDesatualizado(d: DadosRadar): AlertaRadar | null {
 // ------------------------------------------------------------------
 function regraTicketMedioParado(d: DadosRadar): AlertaRadar | null {
   if (!semanaConcluida(d, 3)) return null;
-  const ind = indicadorPorNome(d, "Ticket médio");
+  const ind = indicadorPorNome(d, "Meu ticket médio");
   if (!ind || ind.valor_antes === null) return null;
   // PostgREST devolve numeric como string — normaliza antes de comparar
   const antes = Number(ind.valor_antes);
@@ -162,8 +156,7 @@ function regraTicketMedioParado(d: DadosRadar): AlertaRadar | null {
 // ------------------------------------------------------------------
 function regraSemAvaliacaoNova(d: DadosRadar): AlertaRadar | null {
   if (!semanaConcluida(d, 11)) return null;
-  const tabela = (respostasSemana(d, 11).tabela_indicadores ?? {}) as Record<string, unknown>;
-  const v = tabela.avaliacoes_google;
+  const v = respostasSemana(d, 11).p11_avaliacoes_google;
   const total = v === undefined || v === null || v === "" ? 0 : Number(v);
   if (total > 0) return null;
 
@@ -236,7 +229,7 @@ function regraProntoParaContratar(d: DadosRadar): AlertaRadar | null {
     r12.decisao_clientes === true;
   if (!decisaoOk) return null;
 
-  const custoMensal = numeroDe(respostasSemana(d, 1), "custos_fixos_negocio");
+  const custoMensal = numeroDe(respostasSemana(d, 1), "f1_custo_negocio");
   const reserva = painelMaisRecente(d)?.reserva_emergencia ?? null;
   if (custoMensal === null || custoMensal <= 0 || reserva === null) return null;
 

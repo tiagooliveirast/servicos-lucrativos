@@ -19,22 +19,35 @@ import { supabase } from "@/lib/supabase";
 import type { PainelMensal } from "@/lib/types";
 import { cn, formatBRL, formatNumero, formatPorcento } from "@/lib/utils";
 
+const TEXTO_INTRO_PAINEL =
+  "Pare aqui e atualize seu painel. Leva 5 minutos e é o que te mostra, em números, se você está evoluindo de verdade. Preencha com o que você tem hoje — se algum número você ainda não sabe, estime e ajuste no próximo painel.";
+
+const DICA_PAINEL =
+  "Compare com o painel anterior (se for o primeiro, guarde ele como referência pros próximos). O que mais mudou? O que ainda não saiu do lugar? Não precisa ser tudo positivo — o objetivo é ter clareza, não perfeição.";
+
+const CONFIG_PAINEIS: Record<number, { rotulo: string; semanaChave: number }> = {
+  1: { rotulo: "Fim do Módulo 1 — Dia 30", semanaChave: 4 },
+  2: { rotulo: "Fim do Módulo 2 — Dia 60", semanaChave: 8 },
+  3: { rotulo: "Fim do Módulo 3 — Dia 90 (Final)", semanaChave: 12 },
+};
+
 const CAMPOS_PAINEL = [
-  { id: "meta_mensal", rotulo: "Meta mensal", tipo: "numero" as const, mascara: formatBRL },
-  { id: "faturamento_atual", rotulo: "Faturamento atual", tipo: "numero" as const, mascara: formatBRL },
-  { id: "lucro", rotulo: "Lucro", tipo: "numero" as const, mascara: formatBRL },
-  { id: "ticket_medio", rotulo: "Ticket médio", tipo: "numero" as const, mascara: formatBRL },
-  { id: "numero_clientes", rotulo: "Número de clientes", tipo: "inteiro" as const, mascara: formatNumero },
-  { id: "numero_orcamentos", rotulo: "Número de orçamentos", tipo: "inteiro" as const, mascara: formatNumero },
-  { id: "taxa_conversao", rotulo: "Taxa de conversão", tipo: "numero" as const, mascara: formatPorcento },
+  { id: "meta_mensal", rotulo: "Meta mensal (R$)", tipo: "numero" as const, mascara: formatBRL },
+  { id: "faturamento_atual", rotulo: "Faturamento atual (R$)", tipo: "numero" as const, mascara: formatBRL },
+  { id: "lucro", rotulo: "Lucro (R$)", tipo: "numero" as const, mascara: formatBRL },
+  { id: "ticket_medio", rotulo: "Ticket médio (R$)", tipo: "numero" as const, mascara: formatBRL },
+  { id: "numero_clientes", rotulo: "Nº de clientes atendidos", tipo: "inteiro" as const, mascara: formatNumero },
+  { id: "numero_orcamentos", rotulo: "Nº de orçamentos enviados", tipo: "inteiro" as const, mascara: formatNumero },
+  { id: "taxa_conversao", rotulo: "Taxa de conversão (%)", tipo: "numero" as const, mascara: formatPorcento },
   { id: "avaliacoes_google", rotulo: "Avaliações no Google", tipo: "inteiro" as const, mascara: formatNumero },
-  { id: "reserva_emergencia", rotulo: "Reserva de emergência", tipo: "numero" as const, mascara: formatBRL },
+  { id: "reserva_emergencia", rotulo: "Reserva de emergência (R$)", tipo: "numero" as const, mascara: formatBRL },
 ] as const;
 
 export function PaginaPainel({ userId }: { userId: string }) {
   const { numero } = useParams();
   const n = Number(numero);
-  const semanaChave = n * 4;
+  const config = CONFIG_PAINEIS[n];
+  const semanaChave = config?.semanaChave ?? 0;
 
   const [liberado, setLiberado] = useState<boolean | null>(null);
   const [painel, setPainel] = useState<PainelMensal | null>(null);
@@ -131,7 +144,7 @@ export function PaginaPainel({ userId }: { userId: string }) {
       numero={n}
       painel={painel}
       painelAnterior={painelAnterior}
-      semanaChave={semanaChave}
+      config={config}
     />
   );
 }
@@ -141,13 +154,13 @@ function PainelForm({
   numero,
   painel,
   painelAnterior,
-  semanaChave,
+  config,
 }: {
   userId: string;
   numero: number;
   painel: PainelMensal | null;
   painelAnterior: PainelMensal | null;
-  semanaChave: number;
+  config: { rotulo: string; semanaChave: number };
 }) {
   const [valores, setValores] = useState<Record<string, string>>(inicializar(painel));
   const [observacao, setObservacao] = useState(painel?.observacao ?? "");
@@ -252,12 +265,16 @@ function PainelForm({
           <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
             Painel Mensal {numero}
           </h1>
+          <p className="mt-1 text-sm font-medium text-primary">{config.rotulo}</p>
           <p className="mt-2 flex items-start gap-2 text-sm text-muted-foreground">
             <BarChart3 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-            Liberado após a conclusão da semana {semanaChave}. Preencha com os números reais do
-            seu mês — tudo salvo automaticamente.
+            {TEXTO_INTRO_PAINEL}
           </p>
         </div>
+
+        <p className="rounded-lg border border-primary/25 bg-primary/5 p-4 text-sm text-foreground/90">
+          {DICA_PAINEL}
+        </p>
 
         {carregando ? (
           <div className="flex items-center justify-center py-12 text-muted-foreground">
@@ -288,13 +305,12 @@ function PainelForm({
                 ))}
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="observacao">Observações do mês</Label>
+                <Label htmlFor="observacao">O que mais me chamou atenção nesse painel:</Label>
                 <Textarea
                   id="observacao"
                   rows={3}
                   value={observacao}
                   onChange={(e) => setObservacao(e.target.value)}
-                  placeholder="O que funcionou, o que travou, o que pretende mudar…"
                 />
               </div>
               <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">

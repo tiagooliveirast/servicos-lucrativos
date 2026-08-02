@@ -197,7 +197,7 @@ export function PaginaDashboard({ perfil }: { perfil: Perfil }) {
                           <p className="text-xs font-medium uppercase tracking-wider text-primary">
                             Semana {semana.numero}
                           </p>
-                          <h3 className="mt-1 font-semibold leading-snug">{semana.titulo}</h3>
+                          <h3 className="mt-1 font-semibold leading-snug">{semana.tituloCurto}</h3>
                         </div>
                         <Badge variant={status === "concluida" ? "sucesso" : status === "em_andamento" ? "pendente" : "outline"}>
                           <info.icon className="h-3 w-3" />
