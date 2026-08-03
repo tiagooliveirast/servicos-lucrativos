@@ -251,7 +251,7 @@ function PainelForm({
       <div className="flex flex-col gap-6">
         <div>
           <Button asChild variant="ghost" size="sm" className="-ml-2 text-muted-foreground">
-            <Link to="/">
+            <Link to="/dashboard">
               <ArrowLeft />
               Painel de semanas
             </Link>

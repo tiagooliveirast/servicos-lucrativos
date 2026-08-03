@@ -324,7 +324,7 @@ function ConteudoSemana({
       <div className="flex flex-col gap-6">
         <div>
           <Button asChild variant="ghost" size="sm" className="-ml-2 text-muted-foreground">
-            <Link to="/">
+            <Link to="/dashboard">
               <ArrowLeft />
               Painel de semanas
             </Link>
@@ -447,19 +447,29 @@ function ConteudoSemana({
                       onCheckedChange={() => void alternarMissao(missao.tipo, indice)}
                       className="mt-0.5"
                     />
-                    <span className="flex flex-col gap-1">
-                      <span
-                        className={cn(
-                          "inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide",
-                          missao.tipo === "principal"
-                            ? "bg-primary/20 text-primary"
-                            : "bg-secondary text-muted-foreground"
+<span className="flex flex-col gap-1">
+                        <span
+                          className={cn(
+                            "inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide",
+                            missao.tipo === "principal"
+                              ? "bg-primary/20 text-primary"
+                              : "bg-secondary text-muted-foreground"
+                          )}
+                        >
+                          {missao.tipo === "principal" ? "Missão principal" : "Vitória rápida"}
+                        </span>
+                        <span className="text-sm text-foreground/90">{missao.descricao}</span>
+                        {missao.paraComecando && (
+                          <span className="mt-1 flex flex-col gap-1 rounded-lg border border-dashed border-muted-foreground/40 bg-muted/30 px-3 py-2">
+                            <span className="inline-flex w-fit rounded bg-muted-foreground/10 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                              Para quem está começando
+                            </span>
+                            <span className="text-sm text-foreground/90">
+                              {missao.paraComecando}
+                            </span>
+                          </span>
                         )}
-                      >
-                        {missao.tipo === "principal" ? "Missão principal" : "Vitória rápida"}
                       </span>
-                      <span className="text-sm text-foreground/90">{missao.descricao}</span>
-                    </span>
                   </label>
                 );
               })}
@@ -598,7 +608,7 @@ function ConteudoSemana({
               </Button>
             ) : (
               <Button asChild>
-                <Link to="/">Voltar ao painel de semanas</Link>
+                <Link to="/dashboard">Voltar ao painel de semanas</Link>
               </Button>
             )}
           </div>

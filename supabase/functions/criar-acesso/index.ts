@@ -1,5 +1,5 @@
 // ============================================================
-// Gestão Lucrativa — Edge Function "criar-acesso"
+// Serviços Lucrativos — Edge Function "criar-acesso"
 // Cria um aluno no Supabase Auth com senha temporária, grava o
 // perfil (nome/telefone/e-mail) e libera o acesso na tabela acessos.
 // Só quem está na tabela admins pode chamar.

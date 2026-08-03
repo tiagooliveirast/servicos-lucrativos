@@ -115,3 +115,82 @@ export interface AtividadeLog {
   descricao: string;
   criado_em: string;
 }
+
+export interface CheckinSemanal {
+  id: string;
+  user_id: string;
+  semana_referencia: number;
+  data_checkin: string;
+  faturamento_semana: number | null;
+  lucro_semana: number | null;
+  atendimentos: number | null;
+  orcamentos_enviados: number | null;
+  orcamentos_fechados: number | null;
+  avaliacoes_recebidas: number | null;
+  horas_trabalhadas: number | null;
+  maior_dificuldade: string | null;
+  created_at: string;
+}
+
+export interface ImeHistorico {
+  id: string;
+  user_id: string;
+  data_calculo: string;
+  score_total: number;
+  score_financeiro: number;
+  score_precificacao: number;
+  score_marketing: number;
+  score_comercial: number;
+  score_operacao: number;
+  score_organizacao: number;
+  score_indicadores: number;
+  score_processos: number;
+}
+
+export interface GamificacaoUsuario {
+  user_id: string;
+  xp_total: number;
+  nivel: number;
+  dias_consecutivos: number;
+  maior_sequencia: number;
+  ultimo_login: string | null;
+  updated_at: string;
+}
+
+export interface Conquista {
+  id: string;
+  codigo: string;
+  titulo: string;
+  descricao: string;
+  icone: string | null;
+  criterio: Record<string, unknown>;
+}
+
+export interface ConquistaUsuario {
+  id: string;
+  user_id: string;
+  conquista_id: string;
+  desbloqueada_em: string;
+  conquistas: Conquista | null;
+}
+
+export interface Bau {
+  id: string;
+  codigo: string;
+  titulo: string;
+  conquista_gatilho_id: string | null;
+  conteudo_tipo: "template" | "checklist" | "aula_bonus" | "cupom" | "wallpaper";
+  conteudo_url: string | null;
+  conteudo_texto: string | null;
+  conquistas: Conquista | null;
+}
+
+export interface BauUsuario {
+  id: string;
+  user_id: string;
+  baul_id: string;
+  aberto: boolean;
+  desbloqueado_em: string;
+  aberto_em: string | null;
+  bauis: Bau | null;
+}

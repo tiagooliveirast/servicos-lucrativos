@@ -1,6 +1,10 @@
 import {
   AlertCircle,
   ArrowLeft,
+  Award,
+  BadgeCheck,
+  FileDown,
+  FileText,
   Loader2,
   OctagonAlert,
   ShieldBan,
@@ -21,10 +25,25 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  gerarCertificadoPdf,
+  montarDadosCertificado,
+  verificarElegibilidade,
+} from "@/lib/certificado-implantacao";
+import { baixarPdf, slug } from "@/lib/pdf";
+import {
+  gerarRelatorioPdf,
+  montarDadosRelatorio,
+} from "@/lib/relatorio-implantacao";
 import { supabase } from "@/lib/supabase";
+import {
+  carregarDadosTransformacao,
+  type DadosTransformacao,
+} from "@/lib/transformacao";
 import type {
   Acesso,
   DiagnosticoInicial,
+  ImeHistorico,
   IndicadorSemana,
   PainelMensal,
   Perfil,
@@ -55,6 +74,7 @@ interface DadosDetalhe {
   paineis: PainelMensal[];
   radar: RadarEvento[];
   acesso: Acesso | null;
+  ime: ImeHistorico[];
 }
 
 export function PaginaAdminUsuarioDetalhe() {
@@ -66,6 +86,7 @@ export function PaginaAdminUsuarioDetalhe() {
   const [motivo, setMotivo] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [erroAcao, setErroAcao] = useState<string | null>(null);
+  const [gerando, setGerando] = useState<"relatorio" | "certificado" | null>(null);
 
   useEffect(() => {
     let ativo = true;
@@ -73,7 +94,7 @@ export function PaginaAdminUsuarioDetalhe() {
     setDados(null);
     async function carregar() {
       if (!id) return;
-      const [resPerfil, resDiagnostico, resProgresso, resIndicadores, resPaineis, resRadar, resAcesso] =
+      const [resPerfil, resDiagnostico, resProgresso, resIndicadores, resPaineis, resRadar, resAcesso, resIme] =
         await Promise.all([
           supabase.from("perfis").select("*").eq("id", id).maybeSingle(),
           supabase
@@ -103,6 +124,11 @@ export function PaginaAdminUsuarioDetalhe() {
             .order("criado_em", { ascending: false })
             .limit(50),
           supabase.from("acessos").select("*").eq("user_id", id).maybeSingle(),
+          supabase
+            .from("ime_historico")
+            .select("*")
+            .eq("user_id", id)
+            .order("data_calculo", { ascending: true }),
         ]);
       if (!ativo) return;
       if (
@@ -112,7 +138,8 @@ export function PaginaAdminUsuarioDetalhe() {
         resIndicadores.error ||
         resPaineis.error ||
         resRadar.error ||
-        resAcesso.error
+        resAcesso.error ||
+        resIme.error
       ) {
         setErro(true);
         return;
@@ -125,6 +152,7 @@ export function PaginaAdminUsuarioDetalhe() {
         paineis: resPaineis.data as PainelMensal[],
         radar: resRadar.data as RadarEvento[],
         acesso: (resAcesso.data as Acesso | null) ?? null,
+        ime: (resIme.data ?? []) as ImeHistorico[],
       });
     }
     void carregar();
@@ -214,6 +242,38 @@ export function PaginaAdminUsuarioDetalhe() {
       return;
     }
     setDados((d) => (d ? { ...d, acesso: { ...(d.acesso ?? { user_id: id }), ativo: true, motivo_inativacao: null, inativado_em: null } as Acesso } : d));
+  }
+
+  async function exportarRelatorio() {
+    if (!id) return;
+    setErroAcao(null);
+    setGerando("relatorio");
+    try {
+      const completos = await carregarDadosTransformacao(id);
+      const dadosRelatorio = montarDadosRelatorio(completos);
+      const blob = await gerarRelatorioPdf(dadosRelatorio);
+      baixarPdf(blob, `relatorio-implantacao-${slug(dadosRelatorio.empresaNome ?? "empresa")}.pdf`);
+    } catch {
+      setErroAcao("Não foi possível gerar o Relatório de Implantação.");
+    } finally {
+      setGerando(null);
+    }
+  }
+
+  async function exportarCertificado() {
+    if (!id) return;
+    setErroAcao(null);
+    setGerando("certificado");
+    try {
+      const completos = await carregarDadosTransformacao(id);
+      const dadosCertificado = montarDadosCertificado(completos);
+      const blob = await gerarCertificadoPdf(dadosCertificado);
+      baixarPdf(blob, `certificado-implantacao-${slug(dadosCertificado.alunoNome ?? "aluno")}.pdf`);
+    } catch {
+      setErroAcao("Não foi possível gerar o Certificado de Implantação.");
+    } finally {
+      setGerando(null);
+    }
   }
 
   return (
@@ -513,6 +573,84 @@ export function PaginaAdminUsuarioDetalhe() {
                 );
               })}
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <FileText className="h-4 w-4 text-primary" />
+            Relatório e Certificado
+          </CardTitle>
+          <CardDescription>
+            Exporte o Relatório de Implantação ou o Certificado (quando os 3 critérios forem
+            alcançados pelo aluno).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          {(() => {
+            const elegibilidade = verificarElegibilidade({
+              perfil: dados.perfil,
+              empresa: dados.diagnostico,
+              progresso: dados.progresso,
+              indicadores: dados.indicadores,
+              paineis: dados.paineis,
+              ime: dados.ime,
+              checkins: [],
+            } as DadosTransformacao);
+            return (
+              <>
+                <Button
+                  onClick={() => void exportarRelatorio()}
+                  disabled={gerando !== null}
+                  className="w-fit"
+                >
+                  {gerando === "relatorio" ? <Loader2 className="animate-spin" /> : <FileDown />}
+                  {gerando === "relatorio"
+                    ? "Gerando relatório…"
+                    : "Exportar Relatório de Implantação"}
+                </Button>
+                {elegibilidade.elegivel ? (
+                  <>
+                    <Badge variant="sucesso" className="w-fit">
+                      <BadgeCheck className="h-3 w-3" />
+                      Certificado disponível
+                    </Badge>
+                    <Button
+                      onClick={() => void exportarCertificado()}
+                      disabled={gerando !== null}
+                      className="w-fit"
+                    >
+                      {gerando === "certificado" ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <Award />
+                      )}
+                      {gerando === "certificado"
+                        ? "Gerando certificado…"
+                        : "Exportar Certificado de Implantação"}
+                    </Button>
+                  </>
+                ) : (
+                  <div className="flex flex-col gap-1.5 text-sm">
+                    <p className="text-muted-foreground">Certificado ainda não liberado:</p>
+                    {elegibilidade.pendentes.map((pendente, i) => (
+                      <p key={i} className="flex items-start gap-2">
+                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+                        <span className="text-foreground/80">{pendente}</span>
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </>
+            );
+          })()}
+          {erroAcao && (
+            <p className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive-foreground">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              {erroAcao}
+            </p>
           )}
         </CardContent>
       </Card>

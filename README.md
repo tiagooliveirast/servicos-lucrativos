@@ -1,4 +1,4 @@
-# Gestão Lucrativa
+# Serviços Lucrativos
 
 Plataforma web do "Serviços Lucrativos: O Plano de 90 Dias" — as 12 semanas do plano em
 formato guiado, com progresso salvo, desbloqueio sequencial, 3 painéis mensais, exportação
@@ -15,7 +15,7 @@ do Manual da Empresa em PDF e o Radar da Empresa (alertas inteligentes e determi
 
 1. Crie um projeto **novo** no Supabase.
 2. Execute os arquivos `supabase/migrations/` no SQL Editor do projeto, **em ordem
-   numérica** (`0001_inicial.sql` a `0010_remove_legado.sql`), ou rode
+   numérica** (`0001_inicial.sql` a `0011_missoes_indice.sql`), ou rode
    `supabase db push --linked` com o CLI (requer `supabase link`).
 3. Crie o arquivo `.env` a partir de `.env.example` com `VITE_SUPABASE_URL` e
    `VITE_SUPABASE_ANON_KEY`.

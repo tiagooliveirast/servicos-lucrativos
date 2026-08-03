@@ -34,6 +34,27 @@ const PaginaOnboarding = lazy(() =>
 const PaginaPainel = lazy(() =>
   import("@/pages/PaginaPainel").then((m) => ({ default: m.PaginaPainel }))
 );
+const PaginaIME = lazy(() =>
+  import("@/pages/PaginaIME").then((m) => ({ default: m.PaginaIME }))
+);
+const PaginaEvolucao = lazy(() =>
+  import("@/pages/PaginaEvolucao").then((m) => ({ default: m.PaginaEvolucao }))
+);
+const PaginaRelatorios = lazy(() =>
+  import("@/pages/PaginaRelatorios").then((m) => ({ default: m.PaginaRelatorios }))
+);
+const PaginaSalaDeGuerra = lazy(() =>
+  import("@/pages/PaginaSalaDeGuerra").then((m) => ({ default: m.PaginaSalaDeGuerra }))
+);
+const PaginaConquistas = lazy(() =>
+  import("@/pages/PaginaConquistas").then((m) => ({ default: m.PaginaConquistas }))
+);
+const PaginaBauis = lazy(() =>
+  import("@/pages/PaginaBauis").then((m) => ({ default: m.PaginaBauis }))
+);
+const PaginaCheckin = lazy(() =>
+  import("@/pages/PaginaCheckin").then((m) => ({ default: m.PaginaCheckin }))
+);
 const PaginaSemana = lazy(() =>
   import("@/pages/PaginaSemana").then((m) => ({ default: m.PaginaSemana }))
 );
@@ -123,7 +144,18 @@ export default function App() {
             ) : fase === "onboarding" ? (
               <PaginaOnboarding aoConcluir={() => setRecarregar((r) => r + 1)} />
             ) : (
+              <PaginaSalaDeGuerra perfilId={perfil!.id} />
+            )
+          }
+        />
+
+        <Route
+          path="/dashboard"
+          element={
+            fase === "logado" ? (
               <PaginaDashboard perfil={perfil!} />
+            ) : (
+              <Navigate to="/" replace />
             )
           }
         />
@@ -155,6 +187,72 @@ export default function App() {
           element={
             fase === "logado" ? (
               <PaginaManual userId={user!.id} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/ime"
+          element={
+            fase === "logado" ? (
+              <PaginaIME userId={user!.id} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/check-in"
+          element={
+            fase === "logado" ? (
+              <PaginaCheckin userId={user!.id} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/evolucao"
+          element={
+            fase === "logado" ? (
+              <PaginaEvolucao userId={user!.id} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/relatorios"
+          element={
+            fase === "logado" ? (
+              <PaginaRelatorios userId={user!.id} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/conquistas"
+          element={
+            fase === "logado" ? (
+              <PaginaConquistas userId={user!.id} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/bauis"
+          element={
+            fase === "logado" ? (
+              <PaginaBauis userId={user!.id} />
             ) : (
               <Navigate to="/" replace />
             )

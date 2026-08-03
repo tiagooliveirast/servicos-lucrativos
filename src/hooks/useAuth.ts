@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 
+import { registrarLoginDiario } from "@/lib/gamificacao";
 import { supabase } from "@/lib/supabase";
 import type { Perfil } from "@/lib/types";
 
@@ -81,6 +82,9 @@ export function useAuth(recarregar = 0): EstadoAuth {
         }
 
         setEstado({ fase: "logado", user, perfil });
+        // Registra no servidor o login diário (streak + XP). Fogo-e-esquece:
+        // se falhar, apenas não pontua hoje.
+        void registrarLoginDiario().catch(() => undefined);
       } catch {
         // Erro de rede/servidor: mantém o usuário com sessão, mas mostra
         // uma tela de erro com opção de tentar novamente (em vez de

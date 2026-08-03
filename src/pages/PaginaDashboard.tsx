@@ -2,13 +2,19 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   AlertCircle,
+  Award,
   BarChart3,
   BookOpen,
+  CalendarCheck,
   CheckCircle2,
   ChevronRight,
   FileText,
+  Flame,
+  Gauge,
+  LineChart,
   Loader2,
   Lock,
+  PartyPopper,
   PlayCircle,
 } from "lucide-react";
 
@@ -24,8 +30,9 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { MODULOS, SEMANAS } from "@/lib/conteudo";
+import { carregarPerfilGamificacao } from "@/lib/gamificacao";
 import { supabase } from "@/lib/supabase";
-import type { PainelMensal, Perfil, ProgressoSemana } from "@/lib/types";
+import type { GamificacaoUsuario, PainelMensal, Perfil, ProgressoSemana } from "@/lib/types";
 import { cn, formatBRL, formatNumero } from "@/lib/utils";
 const STATUS_INFO = {
   bloqueada: { rotulo: "Bloqueada", icon: Lock, classes: "text-muted-foreground" },
@@ -37,6 +44,7 @@ export function PaginaDashboard({ perfil }: { perfil: Perfil }) {
   const navigate = useNavigate();
   const [semanas, setSemanas] = useState<ProgressoSemana[] | null>(null);
   const [paineis, setPaineis] = useState<PainelMensal[]>([]);
+  const [gamificacao, setGamificacao] = useState<GamificacaoUsuario | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(false);
   const [tentativa, setTentativa] = useState(0);
@@ -46,7 +54,7 @@ export function PaginaDashboard({ perfil }: { perfil: Perfil }) {
     setCarregando(true);
     setErro(false);
     async function carregar() {
-      const [resSemanas, resPaineis] = await Promise.all([
+      const [resSemanas, resPaineis, resGamificacao] = await Promise.all([
         supabase
           .from("progresso_semanas")
           .select("*")
@@ -55,6 +63,13 @@ export function PaginaDashboard({ perfil }: { perfil: Perfil }) {
           .from("paineis_mensais")
           .select("*")
           .order("numero_painel", { ascending: true }),
+        (async () => {
+          try {
+            return await carregarPerfilGamificacao(perfil.id);
+          } catch {
+            return null;
+          }
+        })(),
       ]);
       if (!ativo) return;
       if (resSemanas.error || resPaineis.error) {
@@ -64,13 +79,14 @@ export function PaginaDashboard({ perfil }: { perfil: Perfil }) {
       }
       setSemanas(resSemanas.data);
       setPaineis(resPaineis.data);
+      setGamificacao(resGamificacao);
       setCarregando(false);
     }
     void carregar();
     return () => {
       ativo = false;
     };
-  }, [tentativa]);
+  }, [tentativa, perfil.id]);
 
   const semanaPorNumero = new Map((semanas ?? []).map((s) => [s.semana, s]));
   const concluidas = (semanas ?? []).filter((s) => s.status === "concluida").length;
@@ -81,6 +97,82 @@ export function PaginaDashboard({ perfil }: { perfil: Perfil }) {
     <Layout nomeUsuario={perfil.nome ?? perfil.email_refriclube ?? ""}>
       <div className="flex flex-col gap-8">
         <RadarEmpresa userId={perfil.id} />
+
+        {gamificacao && (
+          <section className="rounded-xl border border-primary/40 bg-gradient-to-r from-primary/15 to-transparent p-5">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">
+                  <Award className="h-6 w-6" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold leading-none">
+                    Nível {gamificacao.nivel}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {gamificacao.xp_total} XP
+                  </p>
+                </div>
+                {gamificacao.dias_consecutivos > 0 && (
+                  <div className="ml-2 flex items-center gap-1.5 rounded-full bg-orange-500/15 px-3 py-1 text-sm font-medium text-orange-400">
+                    <Flame className="h-4 w-4" />
+                    {gamificacao.dias_consecutivos} dias
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/conquistas">
+                    <Award className="h-4 w-4" />
+                    Conquistas
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/bauis">
+                    <PartyPopper className="h-4 w-4" />
+                    Baús
+                  </Link>
+                </Button>
+              </div>
+            </div>
+            <Progress
+              value={(gamificacao.xp_total % 300) * (100 / 300)}
+              className="mt-4 h-2"
+            />
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              {300 - (gamificacao.xp_total % 300)} XP para o Nível {gamificacao.nivel + 1}
+            </p>
+          </section>
+        )}
+
+        <section>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <LinkAcesso
+              to="/ime"
+              icone={Gauge}
+              titulo="Seu IME"
+              texto="Acompanhe de 0 a 100 a maturidade da sua empresa."
+            />
+            <LinkAcesso
+              to="/check-in"
+              icone={CalendarCheck}
+              titulo="Check-in semanal"
+              texto="Registre como foi sua semana em 2 minutos."
+            />
+            <LinkAcesso
+              to="/evolucao"
+              icone={LineChart}
+              titulo="Sua Evolução"
+              texto="Veja os gráficos do seu faturamento, lucro, ticket e IME."
+            />
+            <LinkAcesso
+              to="/relatorios"
+              icone={FileText}
+              titulo="Relatórios & Certificado"
+              texto="Gere o Relatório de Implantação e o Certificado."
+            />
+          </div>
+        </section>
 
         {carregando && (
           <div className="flex items-center justify-center py-16 text-muted-foreground">
@@ -233,6 +325,32 @@ export function PaginaDashboard({ perfil }: { perfil: Perfil }) {
         )}
       </div>
     </Layout>
+  );
+}
+
+function LinkAcesso({
+  to,
+  titulo,
+  texto,
+  icone: Icone,
+}: {
+  to: string;
+  titulo: string;
+  texto: string;
+  icone: typeof Gauge;
+}) {
+  return (
+    <Link
+      to={to}
+      className="group flex items-center gap-4 rounded-xl border bg-card p-4 transition-colors hover:border-primary/60"
+    >
+      <Icone className="h-6 w-6 shrink-0 text-primary" />
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="font-semibold leading-snug">{titulo}</span>
+        <span className="text-sm text-muted-foreground">{texto}</span>
+      </span>
+      <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+    </Link>
   );
 }
 

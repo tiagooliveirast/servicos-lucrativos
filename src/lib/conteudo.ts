@@ -74,6 +74,8 @@ export type Campo =
 export interface MissaoConteudo {
   tipo: "principal" | "rapida";
   descricao: string;
+  /** Versão da missão para quem ainda está começando (não tem clientes/atendimentos recorrentes). */
+  paraComecando?: string;
 }
 
 export interface IndicadorConteudo {
@@ -181,7 +183,7 @@ export const SEMANAS: SemanaConteudo[] = [
       { id: "f1_meta_minima", rotulo: "= Meta mínima", tipo: "numero", placeholder: "calculado automaticamente", lado: "meta" },
     ],
     missoes: [
-      { tipo: "principal", descricao: "Vitória rápida, ainda hoje: mande mensagem pra 5 clientes antigos perguntando se está tudo bem — ou aumente o preço de 1 serviço em 10% no seu próximo orçamento." },
+      { tipo: "principal", descricao: "Vitória rápida, ainda hoje: mande mensagem pra 5 clientes antigos perguntando se está tudo bem — ou aumente o preço de 1 serviço em 10% no seu próximo orçamento.", paraComecando: "Começando agora: escreva uma mensagem curta apresentando seu serviço e envie pra 5 pessoas conhecidas (vagas, grupos de WhatsApp, parentes) — seu primeiro passo de captação pode começar sem nenhum cliente ainda." },
       { tipo: "rapida", descricao: "Anote o resultado dessa ação abaixo, mesmo que pareça pequeno." },
     ],
     camposAposMissoes: [
@@ -234,9 +236,9 @@ export const SEMANAS: SemanaConteudo[] = [
       { id: "p2_servico_3_preco_atual", rotulo: "Preço atual", tipo: "numero", placeholder: "R$", lado: "s3", caixa: SERVICO_3 },
       { id: "p2_servico_3_preco_correto", rotulo: "Preço correto", tipo: "numero", placeholder: "R$", lado: "s3", caixa: SERVICO_3 },
     ],
-    missoes: [
-      { tipo: "principal", descricao: "Recalcule o preço de pelo menos 3 serviços essa semana." },
-      { tipo: "rapida", descricao: "Aplique o novo preço já no seu próximo orçamento — não espere o mês virar." },
+missoes: [
+      { tipo: "principal", descricao: "Recalcule o preço de pelo menos 3 serviços dessa semana." },
+      { tipo: "rapida", descricao: "Aplique o novo preço já no seu próximo orçamento — não espere o mês virar.", paraComecando: "Começando agora: ainda sem orçamento? Monte sua lista de preços já com os valores recalculados e guarde num lugar fácil de acessar — seu primeiro orçamento já vai sair com o preço certo." },
     ],
     indicador: {
       nome: "Preço médio dos meus 3 principais serviços",
@@ -281,7 +283,7 @@ export const SEMANAS: SemanaConteudo[] = [
       { id: "p3_complemento_3", rotulo: "Complemento 3:", tipo: "textarea", obrigatorio: true },
     ],
     missoes: [
-      { tipo: "principal", descricao: "Ofereça o complemento pros próximos 5 clientes que você atender essa semana." },
+      { tipo: "principal", descricao: "Ofereça o complemento pros próximos 5 clientes que você atender essa semana.", paraComecando: "Começando agora: ainda sem clientes? Treine a oferta do complemento com quem você atender primeiro (amigos, vizinhos, um serviço-teste) — ou simule em voz alta até ficar natural." },
       { tipo: "rapida", descricao: "Anote quantos aceitaram." },
     ],
     camposAposMissoes: [
@@ -398,7 +400,7 @@ export const SEMANAS: SemanaConteudo[] = [
     ],
     nota: "Use também o Template de POP separado (documento próprio) se quiser um espaço maior pra detalhar cada passo com calma.",
     missoes: [
-      { tipo: "principal", descricao: "Use esse processo, na íntegra, no seu próximo atendimento — sem pular nenhum passo." },
+      { tipo: "principal", descricao: "Use esse processo, na íntegra, no seu próximo atendimento — sem pular nenhum passo.", paraComecando: "Começando agora: ainda sem atendimento marcado? Ensaie o processo do começo ao fim com um amigo (ou um atendimento-teste real), seguindo cada passo que você escreveu." },
     ],
     checklistFinal: "Apliquei o processo completo em pelo menos 1 atendimento real",
     camposManual: ["p6_passo_1", "p6_passo_2", "p6_passo_3", "p6_passo_4", "p6_passo_5", "p6_passo_6"],
@@ -460,7 +462,7 @@ export const SEMANAS: SemanaConteudo[] = [
       { id: "p8_mensagem_90dias", rotulo: "Minha mensagem de 90 dias depois (nova oferta):", tipo: "textarea", obrigatorio: true },
     ],
     missoes: [
-      { tipo: "principal", descricao: "Aplique a sequência completa nos últimos 5 clientes que você já atendeu." },
+      { tipo: "principal", descricao: "Aplique a sequência completa nos últimos 5 clientes que você já atendeu.", paraComecando: "Começando agora: ainda sem clientes atendidos? Programe o lembrete automático (ou anote no papel) para acionar cada mensagem nos prazos certos depois do seu primeiro atendimento — assim a sequência já nasce funcionando." },
     ],
     checklistFinal: "Apliquei a sequência de pós-venda em pelo menos 5 clientes reais",
     painelAoTerminar: 2,
@@ -490,7 +492,7 @@ export const SEMANAS: SemanaConteudo[] = [
     ],
     missoes: [
       { tipo: "principal", descricao: "Publique ou divulgue seu trabalho pelo menos 3 vezes essa semana nos canais escolhidos." },
-      { tipo: "rapida", descricao: "Peça indicação, de forma direta, a pelo menos 10 clientes." },
+      { tipo: "rapida", descricao: "Peça indicação, de forma direta, a pelo menos 10 clientes.", paraComecando: "Começando agora: ainda sem 10 clientes? Peça indicação de forma direta a 10 pessoas conhecidas (quem conhece seu trabalho, família, colegas) e às poucas pessoas que você já atendeu." },
     ],
     checklistFinal: "Divulguei nos canais escolhidos e pedi indicação de verdade",
     camposManual: ["p9_canal_1", "p9_canal_2", "p9_canal_3", "p9_frase_indicacao"],
@@ -522,7 +524,7 @@ export const SEMANAS: SemanaConteudo[] = [
       { id: "p10_followup_padrao", rotulo: "Meu follow-up padrão pra orçamento sem resposta:", tipo: "textarea", obrigatorio: true },
     ],
     missoes: [
-      { tipo: "principal", descricao: "Faça o follow-up de todos os orçamentos em aberto essa semana, sem exceção." },
+      { tipo: "principal", descricao: "Faça o follow-up de todos os orçamentos em aberto essa semana, sem exceção.", paraComecando: "Começando agora: ainda sem orçamentos em aberto? Escreva seu follow-up padrão, salve pronto para usar e envie para qualquer pessoa que você já mandou preço ou orçamento — mesmo sem resposta ainda." },
     ],
     indicador: {
       nome: "Minha taxa de conversão de orçamentos",
@@ -562,7 +564,7 @@ export const SEMANAS: SemanaConteudo[] = [
     ],
     missoes: [
       { tipo: "principal", descricao: "Cadastre ou atualize seu perfil no Google Meu Negócio." },
-      { tipo: "rapida", descricao: "Peça avaliação a pelo menos 3 clientes satisfeitos recentes." },
+      { tipo: "rapida", descricao: "Peça avaliação a pelo menos 3 clientes satisfeitos recentes.", paraComecando: "Começando agora: ainda sem clientes recentes? Peça avaliação para as pessoas que você já atendeu — mesmo sendo poucas — e para quem conhece seu trabalho e confia nele." },
       { tipo: "rapida", descricao: "Tire foto de antes/depois no seu próximo serviço." },
     ],
     checklistFinal: "Completei as 3 missões de autoridade dessa semana",
