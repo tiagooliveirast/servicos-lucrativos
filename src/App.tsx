@@ -52,6 +52,9 @@ const PaginaConquistas = lazy(() =>
 const PaginaBauis = lazy(() =>
   import("@/pages/PaginaBauis").then((m) => ({ default: m.PaginaBauis }))
 );
+const PaginaChaves = lazy(() =>
+  import("@/pages/PaginaChaves").then((m) => ({ default: m.PaginaChaves }))
+);
 const PaginaCheckin = lazy(() =>
   import("@/pages/PaginaCheckin").then((m) => ({ default: m.PaginaCheckin }))
 );
@@ -253,6 +256,20 @@ export default function App() {
           element={
             fase === "logado" ? (
               <PaginaBauis userId={user!.id} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/chaves"
+          element={
+            fase === "logado" ? (
+              <PaginaChaves
+                userId={user!.id}
+                nomeAluno={perfil!.nome ?? perfil!.email_refriclube ?? "aluno"}
+              />
             ) : (
               <Navigate to="/" replace />
             )

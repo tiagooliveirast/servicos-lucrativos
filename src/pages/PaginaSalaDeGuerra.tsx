@@ -2,14 +2,16 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   AlertTriangle,
+  ArrowRight,
   Award,
   CalendarDays,
   Flame,
+  KeyRound,
   Loader2,
   Radar,
+  Shield,
   Target,
   TrendingUp,
-  Trophy,
 } from "lucide-react";
 
 import { Layout } from "@/components/Layout";
@@ -19,7 +21,6 @@ import { Progress } from "@/components/ui/progress";
 import type { AlertaRadar } from "@/lib/regras-radar";
 import {
   carregarSalaDeGuerra,
-  LIMIARES_CHAVES,
   type SalaDeGuerra as DadosSala,
 } from "@/lib/sala-de-guerra";
 import { cn } from "@/lib/utils";
@@ -83,9 +84,24 @@ export function PaginaSalaDeGuerra({ perfilId }: { perfilId: string }) {
             <Radar className="h-6 w-6 text-primary" />
             Sala de Guerra
           </h1>
-          <Badge variant="outline" className="border-primary/50 text-primary">
-            Semana {dados.semanaAtual} de 12
-          </Badge>
+          <div className="flex items-center gap-2">
+            {dados.escudoAtual && (
+              <Badge
+                variant="outline"
+                className="gap-1.5"
+                style={{
+                  borderColor: `${dados.escudoAtual.cor_hex}66`,
+                  color: dados.escudoAtual.cor_hex,
+                }}
+              >
+                <Shield className="h-3.5 w-3.5" style={{ color: dados.escudoAtual.cor_hex }} />
+                {dados.escudoAtual.titulo}
+              </Badge>
+            )}
+            <Badge variant="outline" className="border-primary/50 text-primary">
+              Semana {dados.semanaAtual} de 12
+            </Badge>
+          </div>
         </div>
 
         {/* Topo: contexto geral — tempo + implantação */}
@@ -114,6 +130,7 @@ export function PaginaSalaDeGuerra({ perfilId }: { perfilId: string }) {
           <CartaoMissaoDoDia
             missao={dados.missaoDoDia}
             emDia={dados.todasMissoesConcluidas}
+            numero={dados.semanaAtual}
           />
           {dados.recomendacaoRadar && <CartaoRecomendacao alerta={dados.recomendacaoRadar} />}
           {dados.alertaPrioritario && !dados.recomendacaoRadar && (
@@ -135,8 +152,18 @@ export function PaginaSalaDeGuerra({ perfilId }: { perfilId: string }) {
             valor={dados.proximaConquista ? "Próxima" : "—"}
             sufixo={dados.proximaConquista?.titulo ?? "Todas desbloqueadas"}
           />
-          <CartaoProximaChave ime={dados.imeAtual} proxima={dados.proximaChave} />
+          <CartaoProximaChave
+            ime={dados.imeAtual}
+            proxima={dados.proximaChave}
+            ultimaChave={[...dados.chaves].sort((a, b) => b.ordem - a.ordem)[0]}
+          />
         </section>
+
+        <div className="pt-1">
+          <Link to="/chaves" className="text-sm text-primary hover:underline">
+            Ver minhas chaves e escudo
+          </Link>
+        </div>
 
         <div className="pt-1">
           <Link to="/dashboard" className="text-sm text-primary hover:underline">
@@ -176,9 +203,11 @@ function CartaoContexto({
 function CartaoMissaoDoDia({
   missao,
   emDia,
+  numero,
 }: {
   missao: DadosSala["missaoDoDia"];
   emDia: boolean;
+  numero: number;
 }) {
   if (emDia || !missao) {
     return (
@@ -194,8 +223,9 @@ function CartaoMissaoDoDia({
       </div>
     );
   }
+  const destino = `/semana/${numero}`;
   return (
-    <div className="rounded-2xl border border-primary/50 bg-gradient-to-b from-primary/20 to-transparent p-4">
+    <div className="relative rounded-2xl border border-primary/50 bg-gradient-to-b from-primary/20 to-transparent p-4">
       <div className="flex items-center justify-between gap-2">
         <p className="flex items-center gap-2 text-sm font-semibold text-primary">
           <Target className="h-4 w-4" />
@@ -206,6 +236,17 @@ function CartaoMissaoDoDia({
         </Badge>
       </div>
       <p className="mt-1.5 text-sm font-medium leading-relaxed">{missao.descricao}</p>
+      <Button asChild className="relative z-10 mt-3 w-full sm:w-auto">
+        <Link to={destino}>
+          Continuar Semana {numero}
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+      </Button>
+      <Link
+        to={destino}
+        aria-label={`Continuar a Semana ${numero}`}
+        className="after:absolute after:inset-0 after:rounded-2xl"
+      />
     </div>
   );
 }
@@ -270,24 +311,25 @@ function CartaoMotivacao({
 function CartaoProximaChave({
   ime,
   proxima,
+  ultimaChave,
 }: {
   ime: number | null;
   proxima: DadosSala["proximaChave"];
+  ultimaChave: DadosSala["chaves"][number] | undefined;
 }) {
-  const faltam = ime !== null && proxima ? Math.max(0, proxima.ime - ime) : null;
-  const ultimoLimiar = LIMIARES_CHAVES[LIMIARES_CHAVES.length - 1];
+  const faltam = ime !== null && proxima ? Math.max(0, proxima.ime_minimo - ime) : null;
   return (
     <div className="flex flex-col gap-1.5 rounded-2xl border border-primary/40 bg-card p-3">
       <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-        <Trophy className="h-4 w-4 text-primary" />
+        <KeyRound className="h-4 w-4 text-primary" />
         Próxima chave
       </p>
-      <p className="text-xl font-bold leading-tight text-primary">{proxima?.cor ?? "—"}</p>
+      <p className="text-xl font-bold leading-tight text-primary">{proxima?.titulo ?? "—"}</p>
       <p className="line-clamp-3 text-xs leading-snug text-muted-foreground">
         {faltam !== null && proxima
           ? `Faltam ${faltam} pontos de IME${ime !== null ? ` (você tem ${ime})` : ""}`
-          : ime !== null && proxima === null
-            ? `IME ${ime} — você já conquistou a ${ultimoLimiar.cor}!`
+          : ime !== null && proxima === null && ultimaChave
+            ? `IME ${ime} — você já conquistou a ${ultimaChave.titulo}!`
             : ime === null
               ? "Complete seu primeiro IME para destravar chaves."
               : "—"}

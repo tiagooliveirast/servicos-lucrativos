@@ -3,7 +3,9 @@ import { carregarRadarEAtualizar } from "@/lib/radar-nucleo";
 import type { AlertaRadar } from "@/lib/regras-radar";
 import { supabase } from "@/lib/supabase";
 import type {
+  Chave,
   Conquista,
+  EscudoAtual,
   GamificacaoUsuario,
   ImeHistorico,
   Missao,
@@ -12,16 +14,6 @@ import type {
 import { semanaAtualDe } from "@/lib/utils";
 
 const MS_DIA = 24 * 60 * 60 * 1000;
-
-// ------------------------------------------------------------------
-// Limiares de chaves — Onda 3b (leitura antecipada; Onda 4 formaliza)
-// Valores de exemplo a serem confirmados pelo Tiago.
-// ------------------------------------------------------------------
-export const LIMIARES_CHAVES = [
-  { ime: 30, cor: "Chave Verde" },
-  { ime: 60, cor: "Chave Azul" },
-  { ime: 85, cor: "Chave Ouro" },
-] as const;
 
 // ------------------------------------------------------------------
 // Ordem natural das conquistas para a "próxima conquista" (sequencial)
@@ -51,7 +43,9 @@ export interface SalaDeGuerra {
   // Motivação
   streak: number;
   proximaConquista: Conquista | null;
-  proximaChave: { ime: number; cor: string } | null;
+  chaves: Chave[];
+  proximaChave: Chave | null;
+  escudoAtual: EscudoAtual | null;
   imeAtual: number | null;
 }
 
@@ -83,6 +77,8 @@ export async function carregarSalaDeGuerra(
     resConquistas,
     resDesbloqueadas,
     resIme,
+    resChaves,
+    resEscudo,
     radar,
   ] = await Promise.all([
     supabase.from("acessos").select("created_at").eq("user_id", userId).maybeSingle(),
@@ -98,6 +94,12 @@ export async function carregarSalaDeGuerra(
       .order("data_calculo", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    supabase.from("chaves").select("*").order("ordem"),
+    supabase
+      .from("escudo_atual_usuario")
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle(),
     carregarRadarEAtualizar(userId),
   ]);
 
@@ -109,6 +111,8 @@ export async function carregarSalaDeGuerra(
     resConquistas.error,
     resDesbloqueadas.error,
     resIme.error,
+    resChaves.error,
+    resEscudo.error,
     radar.erro,
   ].some(Boolean);
 
@@ -145,10 +149,13 @@ export async function carregarSalaDeGuerra(
 
   const imeAtualRaw = resIme.data as Pick<ImeHistorico, "score_total"> | null;
   const imeAtual = imeAtualRaw !== null ? Number(imeAtualRaw.score_total) : null;
+
+  const chaves = (resChaves.data ?? []) as Chave[];
   const proximaChave =
     imeAtual === null
-      ? { ime: LIMIARES_CHAVES[0].ime, cor: LIMIARES_CHAVES[0].cor }
-      : (LIMIARES_CHAVES.find((t) => imeAtual < t.ime) ?? null);
+      ? (chaves[0] ?? null)
+      : (chaves.find((t) => imeAtual < t.ime_minimo) ?? null);
+  const escudoAtual = (resEscudo.data as EscudoAtual | null) ?? null;
 
   const alertaPrioritario = radar.alertas[0] ?? null;
   const recomendacaoRadar =
@@ -174,7 +181,9 @@ export async function carregarSalaDeGuerra(
       recomendacaoRadar,
       streak,
       proximaConquista,
+      chaves,
       proximaChave,
+      escudoAtual,
       imeAtual,
     },
     erro: false,
@@ -192,7 +201,9 @@ function salaVazia(): SalaDeGuerra {
     recomendacaoRadar: null,
     streak: 0,
     proximaConquista: null,
+    chaves: [],
     proximaChave: null,
+    escudoAtual: null,
     imeAtual: null,
   };
 }

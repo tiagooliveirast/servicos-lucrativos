@@ -194,3 +194,34 @@ export interface BauUsuario {
   aberto_em: string | null;
   bauis: Bau | null;
 }
+
+export type StatusChaveFisica = "nao_solicitada" | "solicitada" | "enviada";
+
+export interface Chave {
+  id: string;
+  codigo: string;
+  titulo: string;
+  cor_hex: string;
+  ime_minimo: number;
+  ordem: number;
+  descricao: string | null;
+}
+
+export interface ChaveUsuario {
+  id: string;
+  user_id: string;
+  chave_id: string;
+  desbloqueada_em: string;
+  solicitacao_fisica_status: StatusChaveFisica;
+  solicitacao_fisica_em: string | null;
+  chaves: Chave | null;
+}
+
+export interface EscudoAtual {
+  user_id: string;
+  codigo: string;
+  titulo: string;
+  cor_hex: string;
+  ordem: number;
+  desbloqueada_em: string;
+}
