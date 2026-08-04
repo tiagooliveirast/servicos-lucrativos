@@ -80,6 +80,7 @@ interface DadosDetalhe {
   acesso: Acesso | null;
   ime: ImeHistorico[];
   chaves: ChaveUsuario[];
+  faturamentoAutodeclarado: boolean;
 }
 
 export function PaginaAdminUsuarioDetalhe() {
@@ -101,7 +102,7 @@ export function PaginaAdminUsuarioDetalhe() {
     setDados(null);
     async function carregar() {
       if (!id) return;
-      const [resPerfil, resDiagnostico, resProgresso, resIndicadores, resPaineis, resRadar, resAcesso, resIme, chaves] =
+      const [resPerfil, resDiagnostico, resProgresso, resIndicadores, resPaineis, resRadar, resAcesso, resIme, chaves, resFaturamento] =
         await Promise.all([
           supabase.from("perfis").select("*").eq("id", id).maybeSingle(),
           supabase
@@ -137,6 +138,13 @@ export function PaginaAdminUsuarioDetalhe() {
             .eq("user_id", id)
             .order("data_calculo", { ascending: true }),
           carregarChavesAdmin(id).catch(() => []),
+          supabase
+            .from("faturamento_validado")
+            .select("nivel_confianca")
+            .eq("user_id", id)
+            .order("data_referencia", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
         ]);
       if (!ativo) return;
       if (
@@ -147,7 +155,8 @@ export function PaginaAdminUsuarioDetalhe() {
         resPaineis.error ||
         resRadar.error ||
         resAcesso.error ||
-        resIme.error
+        resIme.error ||
+        resFaturamento.error
       ) {
         setErro(true);
         return;
@@ -162,6 +171,9 @@ export function PaginaAdminUsuarioDetalhe() {
         acesso: (resAcesso.data as Acesso | null) ?? null,
         ime: (resIme.data ?? []) as ImeHistorico[],
         chaves: chaves,
+        faturamentoAutodeclarado:
+          (resFaturamento.data as { nivel_confianca?: string } | null)
+            ?.nivel_confianca === "autodeclarado",
       });
     }
     void carregar();
@@ -504,13 +516,13 @@ export function PaginaAdminUsuarioDetalhe() {
             Chaves da jornada
           </CardTitle>
           <CardDescription>
-            Chaves desbloqueadas pelo IME e o status da chave física.
+            Chaves desbloqueadas pelos 4 pilares e o status da chave física.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {dados.chaves.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Nenhuma chave desbloqueada ainda (IME abaixo de 30).
+              Nenhuma chave desbloqueada ainda.
             </p>
           ) : (
             <div className="flex flex-col gap-3">
@@ -530,7 +542,17 @@ export function PaginaAdminUsuarioDetalhe() {
                         <KeyRound className="h-5 w-5" style={{ color: chave.cor_hex }} />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold">{chave.titulo}</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-semibold">{chave.titulo}</p>
+                          {dados.faturamentoAutodeclarado && (
+                            <Badge
+                              variant="outline"
+                              className="font-medium text-muted-foreground"
+                            >
+                              Faturamento autodeclarado
+                            </Badge>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground">
                           Desbloqueada em {formatData(chaveUsuario.desbloqueada_em)}
                           {chaveUsuario.solicitacao_fisica_em

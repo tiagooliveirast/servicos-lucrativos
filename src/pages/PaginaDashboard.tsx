@@ -30,6 +30,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { useEhAdmin } from "@/hooks/useEhAdmin";
 import { MODULOS, SEMANAS } from "@/lib/conteudo";
 import { carregarPerfilGamificacao } from "@/lib/gamificacao";
 import { supabase } from "@/lib/supabase";
@@ -39,10 +40,12 @@ const STATUS_INFO = {
   bloqueada: { rotulo: "Bloqueada", icon: Lock, classes: "text-muted-foreground" },
   em_andamento: { rotulo: "Em andamento", icon: PlayCircle, classes: "text-amber-400" },
   concluida: { rotulo: "Concluída", icon: CheckCircle2, classes: "text-emerald-400" },
+  liberada: { rotulo: "Liberada", icon: CheckCircle2, classes: "text-primary" },
 } as const;
 
 export function PaginaDashboard({ perfil }: { perfil: Perfil }) {
   const navigate = useNavigate();
+  const { ehAdmin, carregando: checandoAdmin } = useEhAdmin();
   const [semanas, setSemanas] = useState<ProgressoSemana[] | null>(null);
   const [paineis, setPaineis] = useState<PainelMensal[]>([]);
   const [gamificacao, setGamificacao] = useState<GamificacaoUsuario | null>(null);
@@ -200,7 +203,7 @@ export function PaginaDashboard({ perfil }: { perfil: Perfil }) {
           </div>
         )}
 
-        {!carregando && !erro && (
+        {!carregando && !checandoAdmin && !erro && (
           <>
         <section>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
@@ -273,7 +276,9 @@ export function PaginaDashboard({ perfil }: { perfil: Perfil }) {
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {semanasModulo.map((semana) => {
                   const progresso = semanaPorNumero.get(semana.numero);
-                  const status = progresso?.status ?? "bloqueada";
+                  const status = ehAdmin
+                    ? "liberada"
+                    : (progresso?.status ?? "bloqueada");
                   const info = STATUS_INFO[status];
                   const clicavel = status !== "bloqueada";
                   return (

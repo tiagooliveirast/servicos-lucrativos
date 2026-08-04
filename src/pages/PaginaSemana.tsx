@@ -27,6 +27,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useEhAdmin } from "@/hooks/useEhAdmin";
 import { MODULOS, SEMANA_POR_NUMERO, type Campo, type SemanaConteudo } from "@/lib/conteudo";
 import { supabase } from "@/lib/supabase";
 import type { AulaSemana, IndicadorSemana, ProgressoSemana } from "@/lib/types";
@@ -36,6 +37,7 @@ export function PaginaSemana({ userId }: { userId: string }) {
   const { numero } = useParams();
   const n = Number(numero);
   const semana = SEMANA_POR_NUMERO.get(n);
+  const { ehAdmin, carregando: checandoAdmin } = useEhAdmin();
 
   const [progresso, setProgresso] = useState<ProgressoSemana | null>(null);
   const [carregando, setCarregando] = useState(true);
@@ -71,7 +73,7 @@ export function PaginaSemana({ userId }: { userId: string }) {
   }, [userId, n, tentativa]);
 
   if (!semana) return <Navigate to="/" replace />;
-  if (carregando) {
+  if (carregando || checandoAdmin) {
     return (
       <Layout>
         <div className="flex items-center justify-center py-24 text-muted-foreground">
@@ -96,13 +98,29 @@ export function PaginaSemana({ userId }: { userId: string }) {
       </Layout>
     );
   }
-  if (naoEncontrada) return <Navigate to="/" replace />;
-  if (progresso?.status === "bloqueada") return <Navigate to="/" replace />;
+  // Admin tem acesso de visualização a todas as semanas, mesmo sem ter
+  // desbloqueado — mas sem concluir nem simular progresso.
+  const visualizacao = ehAdmin && (!progresso || progresso.status === "bloqueada");
+  if (!visualizacao) {
+    if (naoEncontrada) return <Navigate to="/" replace />;
+    if (progresso?.status === "bloqueada") return <Navigate to="/" replace />;
+  }
+  const progressoEfetivo =
+    progresso ??
+    ({
+      id: "",
+      user_id: userId,
+      semana: n,
+      status: "em_andamento",
+      respostas: {},
+      concluida_em: null,
+    } satisfies ProgressoSemana);
 
   return (
     <ConteudoSemana
       semana={semana}
-      progresso={progresso!}
+      progresso={progressoEfetivo}
+      visualizacao={visualizacao}
       userId={userId}
       aoConcluirLocalmente={() =>
         setProgresso((p) =>
@@ -117,11 +135,13 @@ function ConteudoSemana({
   semana,
   progresso,
   userId,
+  visualizacao,
   aoConcluirLocalmente,
 }: {
   semana: SemanaConteudo;
   progresso: ProgressoSemana;
   userId: string;
+  visualizacao?: boolean;
   aoConcluirLocalmente: () => void;
 }) {
   const [respostas, setRespostas] = useState<Record<string, unknown>>(
@@ -176,6 +196,7 @@ function ConteudoSemana({
 
   const salvar = useCallback(
     async (novasRespostas: Record<string, unknown>) => {
+      if (visualizacao) return;
       setSalvando(true);
       const { error } = await supabase
         .from("progresso_semanas")
@@ -191,7 +212,7 @@ function ConteudoSemana({
         setSalvoEm(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
       }
     },
-    [userId, semana.numero]
+    [userId, semana.numero, visualizacao]
   );
 
   const jaCarregou = useRef(false);
@@ -213,6 +234,7 @@ function ConteudoSemana({
   }
 
   async function alternarMissao(tipo: "principal" | "rapida", indice: number) {
+    if (visualizacao) return;
     const missao = semana.missoes[indice];
     if (!missao || missao.tipo !== tipo) return;
     const chave = `${tipo}:${indice}`;
@@ -238,7 +260,7 @@ function ConteudoSemana({
   async function atualizarIndicador(campo: "antes" | "depois", valor: string) {
     const novo = { ...(indicador ?? { antes: "", depois: "" }), [campo]: valor };
     setIndicador(novo);
-    if (!semana.indicador) return;
+    if (!semana.indicador || visualizacao) return;
     const { error } = await supabase
       .from("indicadores_semana")
       .upsert(
@@ -258,6 +280,7 @@ function ConteudoSemana({
   }
 
   async function concluirSemana() {
+    if (visualizacao) return;
     const validacao = validarCampos(semana, respostas, calculados, checklistFinal);
     if (validacao) {
       setErro(validacao);
@@ -350,6 +373,14 @@ function ConteudoSemana({
 
         <BlocoAula semana={semana.numero} />
 
+        {visualizacao && (
+          <p className="flex items-start gap-2 rounded-lg border border-primary/40 bg-primary/10 px-4 py-3 text-sm text-primary">
+            <Info className="mt-0.5 h-4 w-4 shrink-0" />
+            Modo visualização (admin): você pode conferir esta semana livremente, mas nada é salvo
+            nem concluído — seu progresso real continua intacto.
+          </p>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Nesta semana</CardTitle>
@@ -414,8 +445,13 @@ function ConteudoSemana({
               </p>
             )}
             <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
-              {salvando && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              {salvando ? "Salvando…" : salvoEm ? `Salvo às ${salvoEm}` : "Tudo salvo"}
+              {visualizacao
+                ? "Modo visualização — nada é salvo"
+                : salvando
+                  ? "Salvando…"
+                  : salvoEm
+                    ? `Salvo às ${salvoEm}`
+                    : "Tudo salvo"}
             </div>
           </CardContent>
         </Card>
@@ -596,7 +632,19 @@ function ConteudoSemana({
           </p>
         )}
 
-        {concluida ? (
+        {visualizacao ? (
+          <div className="flex flex-col items-center gap-3 rounded-xl border border-primary/40 bg-primary/5 p-6 text-center">
+            <Info className="h-8 w-8 text-primary" />
+            <p className="font-semibold">Semana em modo visualização</p>
+            <p className="text-sm text-muted-foreground">
+              Como admin, você pode navegar por todas as semanas. Esta semana não é concluída em
+              modo visualização — conclua pelo seu fluxo normal se quiser registrá-la.
+            </p>
+            <Button asChild variant="outline">
+              <Link to="/dashboard">Voltar ao painel de semanas</Link>
+            </Button>
+          </div>
+        ) : concluida ? (
           <div className="flex flex-col items-center gap-3 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-6 text-center">
             <CheckCircle2 className="h-8 w-8 text-emerald-400" />
             <p className="font-semibold">Semana {semana.numero} concluída!</p>
@@ -619,7 +667,7 @@ function ConteudoSemana({
           </Button>
         )}
 
-        {!concluida && (
+        {!concluida && !visualizacao && (
           <p className="-mt-3 flex items-start gap-2 text-xs text-muted-foreground">
             <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             A semana só é concluída quando todos os campos obrigatórios estiverem preenchidos e o

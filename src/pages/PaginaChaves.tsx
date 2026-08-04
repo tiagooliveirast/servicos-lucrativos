@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { Layout } from "@/components/Layout";
+import { CardFaturamentoAutodeclarado } from "@/components/CardFaturamentoAutodeclarado";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -167,8 +168,8 @@ export function PaginaChaves({
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Cada chave é desbloqueada quando quatro pilares estão prontos:
-            faturamento validado, IME, IE e as missões/ativos da jornada.
-            Cada chave vale uma versão física da sua conquista.
+            faturamento, IME, IE e as missões/ativos da jornada. Cada chave
+            vale uma versão física da sua conquista.
           </p>
         </div>
 
@@ -196,6 +197,11 @@ export function PaginaChaves({
 
             {dados.proximaChave && <ProximaChaveCard dados={dados} />}
 
+            <CardFaturamentoAutodeclarado
+              userId={userId}
+              aoSalvar={() => setTentativa((t) => t + 1)}
+            />
+
             <div className="flex flex-col gap-4">
               {dados.lista.map((status) => {
                 const desbloqueada = desbloqueadasPorId.get(status.chave.id);
@@ -205,6 +211,7 @@ export function PaginaChaves({
                     status={status}
                     desbloqueada={desbloqueada}
                     totalChaves={dados.lista.length}
+                    faturamentoAutodeclarado={dados.faturamentoAutodeclarado}
                     solicitando={solicitando === desbloqueada?.id}
                     aoSolicitar={aoSolicitar}
                   />
@@ -215,8 +222,9 @@ export function PaginaChaves({
             <p className="rounded-lg border border-border bg-card/50 px-3.5 py-2.5 text-xs leading-relaxed text-muted-foreground">
               Ao tocar em “Solicitar”, o WhatsApp abre com uma mensagem pronta
               para o Tiago — você mesmo envia. O status só muda para “Enviada”
-              quando ele confirmar o envio da chave física. O pilar de
-              faturamento é preenchido automaticamente pela integração com o
+              quando ele confirmar o envio da chave física. Neste momento, o
+              pilar de faturamento é informado por você (autodeclarado) — em
+              breve será validado automaticamente pela integração com o
               RefriClube.
             </p>
           </>
@@ -307,8 +315,9 @@ function ProximaChaveCard({ dados }: { dados: ProgressoChaves }) {
         <p className="truncate font-semibold">{proxima.titulo}</p>
       </div>
       <p className="text-xs text-muted-foreground">
-        {prontos} de 4 pilares prontos — o faturamento validado chega pela
-        integração com o RefriClube.
+        {prontos} de 4 pilares prontos — o faturamento deste mês é informado
+        por você (autodeclarado, validação automática com o RefriClube em
+        breve).
       </p>
     </div>
   );
@@ -318,12 +327,14 @@ function CartaoChave({
   status,
   desbloqueada,
   totalChaves,
+  faturamentoAutodeclarado,
   solicitando,
   aoSolicitar,
 }: {
   status: StatusPorChave;
   desbloqueada?: ChaveUsuario;
   totalChaves: number;
+  faturamentoAutodeclarado: boolean;
   solicitando: boolean;
   aoSolicitar: (cu: ChaveUsuario, c: Chave) => void;
 }) {
@@ -364,7 +375,17 @@ function CartaoChave({
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Chave {chave.ordem} de {totalChaves}
             </p>
-            <h3 className="font-semibold leading-snug">{chave.titulo}</h3>
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-semibold leading-snug">{chave.titulo}</h3>
+              {desbloqueadaDeVerdade && faturamentoAutodeclarado && (
+                <Badge
+                  variant="outline"
+                  className="font-medium text-muted-foreground"
+                >
+                  Faturamento autodeclarado
+                </Badge>
+              )}
+            </div>
             <p className="mt-0.5 text-sm text-muted-foreground">{chave.descricao}</p>
           </div>
         </div>
@@ -511,8 +532,8 @@ function CerimoniaDesbloqueio({
           {chave.titulo}
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          Você completou os quatro pilares — faturamento validado, IME, IE e
-          missões da jornada. Essa conquista vale uma chave física.
+          Você completou os quatro pilares — faturamento, IME, IE e missões da
+          jornada. Essa conquista vale uma chave física.
         </p>
 
         <div className="mt-5 flex flex-col gap-2">

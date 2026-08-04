@@ -159,12 +159,15 @@ export interface IeHistorico {
   score_indicadores_atualizados: number;
 }
 
+export type NivelConfiancaFaturamento = "autodeclarado" | "refriclube" | "verificado";
+
 export interface FaturamentoValidado {
   id: string;
   user_id: string;
   valor: number;
   data_referencia: string;
   fonte: string;
+  nivel_confianca: NivelConfiancaFaturamento;
   sincronizado_em: string;
 }
 

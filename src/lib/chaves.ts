@@ -24,6 +24,8 @@ export interface ContextoDesbloqueio {
   imeAtual: number | null;
   ieAtual: number | null;
   faturamentoValidado: number;
+  /** true se a leitura mais recente é autodeclarada (provisória). */
+  faturamentoAutodeclarado: boolean;
   ativos: AtivoCriado[];
 }
 
@@ -47,6 +49,7 @@ export interface ProgressoChaves {
   imeAtual: number | null;
   ieAtual: number | null;
   faturamentoValidado: number;
+  faturamentoAutodeclarado: boolean;
   ativos: AtivoCriado[];
   lista: StatusPorChave[];
   proximaChave: Chave | null;
@@ -71,7 +74,7 @@ export function pilaresDaChave(
       ok: ctx.faturamentoValidado >= chave.faturamento_minimo,
       detalhe: `${formatBRL(ctx.faturamentoValidado)} de ${formatBRL(
         chave.faturamento_minimo
-      )} (RefriClube)`,
+      )} (${ctx.faturamentoAutodeclarado ? "informado por você" : "RefriClube"})`,
     },
     {
       id: "ime",
@@ -174,7 +177,7 @@ export async function carregarProgressoChaves(
       .maybeSingle(),
     supabase
       .from("faturamento_validado")
-      .select("valor")
+      .select("valor, nivel_confianca")
       .eq("user_id", userId)
       .order("data_referencia", { ascending: false })
       .limit(1)
@@ -204,13 +207,20 @@ export async function carregarProgressoChaves(
   const ieAtual =
     resIe.data !== null ? Number((resIe.data as { score_total: number }).score_total) : null;
   const faturamentoValidado =
-    resFat.data !== null ? Number((resFat.data as { valor: number }).valor) : 0;
+    resFat.data !== null
+      ? Number((resFat.data as { valor: number }).valor)
+      : 0;
+  const faturamentoAutodeclarado =
+    resFat.data !== null &&
+    (resFat.data as { nivel_confianca?: string }).nivel_confianca ===
+      "autodeclarado";
   const ativos = listarAtivos((resProgresso.data ?? []) as ProgressoSemana[]);
 
   const ctx: ContextoDesbloqueio = {
     imeAtual,
     ieAtual,
     faturamentoValidado,
+    faturamentoAutodeclarado,
     ativos,
   };
   const desbloqueadasPorId = new Map(desbloqueadas.map((d) => [d.chave_id, d]));
@@ -233,6 +243,7 @@ export async function carregarProgressoChaves(
     imeAtual,
     ieAtual,
     faturamentoValidado,
+    faturamentoAutodeclarado,
     ativos,
     lista,
     proximaChave,
