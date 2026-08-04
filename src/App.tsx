@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AlertTriangle, Loader2 } from "lucide-react";
 
 import { ExigirAdmin } from "@/components/ExigirAdmin";
@@ -84,6 +84,9 @@ const PaginaAdminUsuarioDetalhe = lazy(() =>
 const PaginaAdminAulas = lazy(() =>
   import("@/pages/admin/PaginaAdminAulas").then((m) => ({ default: m.PaginaAdminAulas }))
 );
+const PaginaEmpresaPublica = lazy(() =>
+  import("@/pages/PaginaEmpresaPublica").then((m) => ({ default: m.PaginaEmpresaPublica }))
+);
 
 function TelaCarregando() {
   return (
@@ -112,8 +115,13 @@ function TelaErroSessao({ aoTentar }: { aoTentar: () => void }) {
 export default function App() {
   const [recarregar, setRecarregar] = useState(0);
   const { fase, user, perfil } = useAuth(recarregar);
+  const location = useLocation();
 
-  if (fase === "carregando") {
+  // Página pública da empresa: funciona sem sessão (e enquanto a sessão é
+  // avaliada), então foge dos gates de carregando/erro abaixo.
+  const ehRotaPublica = location.pathname.startsWith("/empresa/");
+
+  if (fase === "carregando" && !ehRotaPublica) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background">
         <Logo className="scale-110" />
@@ -122,13 +130,14 @@ export default function App() {
     );
   }
 
-  if (fase === "erro") {
+  if (fase === "erro" && !ehRotaPublica) {
     return <TelaErroSessao aoTentar={() => setRecarregar((r) => r + 1)} />;
   }
 
   return (
     <Suspense fallback={<TelaCarregando />}>
       <Routes>
+        <Route path="/empresa/:slug" element={<PaginaEmpresaPublica />} />
         <Route path="/auth/callback" element={<PaginaAuthCallback />} />
 
         <Route

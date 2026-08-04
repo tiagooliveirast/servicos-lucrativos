@@ -1,28 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, LineChart, Loader2, TriangleAlert, TrendingUp } from "lucide-react";
-import {
-  CartesianGrid,
-  Line,
-  LineChart as RechartsLineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { ArrowLeft, LineChart, Loader2, TriangleAlert } from "lucide-react";
 
+import { GraficoEvolucao } from "@/components/GraficoEvolucao";
 import { Layout } from "@/components/Layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  OURO,
   serieConversao,
   serieFaturamento,
   serieIme,
@@ -136,108 +120,36 @@ export function PaginaEvolucao({ userId }: { userId: string }) {
 function Graficos({ series }: { series: SeriesEvolucao }) {
   return (
     <div className="flex flex-col gap-4">
-      <GraficoLinha
+      <GraficoEvolucao
         titulo="Índice de Maturidade Empresarial (IME)"
         descricao="De 0 a 100, atualizado a cada semana concluída, painel preenchido e check-in."
         serie={series.ime}
         mascara={(v) => String(Math.round(v))}
       />
-      <GraficoLinha
+      <GraficoEvolucao
         titulo="Faturamento"
         descricao="Evolução do faturamento mensal (painéis, check-ins e indicador da Semana 1)."
         serie={series.faturamento}
         mascara={(v) => formatBRL(v)}
       />
-      <GraficoLinha
+      <GraficoEvolucao
         titulo="Lucro"
         descricao="Evolução do lucro mensal (painéis e check-ins)."
         serie={series.lucro}
         mascara={(v) => formatBRL(v)}
       />
-      <GraficoLinha
+      <GraficoEvolucao
         titulo="Ticket médio"
         descricao="Preço médio do que você vende (painéis e indicador da Semana 3)."
         serie={series.ticket}
         mascara={(v) => formatBRL(v)}
       />
-      <GraficoLinha
+      <GraficoEvolucao
         titulo="Taxa de conversão"
         descricao="Percentual dos orçamentos que viram venda (painéis e indicador da Semana 10)."
         serie={series.conversao}
         mascara={(v) => `${v.toFixed(1)}%`}
       />
     </div>
-  );
-}
-
-function GraficoLinha({
-  titulo,
-  descricao,
-  serie,
-  mascara,
-}: {
-  titulo: string;
-  descricao: string;
-  serie: SerieEvolucao;
-  mascara: (v: number) => string;
-}) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <TrendingUp className="h-4 w-4 text-primary" />
-          {titulo}
-        </CardTitle>
-        <CardDescription>{descricao}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {serie.suficiente ? (
-          <ResponsiveContainer width="100%" height={260}>
-            <RechartsLineChart
-              data={serie.pontos}
-              margin={{ top: 8, right: 12, bottom: 0, left: 8 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#EFEADD" />
-              <XAxis
-                dataKey="rotulo"
-                tick={{ fontSize: 12, fill: "#6B6559" }}
-                tickLine={false}
-                axisLine={{ stroke: "#E5DFD0" }}
-              />
-              <YAxis
-                tick={{ fontSize: 11, fill: "#6B6559" }}
-                tickLine={false}
-                axisLine={{ stroke: "#E5DFD0" }}
-                width={80}
-                tickFormatter={(v: number) => mascara(v)}
-              />
-              <Tooltip
-                contentStyle={{
-                  borderRadius: 8,
-                  border: "1px solid #E5DFD0",
-                  fontSize: 12,
-                  background: "#FFFFFF",
-                }}
-                formatter={(v: number | string) => mascara(Number(v))}
-                labelStyle={{ color: "#6B6559", fontWeight: 600 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="valor"
-                stroke={OURO}
-                strokeWidth={2.5}
-                dot={{ r: 4, fill: OURO, strokeWidth: 0 }}
-                activeDot={{ r: 6 }}
-              />
-            </RechartsLineChart>
-          </ResponsiveContainer>
-        ) : (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            Ainda não há dados suficientes para este gráfico. Continue as semanas, preencha
-            indicadores e painéis para começar a ver sua evolução.
-          </p>
-        )}
-      </CardContent>
-    </Card>
   );
 }

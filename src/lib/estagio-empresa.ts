@@ -39,3 +39,32 @@ export function pontosParaProximoEstagio(
 ): number | null {
   return proximo ? Math.max(0, proximo.faixaMin - imeScore) : null;
 }
+
+// ------------------------------------------------------------------
+// Classificação pública do IME (usada na página da empresa /empresa/[slug]
+// e no card de compartilhamento). Mesmas faixas do estágio visual, mas com
+// nomes de "marketing" — é o que aparece para visitantes no lugar do
+// número exato do IME (dado interno).
+// ------------------------------------------------------------------
+
+export interface ClassificacaoIme {
+  numero: number;
+  nome: string;
+  faixaMin: number;
+  faixaMax: number;
+}
+
+export const CLASSIFICACOES_IME: ClassificacaoIme[] = [
+  { numero: 1, nome: "Empresa Inicial", faixaMin: 0, faixaMax: 19 },
+  { numero: 2, nome: "Empresa em Estruturação", faixaMin: 20, faixaMax: 39 },
+  { numero: 3, nome: "Empresa em Crescimento", faixaMin: 40, faixaMax: 59 },
+  { numero: 4, nome: "Empresa Sólida", faixaMin: 60, faixaMax: 79 },
+  { numero: 5, nome: "Empresa Preparada para Escalar", faixaMin: 80, faixaMax: 100 },
+] as const;
+
+export function obterClassificacaoIme(imeScore: number): ClassificacaoIme {
+  for (const faixa of CLASSIFICACOES_IME) {
+    if (imeScore >= faixa.faixaMin && imeScore <= faixa.faixaMax) return faixa;
+  }
+  return CLASSIFICACOES_IME[0];
+}

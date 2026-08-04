@@ -6,6 +6,8 @@ import { Layout } from "@/components/Layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { CompartilharEvolucao } from "@/components/CompartilharEvolucao";
+import { ConfiguracaoPaginaPublica } from "@/components/ConfiguracaoPaginaPublica";
 import { AVATAR_BASE, ITENS_AVATAR } from "@/lib/avatar";
 import {
   ESTAGIOS_EMPRESA,
@@ -271,6 +273,10 @@ export function PaginaEmpresa({ userId }: { userId: string }) {
                 </li>
               </ul>
             </section>
+
+            {/* Onda 6 — vitrine pública + compartilhamento */}
+            <ConfiguracaoPaginaPublica userId={userId} />
+            <CompartilharEvolucao userId={userId} />
           </div>
         )}
       </div>

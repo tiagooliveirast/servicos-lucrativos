@@ -26,12 +26,16 @@ alter table public.perfis
 
 -- Slug único: dois alunos nunca compartilham a mesma página.
 alter table public.perfis
-  add constraint if not exists perfis_pagina_publica_slug_unique
+  drop constraint if exists perfis_pagina_publica_slug_unique;
+alter table public.perfis
+  add constraint perfis_pagina_publica_slug_unique
   unique (pagina_publica_slug);
 
 -- Slug sanitizado: minúsculas, dígitos e hífens (mesma regra que o client aplica).
 alter table public.perfis
-  add constraint if not exists perfis_pagina_publica_slug_formato
+  drop constraint if exists perfis_pagina_publica_slug_formato;
+alter table public.perfis
+  add constraint perfis_pagina_publica_slug_formato
   check (
     pagina_publica_slug is null
     or pagina_publica_slug ~ '^[a-z0-9]([a-z0-9-]*[a-z0-9])?$'

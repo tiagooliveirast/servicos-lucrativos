@@ -9,6 +9,9 @@ export interface Perfil {
   email_refriclube: string | null;
   email: string | null;
   ultimo_acesso_at: string | null;
+  pagina_publica_ativa: boolean;
+  pagina_publica_slug: string | null;
+  pagina_publica_mostrar_faturamento: boolean;
   created_at: string;
 }
 
