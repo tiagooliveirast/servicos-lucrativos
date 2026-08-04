@@ -78,6 +78,7 @@ export async function carregarSalaDeGuerra(
     resDesbloqueadas,
     resIme,
     resChaves,
+    resChavesUsuario,
     resEscudo,
     radar,
   ] = await Promise.all([
@@ -95,6 +96,7 @@ export async function carregarSalaDeGuerra(
       .limit(1)
       .maybeSingle(),
     supabase.from("chaves").select("*").order("ordem"),
+    supabase.from("chaves_usuario").select("chave_id").eq("user_id", userId),
     supabase
       .from("escudo_atual_usuario")
       .select("*")
@@ -112,6 +114,7 @@ export async function carregarSalaDeGuerra(
     resDesbloqueadas.error,
     resIme.error,
     resChaves.error,
+    resChavesUsuario.error,
     resEscudo.error,
     radar.erro,
   ].some(Boolean);
@@ -151,10 +154,10 @@ export async function carregarSalaDeGuerra(
   const imeAtual = imeAtualRaw !== null ? Number(imeAtualRaw.score_total) : null;
 
   const chaves = (resChaves.data ?? []) as Chave[];
-  const proximaChave =
-    imeAtual === null
-      ? (chaves[0] ?? null)
-      : (chaves.find((t) => imeAtual < t.ime_minimo) ?? null);
+  const chavesDesbloqueadas = new Set(
+    ((resChavesUsuario.data ?? []) as { chave_id: string }[]).map((d) => d.chave_id)
+  );
+  const proximaChave = chaves.find((c) => !chavesDesbloqueadas.has(c.id)) ?? null;
   const escudoAtual = (resEscudo.data as EscudoAtual | null) ?? null;
 
   const alertaPrioritario = radar.alertas[0] ?? null;

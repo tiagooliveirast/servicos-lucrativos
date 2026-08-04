@@ -153,7 +153,6 @@ export function PaginaSalaDeGuerra({ perfilId }: { perfilId: string }) {
             sufixo={dados.proximaConquista?.titulo ?? "Todas desbloqueadas"}
           />
           <CartaoProximaChave
-            ime={dados.imeAtual}
             proxima={dados.proximaChave}
             ultimaChave={[...dados.chaves].sort((a, b) => b.ordem - a.ordem)[0]}
           />
@@ -161,7 +160,11 @@ export function PaginaSalaDeGuerra({ perfilId }: { perfilId: string }) {
 
         <div className="pt-1">
           <Link to="/chaves" className="text-sm text-primary hover:underline">
-            Ver minhas chaves e escudo
+            <span className="mr-1">Ver minhas chaves e escudo</span>
+          </Link>
+          <span className="mx-2 text-muted-foreground/40">·</span>
+          <Link to="/minha-empresa" className="text-sm text-primary hover:underline">
+            Minha Empresa
           </Link>
         </div>
 
@@ -309,15 +312,12 @@ function CartaoMotivacao({
 }
 
 function CartaoProximaChave({
-  ime,
   proxima,
   ultimaChave,
 }: {
-  ime: number | null;
   proxima: DadosSala["proximaChave"];
   ultimaChave: DadosSala["chaves"][number] | undefined;
 }) {
-  const faltam = ime !== null && proxima ? Math.max(0, proxima.ime_minimo - ime) : null;
   return (
     <div className="flex flex-col gap-1.5 rounded-2xl border border-primary/40 bg-card p-3">
       <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -326,13 +326,11 @@ function CartaoProximaChave({
       </p>
       <p className="text-xl font-bold leading-tight text-primary">{proxima?.titulo ?? "—"}</p>
       <p className="line-clamp-3 text-xs leading-snug text-muted-foreground">
-        {faltam !== null && proxima
-          ? `Faltam ${faltam} pontos de IME${ime !== null ? ` (você tem ${ime})` : ""}`
-          : ime !== null && proxima === null && ultimaChave
-            ? `IME ${ime} — você já conquistou a ${ultimaChave.titulo}!`
-            : ime === null
-              ? "Complete seu primeiro IME para destravar chaves."
-              : "—"}
+        {proxima
+          ? "Alcance os 4 pilares: faturamento validado, IME, IE e missões."
+          : ultimaChave
+            ? `Você conquistou todas as chaves, até a ${ultimaChave.titulo}!`
+            : "Complete os 4 pilares para destravar chaves."}
       </p>
     </div>
   );

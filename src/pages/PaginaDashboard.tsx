@@ -11,6 +11,7 @@ import {
   FileText,
   Flame,
   Gauge,
+  HardHat,
   LineChart,
   Loader2,
   Lock,
@@ -170,6 +171,12 @@ export function PaginaDashboard({ perfil }: { perfil: Perfil }) {
               icone={FileText}
               titulo="Relatórios & Certificado"
               texto="Gere o Relatório de Implantação e o Certificado."
+            />
+            <LinkAcesso
+              to="/minha-empresa"
+              icone={HardHat}
+              titulo="Minha Empresa"
+              texto="Veja o estágio da sua empresa e o avatar com os itens desbloqueados."
             />
           </div>
         </section>

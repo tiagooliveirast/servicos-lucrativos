@@ -147,6 +147,27 @@ export interface ImeHistorico {
   score_processos: number;
 }
 
+export interface IeHistorico {
+  id: string;
+  user_id: string;
+  data_calculo: string;
+  score_total: number;
+  score_missoes_prazo: number;
+  score_checkins: number;
+  score_login: number;
+  score_financeiro_refriclube: number;
+  score_indicadores_atualizados: number;
+}
+
+export interface FaturamentoValidado {
+  id: string;
+  user_id: string;
+  valor: number;
+  data_referencia: string;
+  fonte: string;
+  sincronizado_em: string;
+}
+
 export interface GamificacaoUsuario {
   user_id: string;
   xp_total: number;
@@ -203,6 +224,9 @@ export interface Chave {
   titulo: string;
   cor_hex: string;
   ime_minimo: number;
+  faturamento_minimo: number;
+  ie_minimo: number;
+  missoes_obrigatorias: string[];
   ordem: number;
   descricao: string | null;
 }

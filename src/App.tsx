@@ -55,6 +55,9 @@ const PaginaBauis = lazy(() =>
 const PaginaChaves = lazy(() =>
   import("@/pages/PaginaChaves").then((m) => ({ default: m.PaginaChaves }))
 );
+const PaginaEmpresa = lazy(() =>
+  import("@/pages/PaginaEmpresa").then((m) => ({ default: m.PaginaEmpresa }))
+);
 const PaginaCheckin = lazy(() =>
   import("@/pages/PaginaCheckin").then((m) => ({ default: m.PaginaCheckin }))
 );
@@ -270,6 +273,17 @@ export default function App() {
                 userId={user!.id}
                 nomeAluno={perfil!.nome ?? perfil!.email_refriclube ?? "aluno"}
               />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/minha-empresa"
+          element={
+            fase === "logado" ? (
+              <PaginaEmpresa userId={user!.id} />
             ) : (
               <Navigate to="/" replace />
             )
