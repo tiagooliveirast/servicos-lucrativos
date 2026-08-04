@@ -27,6 +27,12 @@ import {
 } from "@/lib/sala-de-guerra";
 import { cn } from "@/lib/utils";
 
+// Onda 8 Nível 1 (análise diária com IA) pausada por decisão de produto.
+// Quando false: a mensagem do mentor não é gerada nem exibida, e o custo
+// de OpenAI fica zero. Reativar basta trocar para true — o código e a
+// Edge Function continuam existindo e funcionando.
+const ANALISE_DIARIA_ATIVA = false;
+
 export function PaginaSalaDeGuerra({ perfilId }: { perfilId: string }) {
   const [dados, setDados] = useState<DadosSala | null>(null);
   const [carregando, setCarregando] = useState(true);
@@ -49,10 +55,14 @@ export function PaginaSalaDeGuerra({ perfilId }: { perfilId: string }) {
 
       // A IA é best-effort: se falhar ou demorar, o card cai no fallback
       // estático do Radar e a tela continua 100% funcional.
-      const analise = await buscarAnaliseIa();
-      if (!ativo) return;
-      setAnaliseMentor(analise);
-      setAnaliseCarregando(false);
+      if (ANALISE_DIARIA_ATIVA) {
+        const analise = await buscarAnaliseIa();
+        if (!ativo) return;
+        setAnaliseMentor(analise);
+        setAnaliseCarregando(false);
+      } else {
+        setAnaliseCarregando(false);
+      }
     }
     void carregar();
     return () => {
@@ -137,12 +147,15 @@ export function PaginaSalaDeGuerra({ perfilId }: { perfilId: string }) {
           </div>
         </section>
 
-        {/* Mensagem do mentor (IA) — com fallback estático do Radar */}
-        <CartaoMentor
-          analise={analiseMentor}
-          dados={dados}
-          carregando={analiseCarregando}
-        />
+        {/* Mensagem do mentor (IA) — com fallback estático do Radar.
+            Pausada enquanto ANALISE_DIARIA_ATIVA = false. */}
+        {ANALISE_DIARIA_ATIVA && (
+          <CartaoMentor
+            analise={analiseMentor}
+            dados={dados}
+            carregando={analiseCarregando}
+          />
+        )}
 
         {/* Meio: o que fazer hoje */}
         <section className="flex flex-col gap-3">

@@ -324,3 +324,12 @@ export interface CrmCandidatoCase {
   semanas_concluidas: number;
   paineis_preenchidos: number;
 }
+
+export interface DicaPreenchimentoSemana {
+  id: string;
+  user_id: string;
+  semana_numero: number;
+  texto: string;
+  modelo: string;
+  gerado_em: string;
+}

@@ -8,7 +8,9 @@ import {
   Info,
   Loader2,
   Lock,
+  RefreshCw,
   Rocket,
+  Sparkles,
   Target,
   Upload,
   Video,
@@ -36,8 +38,15 @@ import {
   listarMeusAnexos,
 } from "@/lib/anexos-missoes";
 import { MODULOS, SEMANA_POR_NUMERO, type Campo, type SemanaConteudo } from "@/lib/conteudo";
+import { buscarDicaSemana, gerarDicaSemana } from "@/lib/dicas-semana";
 import { supabase } from "@/lib/supabase";
-import type { AulaSemana, IndicadorSemana, MissaoAnexo, ProgressoSemana } from "@/lib/types";
+import type {
+  AulaSemana,
+  DicaPreenchimentoSemana,
+  IndicadorSemana,
+  MissaoAnexo,
+  ProgressoSemana,
+} from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export function PaginaSemana({ userId }: { userId: string }) {
@@ -427,6 +436,8 @@ function ConteudoSemana({
             </CardContent>
           </Card>
         )}
+
+        <BlocoDicaSemana semana={semana} userId={userId} visualizacao={visualizacao} />
 
         <Card>
           <CardHeader>
@@ -1187,6 +1198,121 @@ function BlocoAnexoSemana({
               </p>
             )}
           </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function BlocoDicaSemana({
+  semana,
+  userId,
+  visualizacao,
+}: {
+  semana: SemanaConteudo;
+  userId: string;
+  visualizacao?: boolean;
+}) {
+  const [dica, setDica] = useState<DicaPreenchimentoSemana | null>(null);
+  const [carregando, setCarregando] = useState(true);
+  const [gerando, setGerando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+
+  useEffect(() => {
+    let ativo = true;
+    setCarregando(true);
+    async function carregar() {
+      try {
+        const existente = await buscarDicaSemana(userId, semana.numero);
+        if (!ativo) return;
+        setDica(existente);
+      } catch {
+        if (ativo) setErro("Não foi possível carregar sua dica.");
+      } finally {
+        if (ativo) setCarregando(false);
+      }
+    }
+    void carregar();
+    return () => {
+      ativo = false;
+    };
+  }, [userId, semana.numero]);
+
+  async function gerar() {
+    setGerando(true);
+    setErro(null);
+    try {
+      const gerada = await gerarDicaSemana(semana.numero, semana);
+      setDica({
+        id: "",
+        user_id: userId,
+        semana_numero: semana.numero,
+        texto: gerada.texto,
+        modelo: gerada.modelo,
+        gerado_em: new Date().toISOString(),
+      });
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Não foi possível gerar a dica agora.");
+    } finally {
+      setGerando(false);
+    }
+  }
+
+  if (visualizacao) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Sparkles className="h-4 w-4 text-primary" />
+          Dica personalizada pra você
+        </CardTitle>
+        <CardDescription>
+          A IA considera seu ramo de atuação e o que você já preencheu. Só é gerada quando você
+          pede.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        {carregando ? (
+          <div className="flex items-center justify-center py-6 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          </div>
+        ) : dica ? (
+          <>
+            <div className="rounded-lg border border-primary/25 bg-primary/5 p-4">
+              <p className="whitespace-pre-line text-sm text-foreground/90">{dica.texto}</p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Gerada em {new Date(dica.gerado_em).toLocaleDateString("pt-BR")}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-fit"
+              onClick={() => void gerar()}
+              disabled={gerando}
+            >
+              {gerando ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+              {gerando ? "Gerando…" : "Atualizar dica"}
+            </Button>
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-muted-foreground">
+              Quer uma ajuda extra para preencher esta semana? A IA dá um direcionamento prático
+              com base no seu negócio.
+            </p>
+            <Button className="w-fit" onClick={() => void gerar()} disabled={gerando}>
+              {gerando ? <Loader2 className="animate-spin" /> : <Sparkles />}
+              {gerando ? "Gerando…" : "Gerar dica personalizada"}
+            </Button>
+          </>
+        )}
+        {erro && (
+          <p className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive-foreground">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            {erro}
+          </p>
         )}
       </CardContent>
     </Card>
