@@ -8,6 +8,7 @@ import {
   Flame,
   KeyRound,
   Loader2,
+  MessagesSquare,
   Radar,
   Shield,
   Target,
@@ -18,6 +19,7 @@ import { Layout } from "@/components/Layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { buscarAnaliseIa, type AnaliseIa } from "@/lib/analise-ia";
 import type { AlertaRadar } from "@/lib/regras-radar";
 import {
   carregarSalaDeGuerra,
@@ -30,17 +32,27 @@ export function PaginaSalaDeGuerra({ perfilId }: { perfilId: string }) {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(false);
   const [tentativa, setTentativa] = useState(0);
+  const [analiseMentor, setAnaliseMentor] = useState<AnaliseIa | null>(null);
+  const [analiseCarregando, setAnaliseCarregando] = useState(true);
 
   useEffect(() => {
     let ativo = true;
     setCarregando(true);
     setErro(false);
+    setAnaliseCarregando(true);
     async function carregar() {
       const { dados, erro } = await carregarSalaDeGuerra(perfilId);
       if (!ativo) return;
       setDados(dados);
       setErro(erro);
       setCarregando(false);
+
+      // A IA é best-effort: se falhar ou demorar, o card cai no fallback
+      // estático do Radar e a tela continua 100% funcional.
+      const analise = await buscarAnaliseIa();
+      if (!ativo) return;
+      setAnaliseMentor(analise);
+      setAnaliseCarregando(false);
     }
     void carregar();
     return () => {
@@ -124,6 +136,13 @@ export function PaginaSalaDeGuerra({ perfilId }: { perfilId: string }) {
             </p>
           </div>
         </section>
+
+        {/* Mensagem do mentor (IA) — com fallback estático do Radar */}
+        <CartaoMentor
+          analise={analiseMentor}
+          dados={dados}
+          carregando={analiseCarregando}
+        />
 
         {/* Meio: o que fazer hoje */}
         <section className="flex flex-col gap-3">
@@ -332,6 +351,58 @@ function CartaoProximaChave({
             ? `Você conquistou todas as chaves, até a ${ultimaChave.titulo}!`
             : "Complete os 4 pilares para destravar chaves."}
       </p>
+    </div>
+  );
+}
+
+// ------------------------------------------------------------------
+// Mensagem do mentor — AI narra os mesmos fatos que o Radar já mostra.
+// Sempre exibe um texto (IA ou fallback determinístico) para nunca
+// quebrar a tela nem ficar em loading infinito.
+// ------------------------------------------------------------------
+function textoMentorFallback(dados: DadosSala): string {
+  const alerta = dados.recomendacaoRadar ?? dados.alertaPrioritario;
+  if (alerta) return alerta.mensagem;
+  if (dados.missaoDoDia?.descricao) {
+    return `Hoje, mantenha o foco na missão: ${dados.missaoDoDia.descricao}`;
+  }
+  return "Você está em dia com a sua implantação. Mantenha o ritmo da semana atual e continue os 90 dias.";
+}
+
+function CartaoMentor({
+  analise,
+  dados,
+  carregando,
+}: {
+  analise: AnaliseIa | null;
+  dados: DadosSala;
+  carregando: boolean;
+}) {
+  const texto = analise?.texto.trim() ? analise.texto : textoMentorFallback(dados);
+  const ehIa = analise !== null && analise.origem !== "fallback" && Boolean(analise.texto.trim());
+
+  return (
+    <div className="rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/15 via-card to-card p-4">
+      <div className="flex items-center justify-between gap-2">
+        <p className="flex items-center gap-2 text-sm font-semibold text-primary">
+          <MessagesSquare className="h-4 w-4" />
+          Mensagem do seu mentor
+        </p>
+        {carregando ? (
+          <Badge variant="outline" className="gap-1.5 text-muted-foreground">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            gerando…
+          </Badge>
+        ) : (
+          <Badge
+            variant="outline"
+            className={ehIa ? "border-primary/50 text-primary" : "text-muted-foreground"}
+          >
+            {ehIa ? "Personalizada por IA" : "Com base no seu Radar"}
+          </Badge>
+        )}
+      </div>
+      <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-foreground/90">{texto}</p>
     </div>
   );
 }
