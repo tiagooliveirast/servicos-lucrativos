@@ -4,11 +4,13 @@ import {
   AlertCircle,
   ArrowLeft,
   CheckCircle2,
+  FileUp,
   Info,
   Loader2,
   Lock,
   Rocket,
   Target,
+  Upload,
   Video,
   Zap,
 } from "lucide-react";
@@ -28,9 +30,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useEhAdmin } from "@/hooks/useEhAdmin";
+import {
+  anexoEsperadoDaSemana,
+  enviarAnexo,
+  listarMeusAnexos,
+} from "@/lib/anexos-missoes";
 import { MODULOS, SEMANA_POR_NUMERO, type Campo, type SemanaConteudo } from "@/lib/conteudo";
 import { supabase } from "@/lib/supabase";
-import type { AulaSemana, IndicadorSemana, ProgressoSemana } from "@/lib/types";
+import type { AulaSemana, IndicadorSemana, MissaoAnexo, ProgressoSemana } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export function PaginaSemana({ userId }: { userId: string }) {
@@ -513,6 +520,14 @@ function ConteudoSemana({
           </Card>
         )}
 
+        {anexoEsperadoDaSemana(semana.numero) && (
+          <BlocoAnexoSemana
+            userId={userId}
+            semana={semana.numero}
+            visualizacao={visualizacao}
+          />
+        )}
+
         {semana.camposAposMissoes && semana.camposAposMissoes.length > 0 && (
           <Card>
             <CardContent className="flex flex-col gap-5 pt-6">
@@ -993,6 +1008,186 @@ function BlocoAula({ semana }: { semana: number }) {
         <p className="text-xs text-muted-foreground">
           Assista a aula antes de preencher os campos abaixo.
         </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function BlocoAnexoSemana({
+  userId,
+  semana,
+  visualizacao,
+}: {
+  userId: string;
+  semana: number;
+  visualizacao?: boolean;
+}) {
+  const esperado = anexoEsperadoDaSemana(semana);
+  const [anexos, setAnexos] = useState<MissaoAnexo[] | null>(null);
+  const [erro, setErro] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  const [erroEnvio, setErroEnvio] = useState<string | null>(null);
+  const [sucesso, setSucesso] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!esperado) return;
+    let ativo = true;
+    setErro(false);
+    setAnexos(null);
+    const tipo = esperado.tipo;
+    async function carregar() {
+      try {
+        const lista = await listarMeusAnexos(userId, semana, tipo);
+        if (!ativo) return;
+        setAnexos(lista);
+      } catch {
+        if (ativo) setErro(true);
+      }
+    }
+    void carregar();
+    return () => {
+      ativo = false;
+    };
+  }, [userId, semana, esperado]);
+
+  if (!esperado) return null;
+
+  const aprovado = (anexos ?? []).some((a) => a.status === "aprovado");
+  const podeEnviar = !visualizacao && !aprovado;
+
+  async function enviar(arquivo: File | undefined | null) {
+    if (!arquivo || !esperado) return;
+    setEnviando(true);
+    setErroEnvio(null);
+    setSucesso(false);
+    try {
+      await enviarAnexo(userId, semana, esperado.tipo, arquivo);
+      const lista = await listarMeusAnexos(userId, semana, esperado.tipo);
+      setAnexos(lista);
+      setSucesso(true);
+    } catch (e) {
+      setErroEnvio(e instanceof Error ? e.message : "Não foi possível enviar o arquivo.");
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <FileUp className="h-4 w-4 text-primary" />
+          Entrega: {esperado.rotulo}
+        </CardTitle>
+        <CardDescription>
+          {esperado.descricao} {esperado.aceitos}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        {erro ? (
+          <p className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive-foreground">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            Não foi possível carregar seus anexos.
+          </p>
+        ) : anexos === null ? (
+          <div className="flex items-center justify-center py-6 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          </div>
+        ) : (
+          <>
+            {anexos.length > 0 && (
+              <ul className="flex flex-col gap-2">
+                {anexos.map((a) => (
+                  <li
+                    key={a.id}
+                    className="flex flex-col gap-1.5 rounded-lg border border-input px-4 py-3"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge
+                        variant={
+                          a.status === "aprovado"
+                            ? "sucesso"
+                            : a.status === "rejeitado"
+                              ? "destrutivo"
+                              : "pendente"
+                        }
+                      >
+                        {a.status === "aprovado"
+                          ? "Aprovado"
+                          : a.status === "rejeitado"
+                            ? "Rejeitado"
+                            : "Pendente"}
+                      </Badge>
+                      <span className="truncate text-sm text-foreground/85">
+                        {a.nome_arquivo ?? a.storage_path.split("/").pop()}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(a.created_at).toLocaleDateString("pt-BR")}
+                      </span>
+                    </div>
+                    {a.comentario_admin && (
+                      <p className="text-sm text-foreground/90">
+                        <span className="font-medium text-foreground">Tiago:</span>{" "}
+                        {a.comentario_admin}
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {podeEnviar ? (
+              <div className="flex flex-col gap-2">
+                <input
+                  ref={inputRef}
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => {
+                    void enviar(e.target.files?.[0]);
+                    e.target.value = "";
+                  }}
+                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => inputRef.current?.click()}
+                    disabled={enviando}
+                  >
+                    {enviando ? <Loader2 className="animate-spin" /> : <Upload />}
+                    {enviando ? "Enviando…" : "Enviar arquivo"}
+                  </Button>
+                  {anexos.length > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      Você pode reenviar — o Tiago avalia a versão mais recente.
+                    </span>
+                  )}
+                </div>
+                {erroEnvio && (
+                  <p className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive-foreground">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    {erroEnvio}
+                  </p>
+                )}
+                {sucesso && !erroEnvio && (
+                  <p className="flex items-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-400">
+                    <CheckCircle2 className="h-4 w-4 shrink-0" />
+                    Arquivo enviado! O Tiago vai avaliar em breve.
+                  </p>
+                )}
+              </div>
+            ) : visualizacao ? (
+              <p className="text-xs text-muted-foreground">
+                Modo visualização (admin) — envio desabilitado.
+              </p>
+            ) : (
+              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                Entrega aprovada — nada mais a enviar.
+              </p>
+            )}
+          </>
+        )}
       </CardContent>
     </Card>
   );

@@ -1,8 +1,11 @@
-import { Activity, AlertCircle, Loader2, TrendingUp, Trophy, Users } from "lucide-react";
+import { Activity, AlertCircle, HelpCircle, Loader2, Paperclip, TrendingUp, Trophy, Users } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { contarAnexosPendentes } from "@/lib/anexos-missoes";
+import { contarDuvidasAbertas } from "@/lib/duvidas";
 import { supabase } from "@/lib/supabase";
 import type { AtividadeLog, Perfil, ProgressoSemana } from "@/lib/types";
 import { formatarQuando, formatNumero } from "@/lib/utils";
@@ -17,13 +20,15 @@ export function PaginaAdminIndex() {
   const [dados, setDados] = useState<DadosAdmin | null>(null);
   const [erro, setErro] = useState(false);
   const [tentativa, setTentativa] = useState(0);
+  const [duvidasAbertas, setDuvidasAbertas] = useState(0);
+  const [anexosPendentes, setAnexosPendentes] = useState(0);
 
   useEffect(() => {
     let ativo = true;
     setErro(false);
     setDados(null);
     async function carregar() {
-      const [resPerfis, resProgresso, resAtividade] = await Promise.all([
+      const [resPerfis, resProgresso, resAtividade, duvidas, anexos] = await Promise.all([
         supabase.from("perfis").select("id, nome, email, ultimo_acesso_at, created_at"),
         supabase.from("progresso_semanas").select("user_id, semana, status"),
         supabase
@@ -31,6 +36,8 @@ export function PaginaAdminIndex() {
           .select("id, user_id, tipo, descricao, criado_em")
           .order("criado_em", { ascending: false })
           .limit(30),
+        contarDuvidasAbertas(),
+        contarAnexosPendentes(),
       ]);
       if (!ativo) return;
       if (resPerfis.error || resProgresso.error || resAtividade.error) {
@@ -42,6 +49,8 @@ export function PaginaAdminIndex() {
         progresso: resProgresso.data as ProgressoSemana[],
         atividade: resAtividade.data as AtividadeLog[],
       });
+      setDuvidasAbertas(duvidas);
+      setAnexosPendentes(anexos);
     }
     void carregar();
     return () => {
@@ -119,6 +128,47 @@ export function PaginaAdminIndex() {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Link
+          to="/admin/duvidas"
+          className="group flex items-center justify-between rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 transition-colors hover:border-amber-500/60"
+        >
+          <div className="flex items-center gap-3">
+            <HelpCircle className="h-5 w-5 text-amber-400" />
+            <div>
+              <p className="font-semibold">
+                {duvidasAbertas} {duvidasAbertas === 1 ? "dúvida aberta" : "dúvidas abertas"}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Aguardando resposta do Tiago
+              </p>
+            </div>
+          </div>
+          <span className="text-sm font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
+            Responder →
+          </span>
+        </Link>
+        <Link
+          to="/admin/anexos"
+          className="group flex items-center justify-between rounded-xl border border-primary/30 bg-primary/5 p-4 transition-colors hover:border-primary/60"
+        >
+          <div className="flex items-center gap-3">
+            <Paperclip className="h-5 w-5 text-primary" />
+            <div>
+              <p className="font-semibold">
+                {anexosPendentes} {anexosPendentes === 1 ? "anexo pendente" : "anexos pendentes"}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Entregas de missões para revisar
+              </p>
+            </div>
+          </div>
+          <span className="text-sm font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
+            Revisar →
+          </span>
+        </Link>
       </div>
 
       <Card>

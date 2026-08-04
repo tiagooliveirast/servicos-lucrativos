@@ -255,3 +255,72 @@ export interface EscudoAtual {
   ordem: number;
   desbloqueada_em: string;
 }
+
+export type CategoriaDuvida =
+  | "financeiro"
+  | "comercial"
+  | "plataforma"
+  | "conteudo"
+  | "outro";
+
+export type StatusDuvida = "aberta" | "respondida" | "fechada";
+
+export interface Duvida {
+  id: string;
+  user_id: string;
+  categoria: CategoriaDuvida;
+  titulo: string;
+  mensagem: string;
+  status: StatusDuvida;
+  resposta_admin: string | null;
+  respondida_em: string | null;
+  created_at: string;
+  perfis?: { nome: string | null; email: string | null } | null;
+}
+
+export type StatusAnexo = "pendente" | "aprovado" | "rejeitado";
+
+export interface MissaoAnexo {
+  id: string;
+  user_id: string;
+  semana_numero: number;
+  tipo_anexo: string;
+  storage_path: string;
+  nome_arquivo: string | null;
+  status: StatusAnexo;
+  comentario_admin: string | null;
+  created_at: string;
+  perfis?: { nome: string | null; email: string | null } | null;
+}
+
+export interface CrmRiscoDesistencia {
+  user_id: string;
+  nome: string | null;
+  email: string | null;
+  nome_empresa: string | null;
+  ultimo_login: string | null;
+  dias_sem_login: number;
+}
+
+export interface CrmEvolucaoAcelerada {
+  user_id: string;
+  ime_atual: number;
+  ime_ha_30_dias: number;
+  ganho_30_dias: number;
+  calculado_em: string;
+}
+
+export interface CrmCandidatoCase {
+  user_id: string;
+  nome: string | null;
+  email: string | null;
+  nome_empresa: string | null;
+  chave_codigo: string | null;
+  chave_titulo: string | null;
+  chave_cor_hex: string | null;
+  chave_ordem: number | null;
+  chave_desbloqueada_em: string | null;
+  ime_atual: number | null;
+  semanas_concluidas: number;
+  paineis_preenchidos: number;
+}

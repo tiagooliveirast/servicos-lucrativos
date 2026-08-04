@@ -87,6 +87,18 @@ const PaginaAdminAulas = lazy(() =>
 const PaginaEmpresaPublica = lazy(() =>
   import("@/pages/PaginaEmpresaPublica").then((m) => ({ default: m.PaginaEmpresaPublica }))
 );
+const PaginaDuvidas = lazy(() =>
+  import("@/pages/PaginaDuvidas").then((m) => ({ default: m.PaginaDuvidas }))
+);
+const PaginaAdminDuvidas = lazy(() =>
+  import("@/pages/admin/PaginaAdminDuvidas").then((m) => ({ default: m.PaginaAdminDuvidas }))
+);
+const PaginaAdminAnexos = lazy(() =>
+  import("@/pages/admin/PaginaAdminAnexos").then((m) => ({ default: m.PaginaAdminAnexos }))
+);
+const PaginaAdminTurma = lazy(() =>
+  import("@/pages/admin/PaginaAdminTurma").then((m) => ({ default: m.PaginaAdminTurma }))
+);
 
 function TelaCarregando() {
   return (
@@ -300,6 +312,17 @@ export default function App() {
         />
 
         <Route
+          path="/duvidas"
+          element={
+            fase === "logado" ? (
+              <PaginaDuvidas userId={user!.id} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+
+        <Route
           path="/admin"
           element={
             fase === "logado" ? (
@@ -316,6 +339,9 @@ export default function App() {
           <Route path="usuarios/:id" element={<PaginaAdminUsuarioDetalhe />} />
           <Route path="novo-acesso" element={<PaginaAdminNovoAcesso />} />
           <Route path="aulas" element={<PaginaAdminAulas />} />
+          <Route path="turma" element={<PaginaAdminTurma />} />
+          <Route path="duvidas" element={<PaginaAdminDuvidas />} />
+          <Route path="anexos" element={<PaginaAdminAnexos />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

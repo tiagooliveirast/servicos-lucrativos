@@ -12,6 +12,7 @@ import {
   Flame,
   Gauge,
   HardHat,
+  HelpCircle,
   LineChart,
   Loader2,
   Lock,
@@ -32,6 +33,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { useEhAdmin } from "@/hooks/useEhAdmin";
 import { MODULOS, SEMANAS } from "@/lib/conteudo";
+import { contarMinhasDuvidasRespondidas } from "@/lib/duvidas";
 import { carregarPerfilGamificacao } from "@/lib/gamificacao";
 import { supabase } from "@/lib/supabase";
 import type { GamificacaoUsuario, PainelMensal, Perfil, ProgressoSemana } from "@/lib/types";
@@ -52,13 +54,14 @@ export function PaginaDashboard({ perfil }: { perfil: Perfil }) {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(false);
   const [tentativa, setTentativa] = useState(0);
+  const [duvidasRespondidas, setDuvidasRespondidas] = useState(0);
 
   useEffect(() => {
     let ativo = true;
     setCarregando(true);
     setErro(false);
     async function carregar() {
-      const [resSemanas, resPaineis, resGamificacao] = await Promise.all([
+      const [resSemanas, resPaineis, resGamificacao, resDuvidas] = await Promise.all([
         supabase
           .from("progresso_semanas")
           .select("*")
@@ -74,6 +77,7 @@ export function PaginaDashboard({ perfil }: { perfil: Perfil }) {
             return null;
           }
         })(),
+        contarMinhasDuvidasRespondidas(perfil.id).catch(() => 0),
       ]);
       if (!ativo) return;
       if (resSemanas.error || resPaineis.error) {
@@ -84,6 +88,7 @@ export function PaginaDashboard({ perfil }: { perfil: Perfil }) {
       setSemanas(resSemanas.data);
       setPaineis(resPaineis.data);
       setGamificacao(resGamificacao);
+      setDuvidasRespondidas(resDuvidas);
       setCarregando(false);
     }
     void carregar();
@@ -101,6 +106,33 @@ export function PaginaDashboard({ perfil }: { perfil: Perfil }) {
     <Layout nomeUsuario={perfil.nome ?? perfil.email_refriclube ?? ""}>
       <div className="flex flex-col gap-8">
         <RadarEmpresa userId={perfil.id} />
+
+        {duvidasRespondidas > 0 && (
+          <section className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-5">
+            <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
+                  <HelpCircle className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-semibold leading-snug">
+                    Você tem {duvidasRespondidas}{" "}
+                    {duvidasRespondidas === 1
+                      ? "dúvida respondida"
+                      : "dúvidas respondidas"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    O Tiago respondeu na Central de Dúvidas.
+                  </p>
+                </div>
+              </div>
+              <Button onClick={() => navigate("/duvidas")} variant="outline" className="shrink-0">
+                Ver resposta
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </section>
+        )}
 
         {gamificacao && (
           <section className="rounded-xl border border-primary/40 bg-gradient-to-r from-primary/15 to-transparent p-5">
@@ -180,6 +212,12 @@ export function PaginaDashboard({ perfil }: { perfil: Perfil }) {
               icone={HardHat}
               titulo="Minha Empresa"
               texto="Veja o estágio da sua empresa e o avatar com os itens desbloqueados."
+            />
+            <LinkAcesso
+              to="/duvidas"
+              icone={HelpCircle}
+              titulo="Central de Dúvidas"
+              texto="Envie dúvidas e veja as respostas do Tiago."
             />
           </div>
         </section>

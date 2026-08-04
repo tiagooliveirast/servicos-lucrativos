@@ -1,4 +1,13 @@
-import { LayoutDashboard, ShieldCheck, UserPlus, Users, Video } from "lucide-react";
+import {
+  HelpCircle,
+  LayoutDashboard,
+  Paperclip,
+  ShieldCheck,
+  Telescope,
+  UserPlus,
+  Users,
+  Video,
+} from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 
 import { Layout } from "@/components/Layout";
@@ -6,6 +15,9 @@ import { cn } from "@/lib/utils";
 
 const ITENS_NAV = [
   { para: "/admin", rotulo: "Visão geral", icone: LayoutDashboard, fim: true },
+  { para: "/admin/turma", rotulo: "Visão da turma", icone: Telescope, fim: false },
+  { para: "/admin/duvidas", rotulo: "Dúvidas", icone: HelpCircle, fim: false },
+  { para: "/admin/anexos", rotulo: "Anexos", icone: Paperclip, fim: false },
   { para: "/admin/usuarios", rotulo: "Usuários", icone: Users, fim: false },
   { para: "/admin/novo-acesso", rotulo: "Novo acesso", icone: UserPlus, fim: false },
   { para: "/admin/aulas", rotulo: "Vídeo-aulas", icone: Video, fim: false },
