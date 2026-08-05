@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { CompartilharEvolucao } from "@/components/CompartilharEvolucao";
+import { ConfiguracaoLembretes } from "@/components/ConfiguracaoLembretes";
 import { ConfiguracaoPaginaPublica } from "@/components/ConfiguracaoPaginaPublica";
 import { AVATAR_BASE, ITENS_AVATAR } from "@/lib/avatar";
 import {
@@ -277,6 +278,9 @@ export function PaginaEmpresa({ userId }: { userId: string }) {
             {/* Onda 6 — vitrine pública + compartilhamento */}
             <ConfiguracaoPaginaPublica userId={userId} />
             <CompartilharEvolucao userId={userId} />
+
+            {/* Prompt #25 — opt-out dos lembretes semanais */}
+            <ConfiguracaoLembretes userId={userId} />
           </div>
         )}
       </div>

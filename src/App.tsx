@@ -99,6 +99,9 @@ const PaginaAdminAnexos = lazy(() =>
 const PaginaAdminTurma = lazy(() =>
   import("@/pages/admin/PaginaAdminTurma").then((m) => ({ default: m.PaginaAdminTurma }))
 );
+const PaginaPreferencias = lazy(() =>
+  import("@/pages/PaginaPreferencias").then((m) => ({ default: m.PaginaPreferencias }))
+);
 
 function TelaCarregando() {
   return (
@@ -131,7 +134,8 @@ export default function App() {
 
   // Página pública da empresa: funciona sem sessão (e enquanto a sessão é
   // avaliada), então foge dos gates de carregando/erro abaixo.
-  const ehRotaPublica = location.pathname.startsWith("/empresa/");
+  const ehRotaPublica =
+    location.pathname.startsWith("/empresa/") || location.pathname.startsWith("/preferencias");
 
   if (fase === "carregando" && !ehRotaPublica) {
     return (
@@ -150,6 +154,7 @@ export default function App() {
     <Suspense fallback={<TelaCarregando />}>
       <Routes>
         <Route path="/empresa/:slug" element={<PaginaEmpresaPublica />} />
+        <Route path="/preferencias" element={<PaginaPreferencias />} />
         <Route path="/auth/callback" element={<PaginaAuthCallback />} />
 
         <Route

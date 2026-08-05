@@ -12,6 +12,7 @@ export interface Perfil {
   pagina_publica_ativa: boolean;
   pagina_publica_slug: string | null;
   pagina_publica_mostrar_faturamento: boolean;
+  receber_lembretes: boolean;
   created_at: string;
 }
 
