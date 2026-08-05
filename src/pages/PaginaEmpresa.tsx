@@ -199,8 +199,8 @@ export function PaginaEmpresa({ userId }: { userId: string }) {
 
             {/* Avatar */}
             <section className="rounded-2xl border border-primary/40 bg-card p-5">
-              <div className="flex flex-col items-center gap-4">
-                <div className="relative h-56 w-56">
+              <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:justify-center">
+                <div className="relative h-56 w-56 shrink-0">
                   <ImagemComFallback
                     src={AVATAR_BASE.imagem}
                     alt="Base do avatar"
@@ -213,14 +213,14 @@ export function PaginaEmpresa({ userId }: { userId: string }) {
                   />
                   {ITENS_AVATAR.map((item) => {
                     const liberado = desbloqueadas.has(item.conquistaCodigo);
+                    if (!liberado) return null;
                     return (
                       <ImagemComFallback
                         key={item.conquistaCodigo}
                         src={item.imagem}
-                        alt={liberado ? item.nome : `${item.nome} (bloqueado)`}
-                        title={liberado ? item.nome : `${item.nome} (bloqueado)`}
+                        alt={item.nome}
+                        title={item.nome}
                         className={cn("absolute h-14 w-14", item.classe)}
-                        imgClassName={cn(!liberado && "opacity-25 grayscale")}
                         fallback={
                           <div className="flex h-full w-full items-center justify-center rounded-full bg-muted/40" />
                         }
@@ -229,19 +229,49 @@ export function PaginaEmpresa({ userId }: { userId: string }) {
                   })}
                 </div>
 
-                <div className="flex flex-wrap justify-center gap-2">
+                <div className="flex w-full max-w-xs flex-col gap-2">
                   {ITENS_AVATAR.map((item) => {
                     const liberado = desbloqueadas.has(item.conquistaCodigo);
-                    const Icone = item.icone;
                     return (
-                      <Badge
+                      <div
                         key={item.conquistaCodigo}
-                        variant={liberado ? "sucesso" : "outline"}
-                        className={cn(!liberado && "text-muted-foreground/60")}
+                        title={liberado ? item.nome : `${item.nome} (bloqueado)`}
+                        className={cn(
+                          "flex items-center gap-3 rounded-xl border p-2.5",
+                          liberado
+                            ? "border-primary/40 bg-card"
+                            : "border-input bg-muted/40"
+                        )}
                       >
-                        <Icone className="h-3 w-3" />
-                        {item.nome}
-                      </Badge>
+                        <div
+                          className={cn(
+                            "relative h-11 w-11 shrink-0 overflow-hidden rounded-lg",
+                            !liberado && "grayscale"
+                          )}
+                        >
+                          <img
+                            src={item.imagem}
+                            alt={item.nome}
+                            loading="lazy"
+                            className={cn(
+                              "h-full w-full object-contain",
+                              !liberado && "opacity-30"
+                            )}
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">{item.nome}</p>
+                          <Badge
+                            variant={liberado ? "sucesso" : "outline"}
+                            className={cn(
+                              "mt-1",
+                              !liberado && "text-muted-foreground/60"
+                            )}
+                          >
+                            {liberado ? "Desbloqueado" : "Bloqueado"}
+                          </Badge>
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
