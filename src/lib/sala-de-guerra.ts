@@ -18,7 +18,7 @@ const MS_DIA = 24 * 60 * 60 * 1000;
 // ------------------------------------------------------------------
 // Ordem natural das conquistas para a "próxima conquista" (sequencial)
 // ------------------------------------------------------------------
-export const ORDEM_CONQUISTAS = [
+const ORDEM_CONQUISTAS = [
   "primeira_semana",
   "modulo_1_completo",
   "modulo_2_completo",

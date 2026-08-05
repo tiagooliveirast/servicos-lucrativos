@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, LineChart } from "lucide-react";
+import { LineChart } from "lucide-react";
 
+import { CabecalhoPagina } from "@/components/CabecalhoPagina";
 import { GraficoEvolucao } from "@/components/GraficoEvolucao";
 import { CartaoCarregando } from "@/components/CartaoCarregando";
 import { CartaoErro } from "@/components/CartaoErro";
 import { Layout } from "@/components/Layout";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   serieConversao,
   serieFaturamento,
@@ -76,27 +75,27 @@ export function PaginaEvolucao({ userId }: { userId: string }) {
   return (
     <Layout>
       <div className="flex flex-col gap-6">
-        <div>
-          <Button asChild variant="ghost" size="sm" className="-ml-2 text-muted-foreground">
-            <Link to="/dashboard">
-              <ArrowLeft />
-              Painel de semanas
-            </Link>
-          </Button>
-          <div className="mt-3 flex items-center gap-2">
+        <CabecalhoPagina
+          voltarPara="/dashboard"
+          textoVoltar="Painel de semanas"
+          badges={
             <Badge variant="outline" className="text-primary">
               Evolução
             </Badge>
-          </div>
-          <h1 className="mt-2 flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-3xl">
-            <LineChart className="h-7 w-7 text-primary" />
-            Sua Evolução
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Acompanhe seu progresso mês a mês. Os gráficos são montados a partir dos seus
-            indicadores, painéis mensais, check-ins semanais e do seu IME.
-          </p>
-        </div>
+          }
+          titulo={
+            <>
+              <LineChart className="h-7 w-7 text-primary" />
+              Sua Evolução
+            </>
+          }
+          descricao={
+            <p className="mt-1 text-sm text-muted-foreground">
+              Acompanhe seu progresso mês a mês. Os gráficos são montados a partir dos seus
+              indicadores, painéis mensais, check-ins semanais e do seu IME.
+            </p>
+          }
+        />
 
         {erro && (
           <CartaoErro

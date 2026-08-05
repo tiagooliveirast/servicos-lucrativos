@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   AlertCircle,
-  ArrowLeft,
   CheckCircle2,
   FileUp,
   Heart,
@@ -19,6 +18,7 @@ import {
   Zap,
 } from "lucide-react";
 
+import { CabecalhoPagina } from "@/components/CabecalhoPagina";
 import { CartaoCarregando } from "@/components/CartaoCarregando";
 import { CartaoErro } from "@/components/CartaoErro";
 import { SemanaIndisponivel } from "@/components/SemanaIndisponivel";
@@ -439,31 +439,33 @@ function ConteudoSemana({
   return (
     <Layout>
       <div className="flex flex-col gap-6">
-        <div>
-          <Button asChild variant="ghost" size="sm" className="-ml-2 text-muted-foreground">
-            <Link to="/dashboard">
-              <ArrowLeft />
-              Painel de semanas
-            </Link>
-          </Button>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Badge variant="outline" className="text-primary">
-              Semana {semana.numero}
-            </Badge>
-            <Badge variant="secondary">
-              Módulo {semana.modulo} — {modulo.titulo}
-            </Badge>
-            {concluida && <Badge variant="sucesso">Concluída</Badge>}
-          </div>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">{semana.titulo}</h1>
-          <p className="mt-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Corresponde à Aula {semana.numero} do curso
-          </p>
-          <p className="mt-2 flex items-start gap-2 text-sm text-muted-foreground">
-            <Target className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-            Objetivo: {semana.objetivo}
-          </p>
-        </div>
+        <CabecalhoPagina
+          voltarPara="/dashboard"
+          textoVoltar="Painel de semanas"
+          badges={
+            <>
+              <Badge variant="outline" className="text-primary">
+                Semana {semana.numero}
+              </Badge>
+              <Badge variant="secondary">
+                Módulo {semana.modulo} — {modulo.titulo}
+              </Badge>
+              {concluida && <Badge variant="sucesso">Concluída</Badge>}
+            </>
+          }
+          titulo={semana.titulo}
+          descricao={
+            <>
+              <p className="mt-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Corresponde à Aula {semana.numero} do curso
+              </p>
+              <p className="mt-2 flex items-start gap-2 text-sm text-muted-foreground">
+                <Target className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                Objetivo: {semana.objetivo}
+              </p>
+            </>
+          }
+        />
 
         {bannerMotivo && (
           <div className="flex items-start gap-3 rounded-xl border border-primary/50 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent p-4">

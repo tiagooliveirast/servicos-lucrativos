@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  ArrowLeft,
   Award,
   Check,
   Crown,
@@ -14,6 +13,7 @@ import {
   Zap,
 } from "lucide-react";
 
+import { CabecalhoPagina } from "@/components/CabecalhoPagina";
 import { CartaoCarregando } from "@/components/CartaoCarregando";
 import { CartaoErro } from "@/components/CartaoErro";
 import { Layout } from "@/components/Layout";
@@ -71,27 +71,27 @@ export function PaginaConquistas({ userId }: { userId: string }) {
   return (
     <Layout>
       <div className="flex flex-col gap-6">
-        <div>
-          <Button asChild variant="ghost" size="sm" className="-ml-2 text-muted-foreground">
-            <Link to="/dashboard">
-              <ArrowLeft />
-              Painel de semanas
-            </Link>
-          </Button>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+        <CabecalhoPagina
+          voltarPara="/dashboard"
+          textoVoltar="Painel de semanas"
+          badges={
             <Badge variant="outline" className="text-primary">
               Gamificação
             </Badge>
-          </div>
-          <h1 className="mt-2 flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-3xl">
-            <Trophy className="h-7 w-7 text-primary" />
-            Conquistas
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Cada marco da sua jornada vira uma conquista. Continue avançando nas semanas, no
-            IME e na constância para desbloquear todas.
-          </p>
-        </div>
+          }
+          titulo={
+            <>
+              <Trophy className="h-7 w-7 text-primary" />
+              Conquistas
+            </>
+          }
+          descricao={
+            <p className="mt-1 text-sm text-muted-foreground">
+              Cada marco da sua jornada vira uma conquista. Continue avançando nas semanas, no
+              IME e na constância para desbloquear todas.
+            </p>
+          }
+        />
 
         {carregando && <CartaoCarregando />}
 

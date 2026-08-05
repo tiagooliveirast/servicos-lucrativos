@@ -102,42 +102,9 @@ export function pilaresDaChave(
   ];
 }
 
-export function chaveProntaParaDesbloquear(
-  chave: Chave,
-  ctx: ContextoDesbloqueio
-): boolean {
-  return pilaresDaChave(chave, ctx).every((p) => p.ok);
-}
-
 // ------------------------------------------------------------------
 // Carga de dados
 // ------------------------------------------------------------------
-export async function carregarChaves(userId: string): Promise<ChavesDaJornada> {
-  const [resCatalogo, resDesbloqueadas, resEscudo] = await Promise.all([
-    supabase.from("chaves").select("*").order("ordem"),
-    supabase
-      .from("chaves_usuario")
-      .select("id, user_id, chave_id, desbloqueada_em, solicitacao_fisica_status, solicitacao_fisica_em, chaves(*)")
-      .eq("user_id", userId)
-      .order("desbloqueada_em"),
-    supabase
-      .from("escudo_atual_usuario")
-      .select("*")
-      .eq("user_id", userId)
-      .maybeSingle(),
-  ]);
-
-  if (resCatalogo.error || resDesbloqueadas.error || resEscudo.error) {
-    throw new Error("Falha ao carregar as chaves.");
-  }
-
-  return {
-    catalogo: (resCatalogo.data ?? []) as Chave[],
-    desbloqueadas: (resDesbloqueadas.data ?? []) as unknown as ChaveUsuario[],
-    escudo: (resEscudo.data as EscudoAtual | null) ?? null,
-  };
-}
-
 export async function carregarProgressoChaves(
   userId: string
 ): Promise<ProgressoChaves> {

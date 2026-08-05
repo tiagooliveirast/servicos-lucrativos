@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AlertTriangle, Loader2 } from "lucide-react";
 
@@ -130,6 +130,12 @@ function TelaErroSessao({ aoTentar }: { aoTentar: () => void }) {
 export default function App() {
   const { fase, user, perfil, ausenteDias, reavaliar } = useAuth();
   const location = useLocation();
+
+  // Toda troca de rota volta ao topo da página (evita herdar o scroll de
+  // páginas longas ao navegar entre telas).
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   // Página pública da empresa: funciona sem sessão (e enquanto a sessão é
   // avaliada), então foge dos gates de carregando/erro abaixo.

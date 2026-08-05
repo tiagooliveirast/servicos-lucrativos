@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, BarChart3, CheckCircle2, Loader2 } from "lucide-react";
+import { useParams } from "react-router-dom";
+import { BarChart3, CheckCircle2, Loader2 } from "lucide-react";
 
+import { CabecalhoPagina } from "@/components/CabecalhoPagina";
 import { CartaoCarregando } from "@/components/CartaoCarregando";
 import { CartaoErro } from "@/components/CartaoErro";
 import { SemanaIndisponivel } from "@/components/SemanaIndisponivel";
 import { Layout } from "@/components/Layout";
 import { CelebracaoMelhoria, type MensagemCelebracao } from "@/components/CelebracaoMelhoria";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -315,28 +315,28 @@ function PainelForm({
   return (
     <Layout>
       <div className="flex flex-col gap-6">
-        <div>
-          <Button asChild variant="ghost" size="sm" className="-ml-2 text-muted-foreground">
-            <Link to="/dashboard">
-              <ArrowLeft />
-              Painel de semanas
-            </Link>
-          </Button>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Badge variant="outline" className="text-primary">
-              Painel Mensal {numero}
-            </Badge>
-            {completo && <Badge variant="sucesso">Preenchido</Badge>}
-          </div>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
-            Painel Mensal {numero}
-          </h1>
-          <p className="mt-1 text-sm font-medium text-primary">{config.rotulo}</p>
-          <p className="mt-2 flex items-start gap-2 text-sm text-muted-foreground">
-            <BarChart3 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-            {TEXTO_INTRO_PAINEL}
-          </p>
-        </div>
+        <CabecalhoPagina
+          voltarPara="/dashboard"
+          textoVoltar="Painel de semanas"
+          badges={
+            <>
+              <Badge variant="outline" className="text-primary">
+                Painel Mensal {numero}
+              </Badge>
+              {completo && <Badge variant="sucesso">Preenchido</Badge>}
+            </>
+          }
+          titulo={`Painel Mensal ${numero}`}
+          descricao={
+            <>
+              <p className="mt-1 text-sm font-medium text-primary">{config.rotulo}</p>
+              <p className="mt-2 flex items-start gap-2 text-sm text-muted-foreground">
+                <BarChart3 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                {TEXTO_INTRO_PAINEL}
+              </p>
+            </>
+          }
+        />
 
         <p className="rounded-lg border border-primary/25 bg-primary/5 p-4 text-sm text-foreground/90">
           {DICA_PAINEL}

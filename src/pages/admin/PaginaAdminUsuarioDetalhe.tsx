@@ -1,6 +1,5 @@
 import {
   AlertCircle,
-  ArrowLeft,
   Award,
   BadgeCheck,
   FileDown,
@@ -15,8 +14,9 @@ import {
   UserX,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
+import { CabecalhoPagina } from "@/components/CabecalhoPagina";
 import { CartaoCarregando } from "@/components/CartaoCarregando";
 import { CartaoErro } from "@/components/CartaoErro";
 import { Badge } from "@/components/ui/badge";
@@ -335,40 +335,40 @@ export function PaginaAdminUsuarioDetalhe() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <Button asChild variant="ghost" size="sm" className="-ml-2 text-muted-foreground">
-          <Link to="/admin/usuarios">
-            <ArrowLeft />
-            Usuários
-          </Link>
-        </Button>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          {concluidas.includes(12) ? (
-            <Badge variant="sucesso">90 dias concluídos</Badge>
-          ) : (
-            <Badge variant="outline">Semana {semanaAtualDe(concluidas)}</Badge>
-          )}
-          <Badge variant="secondary">{pct}% do plano</Badge>
-        </div>
-        <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
-          {perfil.nome ?? "Sem nome"}
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {perfil.email ?? "—"}
-          {perfil.whatsapp ? ` · WhatsApp ${perfil.whatsapp}` : ""}
-          {perfil.telefone ? ` · ${perfil.telefone}` : ""}
-          {perfil.cidade ? ` · ${perfil.cidade}${perfil.estado ? `/${perfil.estado}` : ""}` : ""}
-        </p>
-        {perfil.email_refriclube && (
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Refriclube: {perfil.email_refriclube}
-          </p>
-        )}
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          Início: {formatData(perfil.created_at)} · Último acesso:{" "}
-          {formatData(perfil.ultimo_acesso_at)}
-        </p>
-      </div>
+      <CabecalhoPagina
+        voltarPara="/admin/usuarios"
+        textoVoltar="Usuários"
+        badges={
+          <>
+            {concluidas.includes(12) ? (
+              <Badge variant="sucesso">90 dias concluídos</Badge>
+            ) : (
+              <Badge variant="outline">Semana {semanaAtualDe(concluidas)}</Badge>
+            )}
+            <Badge variant="secondary">{pct}% do plano</Badge>
+          </>
+        }
+        titulo={perfil.nome ?? "Sem nome"}
+        descricao={
+          <>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {perfil.email ?? "—"}
+              {perfil.whatsapp ? ` · WhatsApp ${perfil.whatsapp}` : ""}
+              {perfil.telefone ? ` · ${perfil.telefone}` : ""}
+              {perfil.cidade ? ` · ${perfil.cidade}${perfil.estado ? `/${perfil.estado}` : ""}` : ""}
+            </p>
+            {perfil.email_refriclube && (
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Refriclube: {perfil.email_refriclube}
+              </p>
+            )}
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Início: {formatData(perfil.created_at)} · Último acesso:{" "}
+              {formatData(perfil.ultimo_acesso_at)}
+            </p>
+          </>
+        }
+      />
 
       <Card>
         <CardHeader>

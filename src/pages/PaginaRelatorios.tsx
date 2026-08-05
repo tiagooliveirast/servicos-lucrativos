@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import {
-  ArrowLeft,
   Award,
   BadgeCheck,
   FileText,
@@ -9,6 +7,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 
+import { CabecalhoPagina } from "@/components/CabecalhoPagina";
 import { CartaoCarregando } from "@/components/CartaoCarregando";
 import { CartaoErro } from "@/components/CartaoErro";
 import { Layout } from "@/components/Layout";
@@ -107,27 +106,27 @@ export function PaginaRelatorios({ userId }: { userId: string }) {
   return (
     <Layout>
       <div className="flex flex-col gap-6">
-        <div>
-          <Button asChild variant="ghost" size="sm" className="-ml-2 text-muted-foreground">
-            <Link to="/dashboard">
-              <ArrowLeft />
-              Painel de semanas
-            </Link>
-          </Button>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+        <CabecalhoPagina
+          voltarPara="/dashboard"
+          textoVoltar="Painel de semanas"
+          badges={
             <Badge variant="outline" className="text-primary">
               Relatórios &amp; Certificado
             </Badge>
-          </div>
-          <h1 className="mt-2 flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-3xl">
-            <FileText className="h-7 w-7 text-primary" />
-            Seus Documentos
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Reúna o resultado da sua jornada de 90 dias no Relatório de Implantação e, ao
-            cumprir os três critérios, conquiste o seu Certificado de Implantação.
-          </p>
-        </div>
+          }
+          titulo={
+            <>
+              <FileText className="h-7 w-7 text-primary" />
+              Seus Documentos
+            </>
+          }
+          descricao={
+            <p className="mt-1 text-sm text-muted-foreground">
+              Reúna o resultado da sua jornada de 90 dias no Relatório de Implantação e, ao
+              cumprir os três critérios, conquiste o seu Certificado de Implantação.
+            </p>
+          }
+        />
 
         {erroGeracao && (
           <div className="flex flex-col items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-10 text-center">

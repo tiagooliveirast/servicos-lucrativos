@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, Award, HardHat, Store } from "lucide-react";
+import { Award, HardHat, Store } from "lucide-react";
 
+import { CabecalhoPagina } from "@/components/CabecalhoPagina";
 import { CartaoCarregando } from "@/components/CartaoCarregando";
 import { CartaoErro } from "@/components/CartaoErro";
 import { Layout } from "@/components/Layout";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { CompartilharEvolucao } from "@/components/CompartilharEvolucao";
 import { ConfiguracaoLembretes } from "@/components/ConfiguracaoLembretes";
@@ -120,27 +119,27 @@ export function PaginaEmpresa({ userId }: { userId: string }) {
   return (
     <Layout>
       <div className="flex flex-col gap-6">
-        <div>
-          <Button asChild variant="ghost" size="sm" className="-ml-2 text-muted-foreground">
-            <Link to="/dashboard">
-              <ArrowLeft />
-              Painel de semanas
-            </Link>
-          </Button>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+        <CabecalhoPagina
+          voltarPara="/dashboard"
+          textoVoltar="Painel de semanas"
+          badges={
             <Badge variant="outline" className="text-primary">
               Visualização
             </Badge>
-          </div>
-          <h1 className="mt-2 flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-3xl">
-            <HardHat className="h-7 w-7 text-primary" />
-            Minha Empresa
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Sua empresa evolui junto com o seu IME. Conquiste marcos para liberar os itens
-            do avatar.
-          </p>
-        </div>
+          }
+          titulo={
+            <>
+              <HardHat className="h-7 w-7 text-primary" />
+              Minha Empresa
+            </>
+          }
+          descricao={
+            <p className="mt-1 text-sm text-muted-foreground">
+              Sua empresa evolui junto com o seu IME. Conquiste marcos para liberar os itens
+              do avatar.
+            </p>
+          }
+        />
 
         {carregando && <CartaoCarregando />}
 

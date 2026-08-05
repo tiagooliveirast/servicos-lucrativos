@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, FileText, Loader2 } from "lucide-react";
+import { FileText, Loader2 } from "lucide-react";
 
+import { CabecalhoPagina } from "@/components/CabecalhoPagina";
 import { CartaoCarregando } from "@/components/CartaoCarregando";
 import { SemanaIndisponivel } from "@/components/SemanaIndisponivel";
 import { Layout } from "@/components/Layout";
@@ -103,27 +103,25 @@ export function PaginaManual({ userId }: { userId: string }) {
   return (
     <Layout>
       <div className="flex flex-col gap-6">
-        <div>
-          <Button asChild variant="ghost" size="sm" className="-ml-2 text-muted-foreground">
-            <Link to="/dashboard">
-              <ArrowLeft />
-              Painel de semanas
-            </Link>
-          </Button>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Badge variant="outline" className="text-primary">
-              Manual da Empresa
-            </Badge>
-            <Badge variant="sucesso">Disponível</Badge>
-          </div>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
-            O Manual da Sua Empresa
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Você concluiu as 12 semanas. Este PDF reúne tudo: os dados da sua empresa, as
-            respostas-chave de cada semana e a evolução dos 3 painéis mensais.
-          </p>
-        </div>
+        <CabecalhoPagina
+          voltarPara="/dashboard"
+          textoVoltar="Painel de semanas"
+          badges={
+            <>
+              <Badge variant="outline" className="text-primary">
+                Manual da Empresa
+              </Badge>
+              <Badge variant="sucesso">Disponível</Badge>
+            </>
+          }
+          titulo="O Manual da Sua Empresa"
+          descricao={
+            <p className="mt-2 text-sm text-muted-foreground">
+              Você concluiu as 12 semanas. Este PDF reúne tudo: os dados da sua empresa, as
+              respostas-chave de cada semana e a evolução dos 3 painéis mensais.
+            </p>
+          }
+        />
 
         <Card>
           <CardHeader>

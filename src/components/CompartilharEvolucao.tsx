@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { IconeChave } from "@/components/IconeChave";
 import { obterClassificacaoIme } from "@/lib/estagio-empresa";
 import { OURO, PRETO } from "@/lib/pdf-estilos";
 import { slugificar } from "@/lib/slug";
@@ -28,30 +29,6 @@ interface DadosCompartilhar {
   chave: { titulo: string; cor_hex: string } | null;
   faturamento: { valor: number; nivel_confianca: NivelConfiancaFaturamento } | null;
   diasJornada: number | null;
-}
-
-interface IconeChaveProps {
-  color: string;
-  className?: string;
-}
-
-function IconeChave({ color, className }: IconeChaveProps) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" />
-      <path d="m21 2-9.6 9.6" />
-      <circle cx="7.5" cy="15.5" r="5.5" />
-    </svg>
-  );
 }
 
 async function carregarDadosCompartilhar(userId: string): Promise<DadosCompartilhar> {
@@ -234,160 +211,158 @@ export function CompartilharEvolucao({ userId }: { userId: string }) {
 
         {!carregando && !erro && dados && (
           <>
-            <div className="overflow-x-auto">
-              <div
-                ref={cardRef}
-                className="mx-auto w-[420px] max-w-full rounded-2xl p-6 text-white"
-                style={{
-                  background: `radial-gradient(circle at top, #1b1713 0%, ${PRETO} 65%)`,
-                  border: `1px solid ${OURO}55`,
-                  fontFamily:
-                    "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif",
-                }}
-              >
-                {/* Marca */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="flex h-8 w-8 items-center justify-center rounded-md"
-                      style={{ background: OURO, color: PRETO }}
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-5 w-5"
-                      >
-                        <path d="M12 1v22" />
-                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                      </svg>
-                    </span>
-                    <span className="text-sm font-bold tracking-tight">
-                      Serviços <span style={{ color: OURO }}>Lucrativos</span>
-                    </span>
-                  </div>
+            <div
+              ref={cardRef}
+              className="mx-auto w-full max-w-[420px] rounded-2xl p-6 text-white"
+              style={{
+                background: `radial-gradient(circle at top, #1b1713 0%, ${PRETO} 65%)`,
+                border: `1px solid ${OURO}55`,
+                fontFamily:
+                  "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif",
+              }}
+            >
+              {/* Marca */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
                   <span
-                    className="text-[10px] uppercase tracking-widest"
-                    style={{ color: OURO }}
+                    className="flex h-8 w-8 items-center justify-center rounded-md"
+                    style={{ background: OURO, color: PRETO }}
                   >
-                    Plano de 90 Dias
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-5 w-5"
+                    >
+                      <path d="M12 1v22" />
+                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                    </svg>
+                  </span>
+                  <span className="text-sm font-bold tracking-tight">
+                    Serviços <span style={{ color: OURO }}>Lucrativos</span>
                   </span>
                 </div>
-
-                <div style={{ height: 26 }} />
-
-                {/* Empresa */}
-                <p
-                  className="text-lg font-bold leading-tight"
+                <span
+                  className="text-[10px] uppercase tracking-widest"
                   style={{ color: OURO }}
                 >
-                  {nomeVisivel}
+                  Plano de 90 Dias
+                </span>
+              </div>
+  
+              <div style={{ height: 26 }} />
+  
+              {/* Empresa */}
+              <p
+                className="text-lg font-bold leading-tight"
+                style={{ color: OURO }}
+              >
+                {nomeVisivel}
+              </p>
+              {dados.paginaAtiva && (dados.cidade || dados.estado) && (
+                <p className="mt-1 text-xs text-white/50">
+                  {[dados.cidade, dados.estado].filter(Boolean).join(" · ")}
                 </p>
-                {dados.paginaAtiva && (dados.cidade || dados.estado) && (
-                  <p className="mt-1 text-xs text-white/50">
-                    {[dados.cidade, dados.estado].filter(Boolean).join(" · ")}
-                  </p>
-                )}
-
-                {/* Chave atual */}
-                {dados.chave && (
-                  <div
-                    className="mt-5 flex items-center gap-3 rounded-xl border px-3.5 py-2.5"
+              )}
+  
+              {/* Chave atual */}
+              {dados.chave && (
+                <div
+                  className="mt-5 flex items-center gap-3 rounded-xl border px-3.5 py-2.5"
+                  style={{
+                    borderColor: `${dados.chave.cor_hex}55`,
+                    background: `${dados.chave.cor_hex}14`,
+                  }}
+                >
+                  <span
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border"
                     style={{
-                      borderColor: `${dados.chave.cor_hex}55`,
-                      background: `${dados.chave.cor_hex}14`,
+                      borderColor: dados.chave.cor_hex,
+                      boxShadow: `0 0 18px -4px ${dados.chave.cor_hex}`,
+                      background: PRETO,
                     }}
                   >
-                    <span
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border"
-                      style={{
-                        borderColor: dados.chave.cor_hex,
-                        boxShadow: `0 0 18px -4px ${dados.chave.cor_hex}`,
-                        background: PRETO,
-                      }}
-                    >
-                      <IconeChave color={dados.chave.cor_hex} className="h-5 w-5" />
-                    </span>
-                    <span>
-                      <span className="block text-[10px] uppercase tracking-wider text-white/50">
-                        Chave atual
-                      </span>
-                      <span className="block text-sm font-semibold" style={{ color: dados.chave.cor_hex }}>
-                        {dados.chave.titulo}
-                      </span>
-                    </span>
-                  </div>
-                )}
-
-                {/* Evolução do IME */}
-                <div className="mt-5 flex items-end justify-between">
-                  <span className="text-[10px] uppercase tracking-wider text-white/50">
-                    Evolução do IME
+                    <IconeChave color={dados.chave.cor_hex} className="h-5 w-5" />
                   </span>
-                  <span className="text-[10px] uppercase tracking-wider text-white/50">
-                    {obterClassificacaoIme(dados.imeFinal ?? 0).nome}
+                  <span>
+                    <span className="block text-[10px] uppercase tracking-wider text-white/50">
+                      Chave atual
+                    </span>
+                    <span className="block text-sm font-semibold" style={{ color: dados.chave.cor_hex }}>
+                      {dados.chave.titulo}
+                    </span>
                   </span>
                 </div>
-                <div className="mt-1 flex items-center gap-3">
-                  {dados.imeInicial !== null && dados.imeInicial !== dados.imeFinal && (
-                    <>
-                      <span className="text-3xl font-bold text-white/70">
-                        {Math.round(dados.imeInicial)}
-                      </span>
-                      <span className="text-xl font-bold" style={{ color: OURO }}>
-                        →
-                      </span>
-                    </>
-                  )}
-                  <span className="text-4xl font-bold" style={{ color: OURO }}>
-                    {dados.imeFinal !== null ? Math.round(dados.imeFinal) : "—"}
-                  </span>
-                </div>
-
-                {/* Faturamento (respeita a preferência de mostrar ou não) */}
-                {dados.mostrarFaturamento && dados.faturamento && (
-                  <div className="mt-5 flex items-center justify-between rounded-xl border px-3.5 py-2.5" style={{ borderColor: `${OURO}44` }}>
-                    <span className="text-xs text-white/70">Faturamento atual</span>
-                    <span className="flex items-center gap-2">
-                      <span className="text-sm font-bold" style={{ color: OURO }}>
-                        {formatBRL(dados.faturamento.valor)}
-                      </span>
-                      {dados.faturamento.nivel_confianca === "autodeclarado" && (
-                        <span
-                          className="rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-wide"
-                          style={{ borderColor: `${OURO}44`, color: "#a89f8f" }}
-                        >
-                          Autodeclarado
-                        </span>
-                      )}
-                    </span>
-                  </div>
-                )}
-
-                {/* Tempo de jornada */}
-                {dados.diasJornada !== null && (
-                  <p className="mt-5 text-xs text-white/60">
-                    <span className="font-semibold" style={{ color: OURO }}>
-                      {dados.diasJornada} {dados.diasJornada === 1 ? "dia" : "dias"}
-                    </span>{" "}
-                    de jornada de estruturação empresarial.
-                  </p>
-                )}
-
-                <div style={{ height: 22 }} />
-
-                {/* Rodapé do card */}
-                <div className="border-t pt-3" style={{ borderColor: `${OURO}33` }}>
-                  <p className="text-[10px] leading-relaxed text-white/45">
-                    Sua empresa também pode evoluir com o Serviços Lucrativos — o método
-                    de 90 dias para estruturar negócios de serviços.
-                  </p>
-                </div>
+              )}
+  
+              {/* Evolução do IME */}
+              <div className="mt-5 flex items-end justify-between">
+                <span className="text-[10px] uppercase tracking-wider text-white/50">
+                  Evolução do IME
+                </span>
+                <span className="text-[10px] uppercase tracking-wider text-white/50">
+                  {obterClassificacaoIme(dados.imeFinal ?? 0).nome}
+                </span>
               </div>
-            </div>
+              <div className="mt-1 flex items-center gap-3">
+                {dados.imeInicial !== null && dados.imeInicial !== dados.imeFinal && (
+                  <>
+                    <span className="text-3xl font-bold text-white/70">
+                      {Math.round(dados.imeInicial)}
+                    </span>
+                    <span className="text-xl font-bold" style={{ color: OURO }}>
+                      →
+                    </span>
+                  </>
+                )}
+                <span className="text-4xl font-bold" style={{ color: OURO }}>
+                  {dados.imeFinal !== null ? Math.round(dados.imeFinal) : "—"}
+                </span>
+              </div>
+  
+              {/* Faturamento (respeita a preferência de mostrar ou não) */}
+              {dados.mostrarFaturamento && dados.faturamento && (
+                <div className="mt-5 flex items-center justify-between rounded-xl border px-3.5 py-2.5" style={{ borderColor: `${OURO}44` }}>
+                  <span className="text-xs text-white/70">Faturamento atual</span>
+                  <span className="flex items-center gap-2">
+                    <span className="text-sm font-bold" style={{ color: OURO }}>
+                      {formatBRL(dados.faturamento.valor)}
+                    </span>
+                    {dados.faturamento.nivel_confianca === "autodeclarado" && (
+                      <span
+                        className="rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-wide"
+                        style={{ borderColor: `${OURO}44`, color: "#a89f8f" }}
+                      >
+                        Autodeclarado
+                      </span>
+                    )}
+                  </span>
+                </div>
+              )}
+  
+              {/* Tempo de jornada */}
+              {dados.diasJornada !== null && (
+                <p className="mt-5 text-xs text-white/60">
+                  <span className="font-semibold" style={{ color: OURO }}>
+                    {dados.diasJornada} {dados.diasJornada === 1 ? "dia" : "dias"}
+                  </span>{" "}
+                  de jornada de estruturação empresarial.
+                </p>
+              )}
+  
+              <div style={{ height: 22 }} />
+  
+              {/* Rodapé do card */}
+              <div className="border-t pt-3" style={{ borderColor: `${OURO}33` }}>
+                <p className="text-[10px] leading-relaxed text-white/45">
+                  Sua empresa também pode evoluir com o Serviços Lucrativos — o método
+                  de 90 dias para estruturar negócios de serviços.
+                </p>
+              </div>
+          </div>
 
             <div className="flex flex-col gap-2">
               <Button

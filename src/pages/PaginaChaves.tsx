@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import {
   Anchor,
-  ArrowLeft,
   Check,
   KeyRound,
   Loader2,
@@ -13,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 
+import { CabecalhoPagina } from "@/components/CabecalhoPagina";
 import { CartaoCarregando } from "@/components/CartaoCarregando";
 import { CartaoErro } from "@/components/CartaoErro";
 import { Layout } from "@/components/Layout";
@@ -165,28 +164,28 @@ export function PaginaChaves({
   return (
     <Layout>
       <div className="flex flex-col gap-6">
-        <div>
-          <Button asChild variant="ghost" size="sm" className="-ml-2 text-muted-foreground">
-            <Link to="/dashboard">
-              <ArrowLeft />
-              Painel de semanas
-            </Link>
-          </Button>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+        <CabecalhoPagina
+          voltarPara="/dashboard"
+          textoVoltar="Painel de semanas"
+          badges={
             <Badge variant="outline" className="text-primary">
               Reconhecimento
             </Badge>
-          </div>
-          <h1 className="mt-2 flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-3xl">
-            <KeyRound className="h-7 w-7 text-primary" />
-            Chaves da Jornada
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Cada chave é desbloqueada quando quatro pilares estão prontos:
-            faturamento, IME, IE e as missões/ativos da jornada. Cada chave
-            vale uma versão física da sua conquista.
-          </p>
-        </div>
+          }
+          titulo={
+            <>
+              <KeyRound className="h-7 w-7 text-primary" />
+              Chaves da Jornada
+            </>
+          }
+          descricao={
+            <p className="mt-1 text-sm text-muted-foreground">
+              Cada chave é desbloqueada quando quatro pilares estão prontos:
+              faturamento, IME, IE e as missões/ativos da jornada. Cada chave
+              vale uma versão física da sua conquista.
+            </p>
+          }
+        />
 
         {carregando && <CartaoCarregando />}
 

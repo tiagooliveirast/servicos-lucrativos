@@ -1,7 +1,7 @@
-import { ArrowLeft, Gauge, Loader2, RefreshCw } from "lucide-react";
+import { Gauge, Loader2, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 
+import { CabecalhoPagina } from "@/components/CabecalhoPagina";
 import { CartaoCarregando } from "@/components/CartaoCarregando";
 import { CartaoErro } from "@/components/CartaoErro";
 import { Layout } from "@/components/Layout";
@@ -76,26 +76,26 @@ export function PaginaIME({ userId }: { userId: string }) {
   return (
     <Layout>
       <div className="flex flex-col gap-6">
-        <div>
-          <Button asChild variant="ghost" size="sm" className="-ml-2 text-muted-foreground">
-            <Link to="/dashboard">
-              <ArrowLeft />
-              Painel de semanas
-            </Link>
-          </Button>
-          <div className="mt-3 flex items-center gap-2">
+        <CabecalhoPagina
+          voltarPara="/dashboard"
+          textoVoltar="Painel de semanas"
+          badges={
             <Badge variant="outline" className="text-primary">
               Índice de Maturidade Empresarial
             </Badge>
-          </div>
-          <h1 className="mt-2 flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-3xl">
-            <Gauge className="h-7 w-7 text-primary" />
-            Seu IME
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            O IME resume, de 0 a 100, a maturidade da sua empresa a partir de 8 pilares.
-          </p>
-        </div>
+          }
+          titulo={
+            <>
+              <Gauge className="h-7 w-7 text-primary" />
+              Seu IME
+            </>
+          }
+          descricao={
+            <p className="mt-1 text-sm text-muted-foreground">
+              O IME resume, de 0 a 100, a maturidade da sua empresa a partir de 8 pilares.
+            </p>
+          }
+        />
 
         {erro && (
           <CartaoErro

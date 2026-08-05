@@ -1,7 +1,8 @@
-import { AlertCircle, ArrowLeft, CalendarCheck, CheckCircle2, Loader2 } from "lucide-react";
+import { AlertCircle, CalendarCheck, CheckCircle2, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { CabecalhoPagina } from "@/components/CabecalhoPagina";
 import { CartaoCarregando } from "@/components/CartaoCarregando";
 import { CartaoErro } from "@/components/CartaoErro";
 import { Layout } from "@/components/Layout";
@@ -184,26 +185,26 @@ export function PaginaCheckin({ userId }: { userId: string }) {
   return (
     <Layout>
       <div className="flex flex-col gap-6">
-        <div>
-          <Button asChild variant="ghost" size="sm" className="-ml-2 text-muted-foreground">
-            <Link to="/dashboard">
-              <ArrowLeft />
-              Painel de semanas
-            </Link>
-          </Button>
-          <div className="mt-3 flex items-center gap-2">
+        <CabecalhoPagina
+          voltarPara="/dashboard"
+          textoVoltar="Painel de semanas"
+          badges={
             <Badge variant="outline" className="text-primary">
               Check-in semanal
             </Badge>
-          </div>
-          <h1 className="mt-2 flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-3xl">
-            <CalendarCheck className="h-7 w-7 text-primary" />
-            Como foi sua semana?
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Leva menos de 2 minutos e ajuda a acompanhar sua evolução semana a semana.
-          </p>
-        </div>
+          }
+          titulo={
+            <>
+              <CalendarCheck className="h-7 w-7 text-primary" />
+              Como foi sua semana?
+            </>
+          }
+          descricao={
+            <p className="mt-1 text-sm text-muted-foreground">
+              Leva menos de 2 minutos e ajuda a acompanhar sua evolução semana a semana.
+            </p>
+          }
+        />
 
         {registrado && (
           <div className="flex flex-col items-center gap-3 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-6 text-center">

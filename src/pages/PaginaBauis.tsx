@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  ArrowLeft,
   BookOpen,
   Check,
   ClipboardList,
@@ -14,6 +13,7 @@ import {
 
 import { CartaoCarregando } from "@/components/CartaoCarregando";
 import { CartaoErro } from "@/components/CartaoErro";
+import { CabecalhoPagina } from "@/components/CabecalhoPagina";
 import { Layout } from "@/components/Layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,24 +40,8 @@ export function PaginaBauis({ userId }: { userId: string }) {
   }, [userId]);
 
   useEffect(() => {
-    let ativo = true;
-    async function carregarInicial() {
-      try {
-        const dados = await carregarBauis(userId);
-        if (!ativo) return;
-        setBauis(dados);
-      } catch {
-        if (!ativo) return;
-        setErro(true);
-      } finally {
-        if (ativo) setCarregando(false);
-      }
-    }
-    void carregarInicial();
-    return () => {
-      ativo = false;
-    };
-  }, [userId]);
+    void carregar();
+  }, [carregar]);
 
   async function aoAbrir(bauUsuario: BauUsuario) {
     if (!bauUsuario.bauis) return;
@@ -82,27 +66,27 @@ export function PaginaBauis({ userId }: { userId: string }) {
   return (
     <Layout>
       <div className="flex flex-col gap-6">
-        <div>
-          <Button asChild variant="ghost" size="sm" className="-ml-2 text-muted-foreground">
-            <Link to="/conquistas">
-              <ArrowLeft />
-              Conquistas
-            </Link>
-          </Button>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+        <CabecalhoPagina
+          voltarPara="/conquistas"
+          textoVoltar="Conquistas"
+          badges={
             <Badge variant="outline" className="text-primary">
               Gamificação
             </Badge>
-          </div>
-          <h1 className="mt-2 flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-3xl">
-            <PartyPopper className="h-7 w-7 text-primary" />
-            Baús
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Cada conquista desbloqueada pode abrir um baú com material bônus para a sua
-            jornada. Abra para descobrir o que tem dentro.
-          </p>
-        </div>
+          }
+          titulo={
+            <>
+              <PartyPopper className="h-7 w-7 text-primary" />
+              Baús
+            </>
+          }
+          descricao={
+            <p className="mt-1 text-sm text-muted-foreground">
+              Cada conquista desbloqueada pode abrir um baú com material bônus para a sua
+              jornada. Abra para descobrir o que tem dentro.
+            </p>
+          }
+        />
 
         {carregando && <CartaoCarregando />}
 

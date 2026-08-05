@@ -252,7 +252,7 @@ export function PaginaSalaDeGuerra({
         </section>
 
         {/* Base: motivação — streak, conquista, chave */}
-        <section className="grid grid-cols-3 gap-3">
+        <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <CartaoMotivacao
             icone={<Flame className="h-4 w-4 text-orange-400" />}
             rotulo="Streak"

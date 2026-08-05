@@ -5,9 +5,10 @@ import { Award, Loader2, MapPin, ShieldCheck, Store } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { GraficoEvolucaoVitrine } from "@/components/GraficoEvolucaoVitrine";
+import { IconeChave } from "@/components/IconeChave";
 import { Logo } from "@/components/Logo";
 import { obterClassificacaoIme } from "@/lib/estagio-empresa";
-import type { SerieEvolucao } from "@/lib/evolucao";
+import { serieIme } from "@/lib/evolucao";
 import {
   buscarPaginaPublica,
   RODAPE_VITRINE,
@@ -16,19 +17,6 @@ import {
 import { formatBRL, formatData } from "@/lib/utils";
 
 type EstadoCarga = "carregando" | "nao_encontrada" | "erro" | "pronto";
-
-function serieImePublica(historico: PaginaPublica["ime_historico"]): SerieEvolucao {
-  const pontos = historico
-    .map((p) => {
-      const d = new Date(p.data);
-      const rotulo = Number.isNaN(d.getTime())
-        ? p.data.slice(0, 10)
-        : d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
-      return { data: p.data, rotulo, valor: p.valor };
-    })
-    .sort((a, b) => a.data.localeCompare(b.data));
-  return { pontos, suficiente: pontos.length >= 2 };
-}
 
 export function PaginaEmpresaPublica() {
   const { slug: slugBruto } = useParams<{ slug: string }>();
@@ -177,29 +165,14 @@ function VitrineEmpresa({ dados }: { dados: PaginaPublica }) {
           </p>
           {dados.chave ? (
             <>
-              <div
-                className="mt-4 flex h-16 w-16 items-center justify-center rounded-full border bg-card"
-                style={{
-                  borderColor: dados.chave.cor_hex,
-                  boxShadow: `0 0 28px -8px ${dados.chave.cor_hex}`,
-                }}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-8 w-8"
-                  style={{ color: dados.chave.cor_hex }}
-                  aria-hidden="true"
+                <span className="mt-4 flex h-16 w-16 items-center justify-center rounded-full border bg-card"
+                  style={{
+                    borderColor: dados.chave.cor_hex,
+                    boxShadow: `0 0 28px -8px ${dados.chave.cor_hex}`,
+                  }}
                 >
-                  <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" />
-                  <path d="m21 2-9.6 9.6" />
-                  <circle cx="7.5" cy="15.5" r="5.5" />
-                </svg>
-              </div>
+                  <IconeChave color={dados.chave.cor_hex} className="h-8 w-8" />
+                </span>
               <h2
                 className="mt-4 text-xl font-bold"
                 style={{ color: dados.chave.cor_hex }}
@@ -280,7 +253,9 @@ function VitrineEmpresa({ dados }: { dados: PaginaPublica }) {
       <GraficoEvolucaoVitrine
         titulo="Evolução do IME"
         descricao="Como a maturidade da empresa cresceu ao longo da jornada de 90 dias."
-        serie={serieImePublica(dados.ime_historico)}
+        serie={serieIme(
+          dados.ime_historico.map((p) => ({ data_calculo: p.data, score_total: p.valor }))
+        )}
         mascara={(v) => String(Math.round(v))}
         mensagemVazia="A evolução do IME desta empresa ainda está começando."
       />

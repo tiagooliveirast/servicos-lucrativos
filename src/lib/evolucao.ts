@@ -10,7 +10,7 @@ import type {
  * Todas usam a cor Ouro Sheik (#C9A227) na UI.
  */
 
-export const PONTOS_MINIMOS = 2;
+const PONTOS_MINIMOS = 2;
 
 export interface PontoEvolucao {
   /** data ISO no formato yyyy-mm-dd (chave de ordenação/dedupe) */
@@ -90,7 +90,9 @@ function painelCampo(
 }
 
 /** IME (Índice de Maturidade Empresarial) por data de cálculo. */
-export function serieIme(ime: ImeHistorico[]): SerieEvolucao {
+export function serieIme(
+  ime: Pick<ImeHistorico, "data_calculo" | "score_total">[]
+): SerieEvolucao {
   const fontes = ime
     .filter((i) => i.data_calculo)
     .map((i) => ({ data: i.data_calculo, valor: i.score_total, prioridade: 0 }));
