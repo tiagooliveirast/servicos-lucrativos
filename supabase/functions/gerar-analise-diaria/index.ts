@@ -39,12 +39,23 @@ const LIMITE_ANALISES_DIARIAS_TOTAL = Number(
 const MODELO_IA = Deno.env.get("OPENAI_MODEL") ?? "gpt-4o-mini";
 const TEMPO_ESPERA_OPENAI_MS = 20000;
 
-const CABECALHOS = {
-  "Content-Type": "application/json",
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+// Origens autorizadas (CORS restrito — nada de "*"):
+// produção (Vercel) + dev local (porta padrão do Vite).
+const ORIGENS_PERMITIDAS = [
+  "https://servicos-lucrativos.vercel.app",
+  "http://localhost:5173",
+];
+
+function cabecalhos(origem: string | null): Record<string, string> {
+  const permitida = origem !== null && ORIGENS_PERMITIDAS.includes(origem) ? origem : "";
+  return {
+    "Content-Type": "application/json",
+    "Vary": "Origin",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    ...(permitida ? { "Access-Control-Allow-Origin": permitida } : {}),
+  };
+}
 
 const PROMPT_SISTEMA = [
   "Você é o mentor da plataforma 'Serviços Lucrativos'. Você escreve para o dono de uma pequena empresa que está implantando um plano de gestão de 90 dias.",
@@ -56,10 +67,6 @@ const PROMPT_SISTEMA = [
   "- Se um dado estiver ausente (null), não o invente e não o mencione.",
   "- Não use emojis, não use markdown, não use cabeçalhos, não assine a mensagem.",
 ].join("\n");
-
-function responder(status: number, corpo: Record<string, unknown>) {
-  return new Response(JSON.stringify(corpo), { status, headers: CABECALHOS });
-}
 
 function dataHojeUtc(): string {
   return new Date().toISOString().slice(0, 10);
@@ -114,8 +121,12 @@ async function chamarOpenAI(payload: unknown): Promise<string> {
 }
 
 Deno.serve(async (req) => {
+  const headers = cabecalhos(req.headers.get("Origin"));
+  const responder = (status: number, corpo: Record<string, unknown>) =>
+    new Response(JSON.stringify(corpo), { status, headers });
+
   if (req.method === "OPTIONS") {
-    return new Response("ok", { status: 204, headers: CABECALHOS });
+    return new Response(null, { status: 204, headers });
   }
   if (req.method !== "POST") {
     return responder(405, { erro: "Método não permitido." });

@@ -31,7 +31,7 @@ do Manual da Empresa em PDF e o Radar da Empresa (alertas inteligentes e determi
 | `VITE_SUPABASE_URL` | `.env` local + Vercel | URL do projeto (front-end) |
 | `VITE_SUPABASE_ANON_KEY` | `.env` local + Vercel | Chave pública do front-end |
 | `SUPABASE_SERVICE_ROLE_KEY` | Secrets da Edge Function | Só no servidor (nunca no front/bundle) |
-| `VITE_REFRICLUBE_SECRET_KEY` | `.env` local + Vercel | Reservada p/ integração futura com o Refriclube |
+| `REFRICLUBE_SECRET_KEY` | Secrets da Edge Function | Reservada p/ integração futura com o Refriclube (sem prefixo `VITE_` — nunca vai ao bundle) |
 
 O deploy da branch `main` para produção está ativo na Vercel (mesmo padrão do Refriclube e
 do Viga Gestão).

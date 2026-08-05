@@ -1,0 +1,74 @@
+# ============================================================
+# Serviços Lucrativos — config do Supabase CLI
+#
+# Este arquivo versiona a configuração do projeto (supabase
+# start/local) e DOCUMENTA o verify_jwt de cada Edge Function.
+# O estado deployed (verificado em produção) é o mesmo:
+#
+#   criar-acesso             verify_jwt = true
+#   gerar-analise-diaria     verify_jwt = true
+#   gerar-dica-semana        verify_jwt = true
+#   enviar-lembretes-semanais verify_jwt = true
+#   cancelar-lembretes       verify_jwt = false  (pública de propósito)
+#
+# IMPORTANTE: cancelar-lembretes NUNCA deve exigir JWT — é o link
+# de descadastro do e-mail, que funciona deslogado.
+# ============================================================
+
+project_id = "orlngwrzfzuxnflcgnum"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 17
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["https://servicos-lucrativos.vercel.app"]
+jwt_expiry = 3600
+enable_signup = true
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[edge_runtime]
+enabled = true
+policy = "oneshot"
+inspector_port = 8083
+
+# ------------------------------------------------------------------
+# Edge Functions — verify_jwt documentado função a função
+# ------------------------------------------------------------------
+
+[functions.criar-acesso]
+verify_jwt = true
+
+[functions.gerar-analise-diaria]
+verify_jwt = true
+
+[functions.gerar-dica-semana]
+verify_jwt = true
+
+[functions.enviar-lembretes-semanais]
+verify_jwt = true
+
+[functions.cancelar-lembretes]
+# Pública de propósito: chamada deslogada pela página /preferencias
+# (link de descadastro no e-mail). Só alterar junto com o deploy.
+verify_jwt = false

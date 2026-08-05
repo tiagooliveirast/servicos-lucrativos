@@ -16,12 +16,23 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-const CABECALHOS = {
-  "Content-Type": "application/json",
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+// Origens autorizadas (CORS restrito — nada de "*"):
+// produção (Vercel) + dev local (porta padrão do Vite).
+const ORIGENS_PERMITIDAS = [
+  "https://servicos-lucrativos.vercel.app",
+  "http://localhost:5173",
+];
+
+function cabecalhos(origem: string | null): Record<string, string> {
+  const permitida = origem !== null && ORIGENS_PERMITIDAS.includes(origem) ? origem : "";
+  return {
+    "Content-Type": "application/json",
+    "Vary": "Origin",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    ...(permitida ? { "Access-Control-Allow-Origin": permitida } : {}),
+  };
+}
 
 // Alfabeto sem caracteres ambíguos (0/O, 1/l/I), fácil de digitar/ditar
 const ALFABETO = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
@@ -31,13 +42,13 @@ function gerarSenha(tamanho = 8): string {
   return Array.from(valores, (v) => ALFABETO[v % ALFABETO.length]).join("");
 }
 
-function responder(status: number, corpo: Record<string, unknown>) {
-  return new Response(JSON.stringify(corpo), { status, headers: CABECALHOS });
-}
-
 Deno.serve(async (req) => {
+  const headers = cabecalhos(req.headers.get("Origin"));
+  const responder = (status: number, corpo: Record<string, unknown>) =>
+    new Response(JSON.stringify(corpo), { status, headers });
+
   if (req.method === "OPTIONS") {
-    return new Response("ok", { status: 204, headers: CABECALHOS });
+    return new Response(null, { status: 204, headers });
   }
   if (req.method !== "POST") {
     return responder(405, { erro: "Método não permitido." });

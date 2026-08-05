@@ -22,15 +22,22 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 
-const CABECALHOS = {
-  "Content-Type": "application/json",
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-};
+// Origens autorizadas (CORS restrito — nada de "*"):
+// produção (Vercel) + dev local (porta padrão do Vite).
+const ORIGENS_PERMITIDAS = [
+  "https://servicos-lucrativos.vercel.app",
+  "http://localhost:5173",
+];
 
-function responder(status: number, corpo: Record<string, unknown>) {
-  return new Response(JSON.stringify(corpo), { status, headers: CABECALHOS });
+function cabecalhos(origem: string | null): Record<string, string> {
+  const permitida = origem !== null && ORIGENS_PERMITIDAS.includes(origem) ? origem : "";
+  return {
+    "Content-Type": "application/json",
+    "Vary": "Origin",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    ...(permitida ? { "Access-Control-Allow-Origin": permitida } : {}),
+  };
 }
 
 async function gerarToken(userId: string): Promise<string> {
@@ -61,8 +68,12 @@ function ehUuid(valor: string): boolean {
 }
 
 Deno.serve(async (req) => {
+  const headers = cabecalhos(req.headers.get("Origin"));
+  const responder = (status: number, corpo: Record<string, unknown>) =>
+    new Response(JSON.stringify(corpo), { status, headers });
+
   if (req.method === "OPTIONS") {
-    return new Response("ok", { status: 204, headers: CABECALHOS });
+    return new Response(null, { status: 204, headers });
   }
   if (req.method !== "GET" && req.method !== "POST") {
     return responder(405, { erro: "Método não permitido." });

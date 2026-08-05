@@ -1395,6 +1395,9 @@ function BlocoDicaSemana({
               {gerando ? <Loader2 className="animate-spin" /> : <Sparkles />}
               {gerando ? "Gerando…" : "Gerar dica personalizada"}
             </Button>
+            <p className="text-xs text-muted-foreground">
+              Usamos parte dos seus dados de negócio para personalizar esta dica.
+            </p>
           </>
         )}
         {erro && (

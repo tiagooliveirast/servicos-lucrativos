@@ -38,12 +38,24 @@ const EMAIL_FROM =
 const TIPO_LEMBRETE = "inatividade_semanal";
 const JANELA_ANTI_DUPLICADO_DIAS = 6;
 
-const CABECALHOS = {
-  "Content-Type": "application/json",
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+// Origens autorizadas (CORS restrito — nada de "*"):
+// produção (Vercel) + dev local (porta padrão do Vite).
+// Chamadas de cron/servidor (sem header Origin) não recebem ACAO.
+const ORIGENS_PERMITIDAS = [
+  "https://servicos-lucrativos.vercel.app",
+  "http://localhost:5173",
+];
+
+function cabecalhos(origem: string | null): Record<string, string> {
+  const permitida = origem !== null && ORIGENS_PERMITIDAS.includes(origem) ? origem : "";
+  return {
+    "Content-Type": "application/json",
+    "Vary": "Origin",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    ...(permitida ? { "Access-Control-Allow-Origin": permitida } : {}),
+  };
+}
 
 // ------------------------------------------------------------------
 // Missão "principal" (índice 0) de cada semana — fallback estático
@@ -72,10 +84,6 @@ interface AlunoRisco {
   nome: string | null;
   email: string | null;
   dias_sem_login: number;
-}
-
-function responder(status: number, corpo: Record<string, unknown>) {
-  return new Response(JSON.stringify(corpo), { status, headers: CABECALHOS });
 }
 
 // ------------------------------------------------------------------
@@ -184,8 +192,12 @@ async function enviarViaResend(aluno: AlunoRisco, semana: number, missao: string
 }
 
 Deno.serve(async (req) => {
+  const headers = cabecalhos(req.headers.get("Origin"));
+  const responder = (status: number, corpo: Record<string, unknown>) =>
+    new Response(JSON.stringify(corpo), { status, headers });
+
   if (req.method === "OPTIONS") {
-    return new Response("ok", { status: 204, headers: CABECALHOS });
+    return new Response(null, { status: 204, headers });
   }
   if (req.method !== "POST") {
     return responder(405, { erro: "Método não permitido." });

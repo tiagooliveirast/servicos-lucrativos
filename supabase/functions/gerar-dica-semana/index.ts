@@ -10,10 +10,12 @@
 //   * diagnostico_inicial.area_atuacao (ramo de atuação) —
 //     se preenchido, a IA adapta exemplos; se ausente, fica
 //     genérica (nunca presume o ramo);
-//   * diagnostico_inicial.tempo_mercado / nome_empresa e
-//     perfis.estado — contexto geral de quem é o aluno;
-//   * respostas de progresso_semanas da semana — campos que o
-//     aluno JÁ preencheu (para a IA não repetir o que ele sabe).
+//   * diagnostico_inicial.tempo_mercado — contexto geral;
+//   * respostas de progresso_semanas da semana — apenas os
+//     RÓTULOS dos campos que o aluno JÁ preencheu (para a IA
+//     não repetir o que ele sabe). Os VALORES digitados (valores
+//     financeiros, preços, metas) NUNCA saem do banco (auditoria
+//     item 13: minimizar dados enviados à OpenAI).
 //
 // Regras de custo:
 //   * sem geração automática: só roda quando o usuário pede;
@@ -37,12 +39,23 @@ const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY") ?? "";
 const MODELO_IA = Deno.env.get("OPENAI_MODEL") ?? "gpt-4o-mini";
 const TEMPO_ESPERA_OPENAI_MS = 20000;
 
-const CABECALHOS = {
-  "Content-Type": "application/json",
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+// Origens autorizadas (CORS restrito — nada de "*"):
+// produção (Vercel) + dev local (porta padrão do Vite).
+const ORIGENS_PERMITIDAS = [
+  "https://servicos-lucrativos.vercel.app",
+  "http://localhost:5173",
+];
+
+function cabecalhos(origem: string | null): Record<string, string> {
+  const permitida = origem !== null && ORIGENS_PERMITIDAS.includes(origem) ? origem : "";
+  return {
+    "Content-Type": "application/json",
+    "Vary": "Origin",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    ...(permitida ? { "Access-Control-Allow-Origin": permitida } : {}),
+  };
+}
 
 const PROMPT_SISTEMA = [
   "Você é o mentor da plataforma 'Serviços Lucrativos'. Você ajuda o dono de um negócio de serviços a preencher corretamente os campos de uma semana do seu plano de implantação de 90 dias.",
@@ -56,10 +69,6 @@ const PROMPT_SISTEMA = [
   "- Se o aluno já preencheu algum campo (lista preenchidos), não repita instruções sobre ele.",
   "- Não use emojis, não use markdown, não use cabeçalhos, não assine a mensagem.",
 ].join("\n");
-
-function responder(status: number, corpo: Record<string, unknown>) {
-  return new Response(JSON.stringify(corpo), { status, headers: CABECALHOS });
-}
 
 function textoLimpo(valor: unknown, limite = 500): string | null {
   if (typeof valor !== "string") return null;
@@ -104,8 +113,12 @@ async function chamarOpenAI(payload: unknown): Promise<string> {
 }
 
 Deno.serve(async (req) => {
+  const headers = cabecalhos(req.headers.get("Origin"));
+  const responder = (status: number, corpo: Record<string, unknown>) =>
+    new Response(JSON.stringify(corpo), { status, headers });
+
   if (req.method === "OPTIONS") {
-    return new Response("ok", { status: 204, headers: CABECALHOS });
+    return new Response(null, { status: 204, headers });
   }
   if (req.method !== "POST") {
     return responder(405, { erro: "Método não permitido." });
@@ -178,17 +191,14 @@ Deno.serve(async (req) => {
       return responder(400, { erro: "A semana informada não tem campos para dar dicas." });
     }
 
-    // ---- 3) Contexto do aluno (service role): ramo, tempo de mercado, estado ----
-    const [resDiagnostico, resPerfil, resProgresso] = await Promise.all([
+    // ---- 3) Contexto do aluno (service role): SOMENTE o mínimo para a
+    // dica — ramo, tempo de mercado e quais campos já foram preenchidos
+    // (rótulos). Nenhum valor financeiro/numérico sensível vai à OpenAI.
+    const [resDiagnostico, resProgresso] = await Promise.all([
       admin
         .from("diagnostico_inicial")
-        .select("area_atuacao, tempo_mercado, nome_empresa")
+        .select("area_atuacao, tempo_mercado")
         .eq("user_id", userId)
-        .maybeSingle(),
-      admin
-        .from("perfis")
-        .select("nome, estado")
-        .eq("id", userId)
         .maybeSingle(),
       admin
         .from("progresso_semanas")
@@ -199,29 +209,23 @@ Deno.serve(async (req) => {
     ]);
 
     const diagnostico = resDiagnostico.data ?? {};
-    const perfil = resPerfil.data ?? {};
 
     const areaAtuacao = textoLimpo(diagnostico.area_atuacao, 200);
     const tempoMercado = textoLimpo(diagnostico.tempo_mercado, 100);
-    const nomeEmpresa = textoLimpo(diagnostico.nome_empresa, 200);
-    const nomeAluno = textoLimpo(perfil.nome, 200);
-    const estado = textoLimpo(perfil.estado, 2);
 
     // Campos que o aluno já preencheu nesta semana — para a IA não
-    // repetir instruções sobre o que ele já sabe.
+    // repetir instruções sobre o que ele já sabe. Só os RÓTULOS dos
+    // campos vão no payload; os valores digitados ficam no banco.
     const respostas =
       resProgresso.data && typeof resProgresso.data.respostas === "object"
         ? (resProgresso.data.respostas as Record<string, unknown>)
         : {};
-    const jaPreenchidos: { rotulo: string; valor: string }[] = [];
+    const jaPreenchidos: string[] = [];
     for (const [chave, valor] of Object.entries(respostas)) {
       if (jaPreenchidos.length >= 25) break;
       if (valor === null || valor === undefined || valor === "") continue;
       if (typeof valor === "object") continue;
-      jaPreenchidos.push({
-        rotulo: textoLimpoOuPadrao(chave, "campo", 100),
-        valor: String(valor).slice(0, 200),
-      });
+      jaPreenchidos.push(textoLimpoOuPadrao(chave, "campo", 100));
     }
 
     // ---- 4) Gerar com a OpenAI (sob demanda; sem cache prévio) ----
@@ -239,11 +243,8 @@ Deno.serve(async (req) => {
         dicas: dicas,
         campos: campos,
         aluno: {
-          nome: nomeAluno,
-          nome_empresa: nomeEmpresa,
           area_atuacao: areaAtuacao,
           tempo_mercado: tempoMercado,
-          estado: estado,
         },
         campos_ja_preenchidos: jaPreenchidos,
       });
