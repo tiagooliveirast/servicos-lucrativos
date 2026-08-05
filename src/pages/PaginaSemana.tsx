@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { Layout } from "@/components/Layout";
+import { CelebracaoMelhoria, type MensagemCelebracao } from "@/components/CelebracaoMelhoria";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,6 +40,11 @@ import {
 } from "@/lib/anexos-missoes";
 import { MODULOS, SEMANA_POR_NUMERO, type Campo, type SemanaConteudo } from "@/lib/conteudo";
 import { buscarDicaSemana, gerarDicaSemana } from "@/lib/dicas-semana";
+import {
+  DIRECAO_INDICADORES_SEMANA,
+  melhoraCom,
+  textoMelhoria,
+} from "@/lib/direcaoIndicadores";
 import { supabase } from "@/lib/supabase";
 import type {
   AulaSemana,
@@ -171,6 +177,7 @@ function ConteudoSemana({
   const [erro, setErro] = useState<string | null>(null);
   const [concluindo, setConcluindo] = useState(false);
   const [concluida, setConcluida] = useState(progresso.status === "concluida");
+  const [celebracao, setCelebracao] = useState<MensagemCelebracao | null>(null);
 
   useEffect(() => {
     let ativo = true;
@@ -293,7 +300,29 @@ function ConteudoSemana({
         },
         { onConflict: "user_id,semana,nome_indicador" }
       );
-    if (error) setErro("Não foi possível salvar o indicador.");
+    if (error) {
+      setErro("Não foi possível salvar o indicador.");
+      return;
+    }
+    if (campo === "depois" && novo.antes !== "" && novo.depois !== "") {
+      const antes = Number(novo.antes);
+      const depois = Number(novo.depois);
+      const direcao = DIRECAO_INDICADORES_SEMANA[semana.numero];
+      if (direcao && Number.isFinite(antes) && Number.isFinite(depois) && melhoraCom(antes, depois, direcao)) {
+        setCelebracao({
+          id: `indicador-${semana.numero}-${depois}-${Date.now()}`,
+          titulo: "Melhoria registrada",
+          texto: textoMelhoria({
+            chave: `indicador-${semana.numero}`,
+            rotulo: semana.indicador.nome,
+            antes,
+            depois,
+            direcao,
+            unidade: semana.indicador.unidade,
+          }),
+        });
+      }
+    }
   }
 
   async function concluirSemana() {
@@ -702,6 +731,7 @@ function ConteudoSemana({
           </p>
         )}
       </div>
+      <CelebracaoMelhoria mensagem={celebracao} aoFechar={() => setCelebracao(null)} />
     </Layout>
   );
 }

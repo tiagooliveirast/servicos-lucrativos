@@ -3,6 +3,7 @@ import { Link, Navigate, useParams } from "react-router-dom";
 import { AlertCircle, ArrowLeft, BarChart3, CheckCircle2, Loader2 } from "lucide-react";
 
 import { Layout } from "@/components/Layout";
+import { CelebracaoMelhoria, type MensagemCelebracao } from "@/components/CelebracaoMelhoria";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +16,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  CAMPOS_MELHORIA_PAINEL,
+  DIRECAO_PAINEIS_MENSAIS,
+  ROTULOS_MELHORIA_PAINEL,
+  UNIDADE_MELHORIA_PAINEL,
+  maiorDestaque,
+  melhoraCom,
+  textoMelhoria,
+  type MelhoriaComparavel,
+} from "@/lib/direcaoIndicadores";
 import { supabase } from "@/lib/supabase";
 import type { PainelMensal } from "@/lib/types";
 import { cn, formatBRL, formatNumero, formatPorcento } from "@/lib/utils";
@@ -168,6 +179,8 @@ function PainelForm({
   const [salvando, setSalvando] = useState(false);
   const [completo, setCompleto] = useState(false);
   const [carregando, setCarregando] = useState(true);
+  const [celebracao, setCelebracao] = useState<MensagemCelebracao | null>(null);
+  const celebradoRef = useRef<Record<string, number>>({});
   const estadoInicialRef = useRef<string>(
     JSON.stringify({ ...inicializar(painel), observacao: painel?.observacao ?? "" })
   );
@@ -224,10 +237,45 @@ function PainelForm({
         // salvar um painel vazio não conta como preenchimento.
         const faturamento = novosValores.faturamento_atual;
         setCompleto(faturamento !== undefined && faturamento !== "");
+        celebrarMelhoriaPainel(novosValores);
       }
     },
     [userId, numero]
   );
+
+  function celebrarMelhoriaPainel(novosValores: Record<string, string>) {
+    if (!painelAnterior) return;
+    const melhorias: MelhoriaComparavel[] = [];
+    for (const id of CAMPOS_MELHORIA_PAINEL) {
+      const valorStr = novosValores[id];
+      if (valorStr === undefined || valorStr === "") continue;
+      const depois = Number(valorStr);
+      const anterior = painelAnterior[id as keyof PainelMensal];
+      if (anterior === null || anterior === undefined) continue;
+      const antes = typeof anterior === "number" ? anterior : Number(anterior);
+      const direcao = DIRECAO_PAINEIS_MENSAIS[id];
+      if (!Number.isFinite(antes) || !Number.isFinite(depois)) continue;
+      if (direcao && melhoraCom(antes, depois, direcao)) {
+        melhorias.push({
+          chave: id,
+          rotulo: ROTULOS_MELHORIA_PAINEL[id],
+          antes,
+          depois,
+          direcao,
+          unidade: UNIDADE_MELHORIA_PAINEL[id] ?? null,
+        });
+      }
+    }
+    const destaque = maiorDestaque(melhorias);
+    if (destaque && celebradoRef.current[destaque.chave] !== destaque.depois) {
+      celebradoRef.current[destaque.chave] = destaque.depois;
+      setCelebracao({
+        id: `painel-${numero}-${destaque.chave}-${destaque.depois}-${Date.now()}`,
+        titulo: "Painel mensal melhorou",
+        texto: textoMelhoria(destaque),
+      });
+    }
+  }
 
   const jaCarregou = useRef(false);
 
@@ -338,6 +386,7 @@ function PainelForm({
           </CardContent>
         </Card>
       </div>
+      <CelebracaoMelhoria mensagem={celebracao} aoFechar={() => setCelebracao(null)} />
     </Layout>
   );
 }

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { Layout } from "@/components/Layout";
+import { CelebracaoMelhoria, type MensagemCelebracao } from "@/components/CelebracaoMelhoria";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +17,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/lib/supabase";
+import {
+  DIRECAO_CHECKINS_SEMANAIS,
+  maiorDestaque,
+  melhoraCom,
+  textoMelhoria,
+  type MelhoriaComparavel,
+} from "@/lib/direcaoIndicadores";
 import type { CheckinSemanal } from "@/lib/types";
 import { formatBRL, semanaAtualDe } from "@/lib/utils";
 
@@ -51,6 +59,7 @@ export function PaginaCheckin({ userId }: { userId: string }) {
   const [enviando, setEnviando] = useState(false);
   const [erroMsg, setErroMsg] = useState<string | null>(null);
   const [registrado, setRegistrado] = useState(false);
+  const [celebracao, setCelebracao] = useState<MensagemCelebracao | null>(null);
 
   useEffect(() => {
     let ativo = true;
@@ -116,6 +125,39 @@ export function PaginaCheckin({ userId }: { userId: string }) {
       return;
     }
     setRegistrado(true);
+    const { data: ultimos } = await supabase
+      .from("checkins_semanais")
+      .select("*")
+      .eq("user_id", userId)
+      .order("data_checkin", { ascending: false })
+      .limit(2);
+    const anterior = (ultimos as CheckinSemanal[] | null)?.[1];
+    if (!anterior) return;
+    const melhorias: MelhoriaComparavel[] = [];
+    for (const campo of ["faturamento_semana", "lucro_semana"] as const) {
+      const antes = anterior[campo];
+      const depois = corpo[campo];
+      const direcao = DIRECAO_CHECKINS_SEMANAIS[campo];
+      if (direcao && antes !== null && depois !== null && melhoraCom(antes, depois, direcao)) {
+        melhorias.push({
+          chave: `checkin-${campo}`,
+          rotulo:
+            campo === "faturamento_semana" ? "Faturamento da semana" : "Lucro da semana",
+          antes,
+          depois,
+          direcao,
+          unidade: "R$",
+        });
+      }
+    }
+    const destaque = maiorDestaque(melhorias);
+    if (destaque) {
+      setCelebracao({
+        id: `checkin-${Date.now()}`,
+        titulo: "Check-in melhorou",
+        texto: textoMelhoria(destaque),
+      });
+    }
   }
 
   if (carregando) {
@@ -281,6 +323,7 @@ export function PaginaCheckin({ userId }: { userId: string }) {
           </Card>
         )}
       </div>
+      <CelebracaoMelhoria mensagem={celebracao} aoFechar={() => setCelebracao(null)} />
     </Layout>
   );
 }
