@@ -81,10 +81,42 @@ export function ConfiguracaoPaginaPublica({ userId }: { userId: string }) {
     setSalvo(false);
     setErroMsg(null);
 
-    // Slug duplicado: tenta com sufixo numérico (-2, -3, …) até achar um
-    // livre. Nunca sobrescreve a página de outro aluno.
-    for (let tentativa = 0; tentativa < 50; tentativa++) {
-      const candidato = tentativa === 0 ? slugBase : `${slugBase}-${tentativa + 1}`;
+    try {
+      // Slug duplicado: busca em UMA query todos os slugs existentes que
+      // começam com a base e resolve em memória o próximo sufixo livre
+      // (-2, -3, …). Nunca sobrescreve a página de outro aluno.
+      const { data: existentes, error: erroBusca } = await supabase
+        .from("perfis")
+        .select("pagina_publica_slug")
+        .like("pagina_publica_slug", `${slugBase}%`)
+        .neq("id", userId);
+
+      if (erroBusca) throw erroBusca;
+
+      const ocupados = new Set(
+        ((existentes ?? []) as { pagina_publica_slug: string | null }[])
+          .map((p) => p.pagina_publica_slug)
+          .filter((s): s is string => s !== null)
+      );
+
+      let candidato = slugBase;
+      if (ocupados.has(slugBase)) {
+        for (let sufixo = 2; sufixo <= 50; sufixo++) {
+          const tentativa = `${slugBase}-${sufixo}`;
+          if (!ocupados.has(tentativa)) {
+            candidato = tentativa;
+            break;
+          }
+        }
+        if (candidato === slugBase) {
+          setErroMsg(
+            "Este endereço já está em uso por outro aluno. Escolha outro nome para a sua página."
+          );
+          setSalvando(false);
+          return;
+        }
+      }
+
       const { error } = await supabase
         .from("perfis")
         .update({
@@ -94,24 +126,27 @@ export function ConfiguracaoPaginaPublica({ userId }: { userId: string }) {
         })
         .eq("id", userId);
 
-      if (!error) {
-        setSlug(candidato);
-        setSalvo(true);
-        setSalvando(false);
-        return;
-      }
-      if (!erroEhSlugDuplicado(error)) {
+      if (error) {
+        // Sobra apenas o caso raro de corrida (outro aluno pegou o slug
+        // entre a leitura e o UPDATE) — a unique constraint protege.
         setErroMsg(
-          "Não foi possível salvar sua página pública. Verifique sua conexão e tente novamente."
+          erroEhSlugDuplicado(error)
+            ? "Este endereço já está em uso por outro aluno. Escolha outro nome para a sua página."
+            : "Não foi possível salvar sua página pública. Verifique sua conexão e tente novamente."
         );
         setSalvando(false);
         return;
       }
+
+      setSlug(candidato);
+      setSalvo(true);
+      setSalvando(false);
+    } catch {
+      setErroMsg(
+        "Não foi possível salvar sua página pública. Verifique sua conexão e tente novamente."
+      );
+      setSalvando(false);
     }
-    setErroMsg(
-      "Este endereço já está em uso por outro aluno. Escolha outro nome para a sua página."
-    );
-    setSalvando(false);
   }
 
   const urlPagina =

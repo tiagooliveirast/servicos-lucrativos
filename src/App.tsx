@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AlertTriangle, Loader2 } from "lucide-react";
 
@@ -128,8 +128,7 @@ function TelaErroSessao({ aoTentar }: { aoTentar: () => void }) {
 }
 
 export default function App() {
-  const [recarregar, setRecarregar] = useState(0);
-  const { fase, user, perfil, ausenteDias } = useAuth(recarregar);
+  const { fase, user, perfil, ausenteDias, reavaliar } = useAuth();
   const location = useLocation();
 
   // Página pública da empresa: funciona sem sessão (e enquanto a sessão é
@@ -147,7 +146,7 @@ export default function App() {
   }
 
   if (fase === "erro" && !ehRotaPublica) {
-    return <TelaErroSessao aoTentar={() => setRecarregar((r) => r + 1)} />;
+    return <TelaErroSessao aoTentar={reavaliar} />;
   }
 
   return (
@@ -174,7 +173,7 @@ export default function App() {
             ) : fase === "acesso_inativo" ? (
               <PaginaAcessoInativo />
             ) : fase === "onboarding" ? (
-              <PaginaOnboarding aoConcluir={() => setRecarregar((r) => r + 1)} />
+              <PaginaOnboarding aoConcluir={reavaliar} />
             ) : (
               <PaginaSalaDeGuerra perfilId={perfil!.id} ausenteDias={ausenteDias} />
             )

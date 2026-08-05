@@ -4,7 +4,7 @@ import { Award, Loader2, MapPin, ShieldCheck, Store } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { GraficoEvolucao } from "@/components/GraficoEvolucao";
+import { GraficoEvolucaoVitrine } from "@/components/GraficoEvolucaoVitrine";
 import { Logo } from "@/components/Logo";
 import { obterClassificacaoIme } from "@/lib/estagio-empresa";
 import type { SerieEvolucao } from "@/lib/evolucao";
@@ -277,7 +277,7 @@ function VitrineEmpresa({ dados }: { dados: PaginaPublica }) {
         </section>
       )}
 
-      <GraficoEvolucao
+      <GraficoEvolucaoVitrine
         titulo="Evolução do IME"
         descricao="Como a maturidade da empresa cresceu ao longo da jornada de 90 dias."
         serie={serieImePublica(dados.ime_historico)}
