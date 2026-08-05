@@ -17,6 +17,8 @@ import {
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
+import { CartaoCarregando } from "@/components/CartaoCarregando";
+import { CartaoErro } from "@/components/CartaoErro";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -186,24 +188,15 @@ export function PaginaAdminUsuarioDetalhe() {
   }, [id, tentativa]);
 
   if (!dados) {
-    return (
-      <div className="flex items-center justify-center py-16 text-muted-foreground">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-      </div>
-    );
+    return <CartaoCarregando />;
   }
 
   if (erro) {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-10 text-center">
-        <AlertCircle className="h-6 w-6 text-destructive" />
-        <p className="text-sm text-foreground/90">
-          Não foi possível carregar este aluno. Verifique sua conexão e tente novamente.
-        </p>
-        <Button variant="outline" onClick={() => setTentativa((t) => t + 1)}>
-          Tentar novamente
-        </Button>
-      </div>
+      <CartaoErro
+        mensagem="Não foi possível carregar este aluno. Verifique sua conexão e tente novamente."
+        onTentar={() => setTentativa((t) => t + 1)}
+      />
     );
   }
 

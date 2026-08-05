@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
+import { mensagemErroAmigavel } from "@/lib/utils";
 
 interface ResultadoAcesso {
   email: string;
@@ -53,7 +54,7 @@ export function PaginaAdminNovoAcesso() {
       setEmail("");
       setTelefone("");
     } catch (err) {
-      setErro(err instanceof Error ? err.message : "Algo deu errado. Tente novamente.");
+      setErro(mensagemErroAmigavel(err, "Algo deu errado. Tente novamente."));
     } finally {
       setCriando(false);
     }

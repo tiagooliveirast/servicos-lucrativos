@@ -23,7 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { COMO_USAR_ESTE_PLANO, ESTADOS, PARA_QUEM_E_ESTE_PLANO, TEMPO_MERCADO_OPCOES } from "@/lib/conteudo";
 import { MOTIVOS } from "@/lib/motivo";
 import { supabase } from "@/lib/supabase";
-import { cn } from "@/lib/utils";
+import { cn, mensagemErroAmigavel } from "@/lib/utils";
 
 interface DadosOnboarding {
   nome: string;
@@ -190,9 +190,10 @@ export function PaginaOnboarding({ aoConcluir }: { aoConcluir: () => void }) {
       aoConcluir();
     } catch (err) {
       setErro(
-        err instanceof Error
-          ? err.message
-          : "Não foi possível salvar. Verifique sua conexão e tente de novo."
+        mensagemErroAmigavel(
+          err,
+          "Não foi possível salvar. Verifique sua conexão e tente de novo."
+        )
       );
       setSalvando(false);
     }

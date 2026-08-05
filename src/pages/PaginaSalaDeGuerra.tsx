@@ -17,6 +17,8 @@ import {
   X,
 } from "lucide-react";
 
+import { CartaoCarregando } from "@/components/CartaoCarregando";
+import { CartaoErro } from "@/components/CartaoErro";
 import { Layout } from "@/components/Layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -119,10 +121,7 @@ export function PaginaSalaDeGuerra({
   if (carregando) {
     return (
       <Layout>
-        <div className="flex flex-col items-center justify-center gap-4 py-32 text-muted-foreground">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm">Montando sua Sala de Guerra…</p>
-        </div>
+        <CartaoCarregando texto="Montando sua Sala de Guerra…" className="py-32" />
       </Layout>
     );
   }
@@ -130,16 +129,10 @@ export function PaginaSalaDeGuerra({
   if (erro || !dados) {
     return (
       <Layout>
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-destructive/40 bg-destructive/10 px-6 py-12 text-center">
-          <AlertTriangle className="h-6 w-6 text-destructive" />
-          <p className="text-sm text-foreground/90">
-            Não foi possível montar sua Sala de Guerra agora. Verifique sua conexão e tente
-            novamente.
-          </p>
-          <Button variant="outline" onClick={() => setTentativa((t) => t + 1)}>
-            Tentar novamente
-          </Button>
-        </div>
+        <CartaoErro
+          mensagem="Não foi possível montar sua Sala de Guerra agora. Verifique sua conexão e tente novamente."
+          onTentar={() => setTentativa((t) => t + 1)}
+        />
       </Layout>
     );
   }

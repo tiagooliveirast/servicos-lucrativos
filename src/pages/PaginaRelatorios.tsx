@@ -9,6 +9,8 @@ import {
   TriangleAlert,
 } from "lucide-react";
 
+import { CartaoCarregando } from "@/components/CartaoCarregando";
+import { CartaoErro } from "@/components/CartaoErro";
 import { Layout } from "@/components/Layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,8 +33,10 @@ import { carregarDadosTransformacao, type DadosTransformacao } from "@/lib/trans
 export function PaginaRelatorios({ userId }: { userId: string }) {
   const [dados, setDados] = useState<DadosTransformacao | null>(null);
   const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState(false);
+  const [erroCarga, setErroCarga] = useState(false);
+  const [erroGeracao, setErroGeracao] = useState(false);
   const [gerando, setGerando] = useState<"relatorio" | "certificado" | null>(null);
+  const [tentativa, setTentativa] = useState(0);
 
   useEffect(() => {
     let ativo = true;
@@ -43,7 +47,7 @@ export function PaginaRelatorios({ userId }: { userId: string }) {
         setDados(transformacao);
       } catch {
         if (!ativo) return;
-        setErro(true);
+        setErroCarga(true);
       } finally {
         if (ativo) setCarregando(false);
       }
@@ -52,14 +56,23 @@ export function PaginaRelatorios({ userId }: { userId: string }) {
     return () => {
       ativo = false;
     };
-  }, [userId]);
+  }, [userId, tentativa]);
 
   if (carregando) {
     return (
       <Layout>
-        <div className="flex items-center justify-center py-24 text-muted-foreground">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        </div>
+        <CartaoCarregando />
+      </Layout>
+    );
+  }
+
+  if (erroCarga) {
+    return (
+      <Layout>
+        <CartaoErro
+          mensagem="Não foi possível carregar seus dados agora. Verifique sua conexão e tente novamente."
+          onTentar={() => setTentativa((t) => t + 1)}
+        />
       </Layout>
     );
   }
@@ -67,12 +80,12 @@ export function PaginaRelatorios({ userId }: { userId: string }) {
   const elegibilidade = dados ? verificarElegibilidade(dados) : null;
 
   async function exportarRelatorio() {
-    setErro(false);
+    setErroGeracao(false);
     setGerando("relatorio");
     try {
       await exportarRelatorioPDF(userId);
     } catch {
-      setErro(true);
+      setErroGeracao(true);
     } finally {
       setGerando(null);
     }
@@ -80,12 +93,12 @@ export function PaginaRelatorios({ userId }: { userId: string }) {
 
   async function exportarCertificado() {
     if (!elegibilidade?.elegivel) return;
-    setErro(false);
+    setErroGeracao(false);
     setGerando("certificado");
     try {
       await exportarCertificadoPDF(userId);
     } catch {
-      setErro(true);
+      setErroGeracao(true);
     } finally {
       setGerando(null);
     }
@@ -116,7 +129,7 @@ export function PaginaRelatorios({ userId }: { userId: string }) {
           </p>
         </div>
 
-        {erro && (
+        {erroGeracao && (
           <div className="flex flex-col items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-10 text-center">
             <TriangleAlert className="h-6 w-6 text-destructive" />
             <p className="text-sm text-foreground/90">

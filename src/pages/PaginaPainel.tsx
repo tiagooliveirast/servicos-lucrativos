@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
-import { AlertCircle, ArrowLeft, BarChart3, CheckCircle2, Loader2 } from "lucide-react";
+import { Link, useParams } from "react-router-dom";
+import { ArrowLeft, BarChart3, CheckCircle2, Loader2 } from "lucide-react";
 
+import { CartaoCarregando } from "@/components/CartaoCarregando";
+import { CartaoErro } from "@/components/CartaoErro";
+import { SemanaIndisponivel } from "@/components/SemanaIndisponivel";
 import { Layout } from "@/components/Layout";
 import { CelebracaoMelhoria, type MensagemCelebracao } from "@/components/CelebracaoMelhoria";
 import { Badge } from "@/components/ui/badge";
@@ -125,29 +128,44 @@ export function PaginaPainel({ userId }: { userId: string }) {
   if (carregando) {
     return (
       <Layout>
-        <div className="flex items-center justify-center py-24 text-muted-foreground">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        </div>
+        <CartaoCarregando />
       </Layout>
     );
   }
   if (erro) {
     return (
       <Layout>
-        <div className="flex flex-col items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-10 text-center">
-          <AlertCircle className="h-6 w-6 text-destructive" />
-          <p className="text-sm text-foreground/90">
-            Não foi possível carregar seus dados agora. Verifique sua conexão e tente
-            novamente.
-          </p>
-          <Button variant="outline" onClick={() => setTentativa((t) => t + 1)}>
-            Tentar novamente
-          </Button>
-        </div>
+        <CartaoErro
+          mensagem="Não foi possível carregar seus dados agora. Verifique sua conexão e tente novamente."
+          onTentar={() => setTentativa((t) => t + 1)}
+        />
       </Layout>
     );
   }
-  if (!liberado || (n !== 1 && n !== 2 && n !== 3)) return <Navigate to="/" replace />;
+  if (n !== 1 && n !== 2 && n !== 3) {
+    return (
+      <Layout>
+        <SemanaIndisponivel
+          titulo="Painel não encontrado"
+          descricao="Este painel não existe na sua jornada."
+        />
+      </Layout>
+    );
+  }
+  if (!liberado) {
+    return (
+      <Layout>
+        <SemanaIndisponivel
+          titulo="Painel ainda bloqueado"
+          descricao={`Este painel é liberado quando você conclui a Semana ${semanaChave}.`}
+          linkPara={{
+            para: `/semanas/${semanaChave}`,
+            rotulo: `Ir para a Semana ${semanaChave}`,
+          }}
+        />
+      </Layout>
+    );
+  }
 
   return (
     <PainelForm

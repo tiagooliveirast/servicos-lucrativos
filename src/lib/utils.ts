@@ -75,3 +75,51 @@ export function extrairVideoId(url: string): string | null {
   );
   return match ? match[1] : null;
 }
+
+const PADRAO_ERRO_TECNICO =
+  /(error|failed|violates|duplicate|invalid|undefined|permission denied|could not|fetch|network|jwt|auth session|token|expected|unexpected|null)/i;
+
+export function mensagemErroAmigavel(
+  err: unknown,
+  fallback = "Algo deu errado. Tente novamente."
+): string {
+  const original =
+    err instanceof Error
+      ? err.message
+      : err === null || err === undefined
+        ? ""
+        : String(err);
+  if (original.trim()) console.error("Erro não tratado:", original);
+  if (!original.trim()) return fallback;
+
+  const msg = original.trim();
+  if (/Invalid login credentials/.test(msg)) {
+    return "E-mail ou senha incorretos.";
+  }
+  if (/Email not confirmed/.test(msg)) {
+    return "Confirme seu e-mail antes de entrar. Verifique sua caixa de entrada (e o spam).";
+  }
+  if (/already registered/.test(msg)) {
+    return "Este e-mail já está cadastrado. Tente entrar.";
+  }
+  if (/Password should be at least 6 characters/.test(msg)) {
+    return "A senha precisa ter pelo menos 6 caracteres.";
+  }
+  if (/Unable to validate email address/.test(msg)) {
+    return "E-mail inválido. Verifique e tente novamente.";
+  }
+  if (/duplicate key/.test(msg)) {
+    return "Este registro já existe. Atualize a página e tente novamente.";
+  }
+  if (/violates row-level security policy|permission denied/.test(msg)) {
+    return "Você não tem permissão para realizar esta ação.";
+  }
+  if (/Failed to fetch|NetworkError|fetch failed|network request failed/.test(msg)) {
+    return "Sem conexão com a internet. Verifique sua conexão e tente novamente.";
+  }
+  if (/JWT|jwt|Auth session missing|token (is )?(invalid|expired)/.test(msg)) {
+    return "Sua sessão expirou. Faça login novamente.";
+  }
+  if (PADRAO_ERRO_TECNICO.test(msg)) return fallback;
+  return msg;
+}

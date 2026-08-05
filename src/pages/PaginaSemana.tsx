@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import {
   AlertCircle,
   ArrowLeft,
@@ -19,6 +19,9 @@ import {
   Zap,
 } from "lucide-react";
 
+import { CartaoCarregando } from "@/components/CartaoCarregando";
+import { CartaoErro } from "@/components/CartaoErro";
+import { SemanaIndisponivel } from "@/components/SemanaIndisponivel";
 import { Layout } from "@/components/Layout";
 import { CelebracaoMelhoria, type MensagemCelebracao } from "@/components/CelebracaoMelhoria";
 import { Badge } from "@/components/ui/badge";
@@ -102,29 +105,30 @@ export function PaginaSemana({ userId }: { userId: string }) {
     };
   }, [userId, n, tentativa]);
 
-  if (!semana) return <Navigate to="/" replace />;
+  if (!semana) {
+    return (
+      <Layout>
+        <SemanaIndisponivel
+          titulo="Semana não encontrada"
+          descricao="Esta semana não existe na sua jornada."
+        />
+      </Layout>
+    );
+  }
   if (carregando || checandoAdmin) {
     return (
       <Layout>
-        <div className="flex items-center justify-center py-24 text-muted-foreground">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        </div>
+        <CartaoCarregando />
       </Layout>
     );
   }
   if (erro) {
     return (
       <Layout>
-        <div className="flex flex-col items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-10 text-center">
-          <AlertCircle className="h-6 w-6 text-destructive" />
-          <p className="text-sm text-foreground/90">
-            Não foi possível carregar seus dados agora. Verifique sua conexão e tente
-            novamente.
-          </p>
-          <Button variant="outline" onClick={() => setTentativa((t) => t + 1)}>
-            Tentar novamente
-          </Button>
-        </div>
+        <CartaoErro
+          mensagem="Não foi possível carregar seus dados agora. Verifique sua conexão e tente novamente."
+          onTentar={() => setTentativa((t) => t + 1)}
+        />
       </Layout>
     );
   }
@@ -132,8 +136,16 @@ export function PaginaSemana({ userId }: { userId: string }) {
   // desbloqueado — mas sem concluir nem simular progresso.
   const visualizacao = ehAdmin && (!progresso || progresso.status === "bloqueada");
   if (!visualizacao) {
-    if (naoEncontrada) return <Navigate to="/" replace />;
-    if (progresso?.status === "bloqueada") return <Navigate to="/" replace />;
+    if (naoEncontrada || progresso?.status === "bloqueada") {
+      return (
+        <Layout>
+          <SemanaIndisponivel
+            titulo="Semana ainda não disponível"
+            descricao="Conclua as semanas anteriores na ordem para desbloquear esta."
+          />
+        </Layout>
+      );
+    }
   }
   const progressoEfetivo =
     progresso ??

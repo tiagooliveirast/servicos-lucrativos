@@ -2,6 +2,8 @@ import { AlertCircle, ArrowLeft, CalendarCheck, CheckCircle2, Loader2 } from "lu
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { CartaoCarregando } from "@/components/CartaoCarregando";
+import { CartaoErro } from "@/components/CartaoErro";
 import { Layout } from "@/components/Layout";
 import { CelebracaoMelhoria, type MensagemCelebracao } from "@/components/CelebracaoMelhoria";
 import { Badge } from "@/components/ui/badge";
@@ -163,9 +165,7 @@ export function PaginaCheckin({ userId }: { userId: string }) {
   if (carregando) {
     return (
       <Layout>
-        <div className="flex items-center justify-center py-24 text-muted-foreground">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        </div>
+        <CartaoCarregando />
       </Layout>
     );
   }
@@ -173,16 +173,10 @@ export function PaginaCheckin({ userId }: { userId: string }) {
   if (erro) {
     return (
       <Layout>
-        <div className="flex flex-col items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-10 text-center">
-          <AlertCircle className="h-6 w-6 text-destructive" />
-          <p className="text-sm text-foreground/90">
-            Não foi possível carregar o check-in agora. Verifique sua conexão e tente
-            novamente.
-          </p>
-          <Button variant="outline" onClick={() => setTentativa((t) => t + 1)}>
-            Tentar novamente
-          </Button>
-        </div>
+        <CartaoErro
+          mensagem="Não foi possível carregar o check-in agora. Verifique sua conexão e tente novamente."
+          onTentar={() => setTentativa((t) => t + 1)}
+        />
       </Layout>
     );
   }

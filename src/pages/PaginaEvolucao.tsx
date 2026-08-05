@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, LineChart, Loader2, TriangleAlert } from "lucide-react";
+import { ArrowLeft, LineChart } from "lucide-react";
 
 import { GraficoEvolucao } from "@/components/GraficoEvolucao";
+import { CartaoCarregando } from "@/components/CartaoCarregando";
+import { CartaoErro } from "@/components/CartaoErro";
 import { Layout } from "@/components/Layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,9 +58,7 @@ export function PaginaEvolucao({ userId }: { userId: string }) {
   if (carregando) {
     return (
       <Layout>
-        <div className="flex items-center justify-center py-24 text-muted-foreground">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        </div>
+        <CartaoCarregando />
       </Layout>
     );
   }
@@ -99,16 +99,10 @@ export function PaginaEvolucao({ userId }: { userId: string }) {
         </div>
 
         {erro && (
-          <div className="flex flex-col items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-10 text-center">
-            <TriangleAlert className="h-6 w-6 text-destructive" />
-            <p className="text-sm text-foreground/90">
-              Não foi possível carregar seus dados agora. Verifique sua conexão e tente
-              novamente.
-            </p>
-            <Button variant="outline" onClick={() => setTentativa((t) => t + 1)}>
-              Tentar novamente
-            </Button>
-          </div>
+          <CartaoErro
+            mensagem="Não foi possível carregar seus dados agora. Verifique sua conexão e tente novamente."
+            onTentar={() => setTentativa((t) => t + 1)}
+          />
         )}
 
         {!erro && dados && series && <Graficos series={series} />}

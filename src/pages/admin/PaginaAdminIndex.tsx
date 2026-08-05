@@ -1,8 +1,10 @@
-import { Activity, AlertCircle, HelpCircle, Loader2, Paperclip, TrendingUp, Trophy, Users } from "lucide-react";
+import { Activity, HelpCircle, Paperclip, TrendingUp, Trophy, Users } from "lucide-react";
+
+import { CartaoCarregando } from "@/components/CartaoCarregando";
+import { CartaoErro } from "@/components/CartaoErro";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { contarAnexosPendentes } from "@/lib/anexos-missoes";
 import { contarDuvidasAbertas } from "@/lib/duvidas";
@@ -59,25 +61,11 @@ export function PaginaAdminIndex() {
   }, [tentativa]);
 
   if (erro) {
-    return (
-      <div className="flex flex-col items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-10 text-center">
-        <AlertCircle className="h-6 w-6 text-destructive" />
-        <p className="text-sm text-foreground/90">
-          Não foi possível carregar os dados. Verifique sua conexão e tente novamente.
-        </p>
-        <Button variant="outline" onClick={() => setTentativa((t) => t + 1)}>
-          Tentar novamente
-        </Button>
-      </div>
-    );
+    return <CartaoErro onTentar={() => setTentativa((t) => t + 1)} />;
   }
 
   if (!dados) {
-    return (
-      <div className="flex items-center justify-center py-16 text-muted-foreground">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-      </div>
-    );
+    return <CartaoCarregando />;
   }
 
   const agora = Date.now();

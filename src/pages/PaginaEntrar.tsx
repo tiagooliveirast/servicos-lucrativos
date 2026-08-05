@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SUBTITULO_PRODUTO } from "@/lib/conteudo";
 import { supabase } from "@/lib/supabase";
+import { mensagemErroAmigavel } from "@/lib/utils";
 
 export function PaginaEntrar() {
   const [email, setEmail] = useState("");
@@ -32,7 +33,10 @@ export function PaginaEntrar() {
         email,
         password: senha,
       });
-      if (error) throw new Error(traduzirErro(error.message));
+      if (error)
+        throw new Error(
+          mensagemErroAmigavel(error, "Não foi possível entrar. Tente novamente.")
+        );
     } catch (err) {
       setErro(err instanceof Error ? err.message : "Algo deu errado. Tente novamente.");
     } finally {
@@ -52,7 +56,10 @@ export function PaginaEntrar() {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/callback`,
       });
-      if (error) throw new Error(traduzirErro(error.message));
+      if (error)
+        throw new Error(
+          mensagemErroAmigavel(error, "Não foi possível enviar o link. Tente novamente.")
+        );
       setAvisos(
         "Enviamos um link de redefinição de senha para o seu e-mail. Confira a caixa de entrada (e o spam)."
       );
@@ -133,23 +140,4 @@ export function PaginaEntrar() {
       </p>
     </div>
   );
-}
-
-function traduzirErro(mensagem: string): string {
-  if (mensagem.includes("Invalid login credentials")) {
-    return "E-mail ou senha incorretos.";
-  }
-  if (mensagem.includes("Email not confirmed")) {
-    return "Confirme seu e-mail antes de entrar. Verifique sua caixa de entrada (e o spam).";
-  }
-  if (mensagem.includes("already registered")) {
-    return "Este e-mail já está cadastrado. Tente entrar.";
-  }
-  if (mensagem.includes("Password should be at least 6 characters")) {
-    return "A senha precisa ter pelo menos 6 caracteres.";
-  }
-  if (mensagem.includes("Unable to validate email address")) {
-    return "E-mail inválido. Verifique e tente novamente.";
-  }
-  return mensagem;
 }

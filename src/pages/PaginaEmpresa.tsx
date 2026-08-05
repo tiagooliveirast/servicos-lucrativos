@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Award, HardHat, Loader2, Store } from "lucide-react";
+import { ArrowLeft, Award, HardHat, Store } from "lucide-react";
 
+import { CartaoCarregando } from "@/components/CartaoCarregando";
+import { CartaoErro } from "@/components/CartaoErro";
 import { Layout } from "@/components/Layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -140,22 +142,13 @@ export function PaginaEmpresa({ userId }: { userId: string }) {
           </p>
         </div>
 
-        {carregando && (
-          <div className="flex items-center justify-center py-24 text-muted-foreground">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          </div>
-        )}
+        {carregando && <CartaoCarregando />}
 
         {erro && (
-          <div className="flex flex-col items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-10 text-center">
-            <Loader2 className="h-6 w-6 text-destructive" />
-            <p className="text-sm text-foreground/90">
-              Não foi possível carregar sua empresa agora. Tente novamente.
-            </p>
-            <Button variant="outline" onClick={() => setTentativa((t) => t + 1)}>
-              Tentar novamente
-            </Button>
-          </div>
+          <CartaoErro
+            mensagem="Não foi possível carregar sua empresa agora. Tente novamente."
+            onTentar={() => setTentativa((t) => t + 1)}
+          />
         )}
 
         {!carregando && !erro && (

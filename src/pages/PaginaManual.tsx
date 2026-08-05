@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { ArrowLeft, FileText, Loader2 } from "lucide-react";
 
+import { CartaoCarregando } from "@/components/CartaoCarregando";
+import { SemanaIndisponivel } from "@/components/SemanaIndisponivel";
 import { Layout } from "@/components/Layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -82,13 +84,21 @@ export function PaginaManual({ userId }: { userId: string }) {
   if (carregando) {
     return (
       <Layout>
-        <div className="flex items-center justify-center py-24 text-muted-foreground">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        </div>
+        <CartaoCarregando />
       </Layout>
     );
   }
-  if (!liberado) return <Navigate to="/" replace />;
+  if (!liberado) {
+    return (
+      <Layout>
+        <SemanaIndisponivel
+          titulo="Manual ainda bloqueado"
+          descricao="O Manual da Empresa é liberado quando você conclui a Semana 12."
+          linkPara={{ para: "/semanas/12", rotulo: "Ir para a Semana 12" }}
+        />
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

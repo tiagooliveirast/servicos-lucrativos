@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  AlertCircle,
   Award,
   BarChart3,
   BookOpen,
@@ -14,12 +13,13 @@ import {
   HardHat,
   HelpCircle,
   LineChart,
-  Loader2,
   Lock,
   PartyPopper,
   PlayCircle,
 } from "lucide-react";
 
+import { CartaoCarregando } from "@/components/CartaoCarregando";
+import { CartaoErro } from "@/components/CartaoErro";
 import { Layout } from "@/components/Layout";
 import { RadarEmpresa } from "@/components/RadarEmpresa";
 import { Badge } from "@/components/ui/badge";
@@ -222,23 +222,13 @@ export function PaginaDashboard({ perfil }: { perfil: Perfil }) {
           </div>
         </section>
 
-        {carregando && (
-          <div className="flex items-center justify-center py-16 text-muted-foreground">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          </div>
-        )}
+        {carregando && <CartaoCarregando />}
 
         {erro && (
-          <div className="flex flex-col items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-10 text-center">
-            <AlertCircle className="h-6 w-6 text-destructive" />
-            <p className="text-sm text-foreground/90">
-              Não foi possível carregar seus dados agora. Verifique sua conexão e tente
-              novamente.
-            </p>
-            <Button variant="outline" onClick={() => setTentativa((t) => t + 1)}>
-              Tentar novamente
-            </Button>
-          </div>
+          <CartaoErro
+            mensagem="Não foi possível carregar seus dados agora. Verifique sua conexão e tente novamente."
+            onTentar={() => setTentativa((t) => t + 1)}
+          />
         )}
 
         {!carregando && !checandoAdmin && !erro && (

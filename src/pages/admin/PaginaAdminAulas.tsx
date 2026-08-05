@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { SEMANA_POR_NUMERO } from "@/lib/conteudo";
 import { supabase } from "@/lib/supabase";
 import type { AulaSemana } from "@/lib/types";
-import { extrairVideoId } from "@/lib/utils";
+import { extrairVideoId, mensagemErroAmigavel } from "@/lib/utils";
 
 interface LinhaAula extends AulaSemana {
   temVideo: boolean;
@@ -45,9 +45,7 @@ export function PaginaAdminAulas() {
       );
     } catch (err) {
       setErro(
-        err instanceof Error
-          ? err.message
-          : "Não foi possível carregar as aulas. Tente novamente."
+        mensagemErroAmigavel(err, "Não foi possível carregar as aulas. Tente novamente.")
       );
     } finally {
       setCarregando(false);
@@ -93,9 +91,10 @@ export function PaginaAdminAulas() {
       setTimeout(() => setSalvos((s) => s.filter((n) => n !== aula.semana)), 2000);
     } catch (err) {
       setErro(
-        err instanceof Error
-          ? err.message
-          : "Não foi possível salvar a aula. Verifique se você é administrador."
+        mensagemErroAmigavel(
+          err,
+          "Não foi possível salvar a aula. Verifique se você é administrador."
+        )
       );
     } finally {
       setSalvando(null);

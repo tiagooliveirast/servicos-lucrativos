@@ -156,12 +156,7 @@ export default function App() {
         <Route path="/preferencias" element={<PaginaPreferencias />} />
         <Route path="/auth/callback" element={<PaginaAuthCallback />} />
 
-        <Route
-          path="/nova-senha"
-          element={
-            fase === "logado" ? <PaginaNovaSenha /> : <Navigate to="/" replace />
-          }
-        />
+        <Route path="/nova-senha" element={<PaginaNovaSenha />} />
 
         <Route
           path="/"

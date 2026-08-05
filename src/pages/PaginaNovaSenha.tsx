@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertCircle, CheckCircle2, KeyRound, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
+import { mensagemErroAmigavel } from "@/lib/utils";
 
 export function PaginaNovaSenha() {
   const navigate = useNavigate();
@@ -16,6 +17,20 @@ export function PaginaNovaSenha() {
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [concluida, setConcluida] = useState(false);
+  const [checando, setChecando] = useState(true);
+  const [semSessao, setSemSessao] = useState(false);
+
+  useEffect(() => {
+    let ativo = true;
+    void supabase.auth.getSession().then(({ data }) => {
+      if (!ativo) return;
+      setSemSessao(!data.session);
+      setChecando(false);
+    });
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
@@ -31,13 +46,51 @@ export function PaginaNovaSenha() {
     setSalvando(true);
     try {
       const { error } = await supabase.auth.updateUser({ password: senha });
-      if (error) throw new Error(traduzirErro(error.message));
+      if (error)
+        throw new Error(
+          mensagemErroAmigavel(error, "Não foi possível trocar a senha. Tente novamente.")
+        );
       setConcluida(true);
     } catch (err) {
       setErro(err instanceof Error ? err.message : "Não foi possível trocar a senha. Tente novamente.");
     } finally {
       setSalvando(false);
     }
+  }
+
+  if (checando) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (semSessao) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
+        <div className="mb-8">
+          <Logo className="scale-110" />
+        </div>
+        <Card className="w-full max-w-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <AlertCircle className="h-5 w-5 text-destructive" />
+              Link inválido ou expirado
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4 text-sm text-muted-foreground">
+            <p>
+              Este link de redefinição de senha não é mais válido. Peça um novo link na
+              tela de entrada.
+            </p>
+            <Button onClick={() => navigate("/")} className="w-full">
+              Voltar para a tela de entrada
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   if (concluida) {
@@ -123,11 +176,4 @@ export function PaginaNovaSenha() {
       </Card>
     </div>
   );
-}
-
-function traduzirErro(mensagem: string): string {
-  if (mensagem.includes("Password should be at least 6 characters")) {
-    return "A senha precisa ter pelo menos 6 caracteres.";
-  }
-  return mensagem;
 }
