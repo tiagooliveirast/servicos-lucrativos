@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Award, HardHat, Loader2, Lock, Store, Wrench } from "lucide-react";
+import { ArrowLeft, Award, HardHat, Loader2, Store } from "lucide-react";
 
 import { Layout } from "@/components/Layout";
 import { Badge } from "@/components/ui/badge";
@@ -208,29 +208,21 @@ export function PaginaEmpresa({ userId }: { userId: string }) {
                   />
                   {ITENS_AVATAR.map((item) => {
                     const liberado = desbloqueadas.has(item.conquistaCodigo);
+                    const Icone = item.icone;
                     return (
-                      <ImagemComFallback
+                      <div
                         key={item.conquistaCodigo}
-                        src={item.imagem}
-                        alt={liberado ? item.nome : "Item bloqueado"}
-                        className={cn("absolute h-14 w-14", item.classe)}
-                        fallback={
-                          <div
-                            className={cn(
-                              "flex h-full w-full items-center justify-center rounded-full border bg-card/60",
-                              liberado
-                                ? "border-primary/50 text-primary"
-                                : "border-input text-muted-foreground/50"
-                            )}
-                          >
-                            {liberado ? (
-                              <Wrench className="h-6 w-6" />
-                            ) : (
-                              <Lock className="h-6 w-6" />
-                            )}
-                          </div>
-                        }
-                      />
+                        title={liberado ? item.nome : `${item.nome} (bloqueado)`}
+                        className={cn(
+                          "absolute flex h-14 w-14 items-center justify-center rounded-full border shadow-sm",
+                          item.classe,
+                          liberado
+                            ? "border-primary/70 bg-card text-primary"
+                            : "border-input bg-muted/50 text-muted-foreground/60"
+                        )}
+                      >
+                        <Icone className={cn("h-7 w-7", !liberado && "opacity-70")} />
+                      </div>
                     );
                   })}
                 </div>
@@ -238,17 +230,14 @@ export function PaginaEmpresa({ userId }: { userId: string }) {
                 <div className="flex flex-wrap justify-center gap-2">
                   {ITENS_AVATAR.map((item) => {
                     const liberado = desbloqueadas.has(item.conquistaCodigo);
+                    const Icone = item.icone;
                     return (
                       <Badge
                         key={item.conquistaCodigo}
                         variant={liberado ? "sucesso" : "outline"}
                         className={cn(!liberado && "text-muted-foreground/60")}
                       >
-                        {liberado ? (
-                          <Wrench className="h-3 w-3" />
-                        ) : (
-                          <Lock className="h-3 w-3" />
-                        )}
+                        <Icone className="h-3 w-3" />
                         {item.nome}
                       </Badge>
                     );
@@ -265,7 +254,7 @@ export function PaginaEmpresa({ userId }: { userId: string }) {
               </h3>
               <ul className="flex flex-col gap-2 text-sm text-foreground/80">
                 <li className="flex items-start gap-2">
-                  <Wrench className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <HardHat className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                   Complete as semanas para aumentar seu IME e desbloquear o próximo estágio.
                 </li>
                 <li className="flex items-start gap-2">
