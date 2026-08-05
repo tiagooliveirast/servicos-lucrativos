@@ -28,11 +28,15 @@ function ImagemComFallback({
   alt,
   className,
   fallback,
+  imgClassName,
+  title,
 }: {
   src: string;
   alt: string;
   className?: string;
   fallback?: React.ReactNode;
+  imgClassName?: string;
+  title?: string;
 }) {
   const [falhou, setFalhou] = useState(false);
   return (
@@ -43,8 +47,9 @@ function ImagemComFallback({
         <img
           src={src}
           alt={alt}
+          title={title}
           loading="lazy"
-          className="h-full w-full object-cover"
+          className={cn("h-full w-full object-cover", imgClassName)}
           onError={() => setFalhou(true)}
         />
       )}
@@ -210,19 +215,26 @@ export function PaginaEmpresa({ userId }: { userId: string }) {
                     const liberado = desbloqueadas.has(item.conquistaCodigo);
                     const Icone = item.icone;
                     return (
-                      <div
+                      <ImagemComFallback
                         key={item.conquistaCodigo}
+                        src={item.imagem}
+                        alt={liberado ? item.nome : `${item.nome} (bloqueado)`}
                         title={liberado ? item.nome : `${item.nome} (bloqueado)`}
-                        className={cn(
-                          "absolute flex h-14 w-14 items-center justify-center rounded-full border shadow-sm",
-                          item.classe,
-                          liberado
-                            ? "border-primary/70 bg-card text-primary"
-                            : "border-input bg-muted/50 text-muted-foreground/60"
-                        )}
-                      >
-                        <Icone className={cn("h-7 w-7", !liberado && "opacity-70")} />
-                      </div>
+                        className={cn("absolute h-14 w-14", item.classe)}
+                        imgClassName={cn(!liberado && "opacity-25 grayscale")}
+                        fallback={
+                          <div
+                            className={cn(
+                              "flex h-full w-full items-center justify-center rounded-full border bg-card/60",
+                              liberado
+                                ? "border-primary/50 text-primary"
+                                : "border-input text-muted-foreground/50"
+                            )}
+                          >
+                            <Icone className="h-6 w-6" />
+                          </div>
+                        }
+                      />
                     );
                   })}
                 </div>
