@@ -1,4 +1,14 @@
-import { AlertCircle, Crown, Loader2, Rocket, Star, Telescope, TrendingUp, UserX } from "lucide-react";
+import {
+  AlertCircle,
+  Crown,
+  Loader2,
+  MessageCircle,
+  Rocket,
+  Star,
+  Telescope,
+  TrendingUp,
+  UserX,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -11,13 +21,21 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  formatarUltimoLembrete,
+  missaoPendenteDe,
+  montarLinkWhatsApp,
+  montarMensagemLembrete,
+} from "@/lib/lembretes-whatsapp";
 import { supabase } from "@/lib/supabase";
 import type {
   CrmCandidatoCase,
   CrmEvolucaoAcelerada,
   CrmRiscoDesistencia,
+  LembreteEnviado,
+  Missao,
 } from "@/lib/types";
-import { formatData } from "@/lib/utils";
+import { formatData, semanaAtualDe } from "@/lib/utils";
 
 interface DadosTurma {
   risco: CrmRiscoDesistencia[];
@@ -25,8 +43,16 @@ interface DadosTurma {
   candidatos: CrmCandidatoCase[];
 }
 
+interface ContextoAluno {
+  semana: number;
+  missao: string;
+  ultimoLembrete: LembreteEnviado | null;
+}
+
 export function PaginaAdminTurma() {
   const [dados, setDados] = useState<DadosTurma | null>(null);
+  const [porUsuario, setPorUsuario] = useState<Record<string, ContextoAluno>>({});
+  const [contextoPronto, setContextoPronto] = useState(false);
   const [erro, setErro] = useState(false);
   const [tentativa, setTentativa] = useState(0);
 
@@ -34,6 +60,79 @@ export function PaginaAdminTurma() {
     let ativo = true;
     setErro(false);
     setDados(null);
+    setPorUsuario({});
+    setContextoPronto(false);
+
+    async function carregarContexto(risco: CrmRiscoDesistencia[]) {
+      const ids = risco.map((r) => r.user_id);
+      if (ids.length === 0) {
+        setPorUsuario({});
+        setContextoPronto(true);
+        return;
+      }
+      const [resProgresso, resMissoes, resLembretes] = await Promise.all([
+        supabase
+          .from("progresso_semanas")
+          .select("user_id, semana")
+          .in("user_id", ids)
+          .eq("status", "concluida"),
+        supabase
+          .from("missoes")
+          .select("user_id, semana, tipo, indice, descricao")
+          .in("user_id", ids)
+          .eq("concluida", false),
+        supabase
+          .from("lembretes_enviados")
+          .select("id, user_id, tipo, enviado_em")
+          .in("user_id", ids)
+          .order("enviado_em", { ascending: false }),
+      ]);
+      if (!ativo) return;
+      if (resProgresso.error || resMissoes.error || resLembretes.error) {
+        setErro(true);
+        return;
+      }
+
+      const concluidasPorUser = new Map<string, number[]>();
+      for (const linha of (resProgresso.data ?? []) as { user_id: string; semana: number }[]) {
+        const lista = concluidasPorUser.get(linha.user_id) ?? [];
+        lista.push(linha.semana);
+        concluidasPorUser.set(linha.user_id, lista);
+      }
+
+      const pendentesPorUser = new Map<
+        string,
+        Pick<Missao, "user_id" | "semana" | "tipo" | "indice" | "descricao">[]
+      >();
+      for (const linha of (resMissoes.data ?? []) as Pick<
+        Missao,
+        "user_id" | "semana" | "tipo" | "indice" | "descricao"
+      >[]) {
+        const lista = pendentesPorUser.get(linha.user_id) ?? [];
+        lista.push(linha);
+        pendentesPorUser.set(linha.user_id, lista);
+      }
+
+      const ultimoLembretePorUser = new Map<string, LembreteEnviado>();
+      for (const linha of (resLembretes.data ?? []) as LembreteEnviado[]) {
+        if (!ultimoLembretePorUser.has(linha.user_id)) {
+          ultimoLembretePorUser.set(linha.user_id, linha);
+        }
+      }
+
+      const mapa: Record<string, ContextoAluno> = {};
+      for (const r of risco) {
+        const semana = semanaAtualDe(concluidasPorUser.get(r.user_id) ?? []);
+        mapa[r.user_id] = {
+          semana,
+          missao: missaoPendenteDe(pendentesPorUser.get(r.user_id) ?? [], semana),
+          ultimoLembrete: ultimoLembretePorUser.get(r.user_id) ?? null,
+        };
+      }
+      setPorUsuario(mapa);
+      setContextoPronto(true);
+    }
+
     async function carregar() {
       const [resRisco, resEvolucao, resCandidatos] = await Promise.all([
         supabase
@@ -54,17 +153,41 @@ export function PaginaAdminTurma() {
         setErro(true);
         return;
       }
+      const risco = (resRisco.data ?? []) as CrmRiscoDesistencia[];
       setDados({
-        risco: (resRisco.data ?? []) as CrmRiscoDesistencia[],
+        risco,
         evolucao: (resEvolucao.data ?? []) as CrmEvolucaoAcelerada[],
         candidatos: (resCandidatos.data ?? []) as CrmCandidatoCase[],
       });
+      await carregarContexto(risco);
     }
     void carregar();
     return () => {
       ativo = false;
     };
   }, [tentativa]);
+
+  async function registrarLembreteManual(aluno: CrmRiscoDesistencia) {
+    const { error } = await supabase.from("lembretes_enviados").insert({
+      user_id: aluno.user_id,
+      tipo: "whatsapp_manual",
+    });
+    if (!error) {
+      const enviado: LembreteEnviado = {
+        id: "",
+        user_id: aluno.user_id,
+        tipo: "whatsapp_manual",
+        enviado_em: new Date().toISOString(),
+      };
+      setPorUsuario((m) => ({
+        ...m,
+        [aluno.user_id]: {
+          ...(m[aluno.user_id] ?? { semana: 1, missao: "continue o passo a passo da semana atual" }),
+          ultimoLembrete: enviado,
+        },
+      }));
+    }
+  }
 
   if (erro) {
     return (
@@ -80,7 +203,7 @@ export function PaginaAdminTurma() {
     );
   }
 
-  if (!dados) {
+  if (!dados || !contextoPronto) {
     return (
       <div className="flex items-center justify-center py-16 text-muted-foreground">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -109,8 +232,8 @@ export function PaginaAdminTurma() {
               Risco de desistência
             </CardTitle>
             <CardDescription>
-              Alunos há {dados.risco.length === 0 ? "" : ""}7 dias ou mais sem login
-              (maior tempo primeiro).
+              Alunos há 7 dias ou mais sem login (maior tempo primeiro). Envie o lembrete
+              pelo WhatsApp para trazer de volta.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -120,22 +243,69 @@ export function PaginaAdminTurma() {
               </p>
             ) : (
               <ul className="flex flex-col">
-                {dados.risco.map((r) => (
-                  <li key={r.user_id} className="border-b border-border py-2.5 last:border-b-0">
-                    <Link
-                      to={`/admin/usuarios/${r.user_id}`}
-                      className="flex items-center justify-between gap-2 hover:underline"
-                    >
-                      <span className="min-w-0 truncate text-sm">
-                        <span className="font-medium">{r.nome ?? r.email ?? "Aluno(a)"}</span>
-                        {r.nome_empresa && (
-                          <span className="text-muted-foreground"> · {r.nome_empresa}</span>
+                {dados.risco.map((r) => {
+                  const contexto = porUsuario[r.user_id];
+                  const semWhatsapp = !r.whatsapp || r.whatsapp.trim() === "";
+                  const linkWhatsApp = semWhatsapp
+                    ? null
+                    : montarLinkWhatsApp(
+                        r.whatsapp!,
+                        montarMensagemLembrete({
+                          nome: r.nome,
+                          diasSemLogin: r.dias_sem_login,
+                          semana: contexto?.semana ?? 1,
+                          missao: contexto?.missao ?? "continue o passo a passo da semana atual",
+                        })
+                      );
+                  return (
+                    <li key={r.user_id} className="border-b border-border py-3 last:border-b-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <Link
+                          to={`/admin/usuarios/${r.user_id}`}
+                          className="flex min-w-0 items-center gap-2 hover:underline"
+                        >
+                          <span className="min-w-0 truncate text-sm">
+                            <span className="font-medium">{r.nome ?? r.email ?? "Aluno(a)"}</span>
+                            {r.nome_empresa && (
+                              <span className="text-muted-foreground"> · {r.nome_empresa}</span>
+                            )}
+                          </span>
+                        </Link>
+                        <Badge variant="destrutivo">{r.dias_sem_login} dias</Badge>
+                      </div>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                        {linkWhatsApp ? (
+                          <Button
+                            asChild
+                            size="sm"
+                            variant="outline"
+                            onClick={() => void registrarLembreteManual(r)}
+                          >
+                            <a href={linkWhatsApp} target="_blank" rel="noreferrer">
+                              <MessageCircle className="h-3.5 w-3.5" />
+                              Abrir WhatsApp
+                            </a>
+                          </Button>
+                        ) : (
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                            Sem WhatsApp cadastrado
+                            <Link
+                              to={`/admin/usuarios/${r.user_id}`}
+                              className="font-medium text-primary underline-offset-2 hover:underline"
+                            >
+                              preencher
+                            </Link>
+                          </span>
                         )}
-                      </span>
-                      <Badge variant="destrutivo">{r.dias_sem_login} dias</Badge>
-                    </Link>
-                  </li>
-                ))}
+                        {contexto?.ultimoLembrete && (
+                          <span className="text-xs text-muted-foreground">
+                            {formatarUltimoLembrete(contexto.ultimoLembrete.enviado_em)}
+                          </span>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </CardContent>

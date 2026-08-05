@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 
 interface DadosOnboarding {
   nome: string;
+  whatsapp: string;
   telefone: string;
   cidade: string;
   estado: string;
@@ -44,6 +45,7 @@ interface DadosOnboarding {
 
 const INICIAL: DadosOnboarding = {
   nome: "",
+  whatsapp: "",
   telefone: "",
   cidade: "",
   estado: "",
@@ -135,6 +137,7 @@ export function PaginaOnboarding({ aoConcluir }: { aoConcluir: () => void }) {
       const perfil = {
         id: user.id,
         nome: dados.nome.trim() || null,
+        whatsapp: dados.whatsapp.trim() || null,
         telefone: dados.telefone.trim() || null,
         cidade: dados.cidade.trim() || null,
         estado: dados.estado || null,
@@ -241,14 +244,28 @@ export function PaginaOnboarding({ aoConcluir }: { aoConcluir: () => void }) {
                   placeholder="Como você se chama"
                 />
               </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="whatsapp">
+                  WhatsApp (com DDD) <span className="text-primary">*</span>
+                </Label>
+                <Input
+                  id="whatsapp"
+                  value={dados.whatsapp}
+                  onChange={(e) => atualizar("whatsapp", e.target.value)}
+                  placeholder="(00) 00000-0000"
+                />
+                <p className="text-xs text-muted-foreground">
+                  É por ele que a gente entra em contato se precisar te chamar.
+                </p>
+              </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="telefone">Telefone</Label>
+                  <Label htmlFor="telefone">Telefone fixo (opcional)</Label>
                   <Input
                     id="telefone"
                     value={dados.telefone}
                     onChange={(e) => atualizar("telefone", e.target.value)}
-                    placeholder="(00) 00000-0000"
+                    placeholder="(00) 0000-0000"
                   />
                 </div>
                 <div className="flex flex-col gap-2">
@@ -469,7 +486,7 @@ function validarPasso(passo: number, dados: DadosOnboarding): boolean {
     return true;
   }
   if (passo === 1) {
-    return dados.nome.trim().length > 0;
+    return dados.nome.trim().length > 0 && dados.whatsapp.trim().length > 0;
   }
   if (passo === 2) {
     if (!dados.nome_empresa.trim() || !dados.area_atuacao.trim()) return false;

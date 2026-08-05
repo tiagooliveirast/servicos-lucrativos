@@ -4,6 +4,7 @@ export interface Perfil {
   id: string;
   nome: string | null;
   telefone: string | null;
+  whatsapp: string | null;
   cidade: string | null;
   estado: string | null;
   email_refriclube: string | null;
@@ -298,9 +299,17 @@ export interface CrmRiscoDesistencia {
   user_id: string;
   nome: string | null;
   email: string | null;
+  whatsapp: string | null;
   nome_empresa: string | null;
   ultimo_login: string | null;
   dias_sem_login: number;
+}
+
+export interface LembreteEnviado {
+  id: string;
+  user_id: string;
+  tipo: string;
+  enviado_em: string;
 }
 
 export interface CrmEvolucaoAcelerada {

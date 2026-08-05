@@ -7,6 +7,7 @@ import {
   FileText,
   KeyRound,
   Loader2,
+  MessageCircle,
   OctagonAlert,
   PackageCheck,
   ShieldBan,
@@ -95,6 +96,14 @@ export function PaginaAdminUsuarioDetalhe() {
   const [gerando, setGerando] = useState<"relatorio" | "certificado" | null>(null);
   const [marcandoEnviada, setMarcandoEnviada] = useState<string | null>(null);
   const [erroChaves, setErroChaves] = useState<string | null>(null);
+  const [whatsapp, setWhatsapp] = useState("");
+  const [salvandoWhatsApp, setSalvandoWhatsApp] = useState(false);
+  const [erroWhatsApp, setErroWhatsApp] = useState<string | null>(null);
+  const [sucessoWhatsApp, setSucessoWhatsApp] = useState(false);
+
+  useEffect(() => {
+    setWhatsapp(dados?.perfil?.whatsapp ?? "");
+  }, [dados?.perfil?.whatsapp]);
 
   useEffect(() => {
     let ativo = true;
@@ -265,6 +274,28 @@ export function PaginaAdminUsuarioDetalhe() {
     setDados((d) => (d ? { ...d, acesso: { ...(d.acesso ?? { user_id: id }), ativo: true, motivo_inativacao: null, inativado_em: null } as Acesso } : d));
   }
 
+  async function salvarWhatsApp() {
+    if (!id) return;
+    setSalvandoWhatsApp(true);
+    setErroWhatsApp(null);
+    setSucessoWhatsApp(false);
+    const { error } = await supabase.rpc("admin_atualizar_whatsapp", {
+      alvo: id,
+      novo_whatsapp: whatsapp,
+    });
+    setSalvandoWhatsApp(false);
+    if (error) {
+      setErroWhatsApp("Não foi possível salvar o WhatsApp.");
+      return;
+    }
+    setSucessoWhatsApp(true);
+    setDados((d) =>
+      d && d.perfil
+        ? { ...d, perfil: { ...d.perfil, whatsapp: whatsapp.trim() || null } }
+        : d
+    );
+  }
+
   async function marcarEnviada(chaveUsuarioId: string) {
     setMarcandoEnviada(chaveUsuarioId);
     setErroChaves(null);
@@ -343,6 +374,7 @@ export function PaginaAdminUsuarioDetalhe() {
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {perfil.email ?? "—"}
+          {perfil.whatsapp ? ` · WhatsApp ${perfil.whatsapp}` : ""}
           {perfil.telefone ? ` · ${perfil.telefone}` : ""}
           {perfil.cidade ? ` · ${perfil.cidade}${perfil.estado ? `/${perfil.estado}` : ""}` : ""}
         </p>
@@ -433,6 +465,55 @@ export function PaginaAdminUsuarioDetalhe() {
                 </Button>
               </div>
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <MessageCircle className="h-4 w-4 text-primary" />
+            Contato pelo WhatsApp
+          </CardTitle>
+          <CardDescription>
+            É o número usado no lembrete manual da Visão Geral da Turma. Alunos cadastrados
+            antes desse campo existir podem ter o WhatsApp preenchido aqui.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+            <div className="flex flex-1 flex-col gap-2">
+              <Label htmlFor="whatsapp">WhatsApp (com DDD)</Label>
+              <Input
+                id="whatsapp"
+                value={whatsapp}
+                onChange={(e) => {
+                  setWhatsapp(e.target.value);
+                  setSucessoWhatsApp(false);
+                }}
+                placeholder="(00) 00000-0000"
+              />
+            </div>
+            <Button
+              onClick={() => void salvarWhatsApp()}
+              disabled={salvandoWhatsApp || whatsapp.trim() === (perfil.whatsapp ?? "")}
+              className="w-fit"
+            >
+              {salvandoWhatsApp && <Loader2 className="animate-spin" />}
+              Salvar WhatsApp
+            </Button>
+          </div>
+          {erroWhatsApp && (
+            <p className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive-foreground">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              {erroWhatsApp}
+            </p>
+          )}
+          {sucessoWhatsApp && (
+            <p className="flex items-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-600">
+              <BadgeCheck className="h-4 w-4 shrink-0" />
+              WhatsApp salvo.
+            </p>
           )}
         </CardContent>
       </Card>
