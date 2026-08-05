@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   CheckCircle2,
   FileUp,
+  Heart,
   Info,
   Loader2,
   Lock,
@@ -14,6 +15,7 @@ import {
   Target,
   Upload,
   Video,
+  X,
   Zap,
 } from "lucide-react";
 
@@ -45,6 +47,12 @@ import {
   melhoraCom,
   textoMelhoria,
 } from "@/lib/direcaoIndicadores";
+import {
+  carregarMotivoPessoal,
+  motivoJaExibido,
+  registrarMotivoExibido,
+  textoMotivo,
+} from "@/lib/motivo";
 import { supabase } from "@/lib/supabase";
 import type {
   AulaSemana,
@@ -178,6 +186,34 @@ function ConteudoSemana({
   const [concluindo, setConcluindo] = useState(false);
   const [concluida, setConcluida] = useState(progresso.status === "concluida");
   const [celebracao, setCelebracao] = useState<MensagemCelebracao | null>(null);
+  const [bannerMotivo, setBannerMotivo] = useState<string | null>(null);
+
+  // Banner "Lembra por que você começou?" — 1x por módulo (semanas 1, 5, 9).
+  useEffect(() => {
+    if (
+      visualizacao ||
+      (semana.numero !== 1 && semana.numero !== 5 && semana.numero !== 9)
+    ) {
+      return;
+    }
+    let ativo = true;
+    const contexto = `inicio_modulo_${(semana.numero - 1) / 4 + 1}`;
+    async function carregarBanner() {
+      const [motivo, jaVisto] = await Promise.all([
+        carregarMotivoPessoal(userId),
+        motivoJaExibido(userId, contexto),
+      ]);
+      if (!ativo) return;
+      const texto = textoMotivo(motivo);
+      if (!texto || jaVisto) return;
+      setBannerMotivo(texto);
+      void registrarMotivoExibido(userId, contexto);
+    }
+    void carregarBanner();
+    return () => {
+      ativo = false;
+    };
+  }, [userId, semana.numero, visualizacao]);
 
   useEffect(() => {
     let ativo = true;
@@ -416,6 +452,28 @@ function ConteudoSemana({
             Objetivo: {semana.objetivo}
           </p>
         </div>
+
+        {bannerMotivo && (
+          <div className="flex items-start gap-3 rounded-xl border border-primary/50 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent p-4">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+              <Heart className="h-5 w-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-primary">Lembra por que você começou?</p>
+              <p className="mt-1 text-sm leading-relaxed text-foreground/90">
+                Você disse: <span className="font-medium">{bannerMotivo}</span>
+              </p>
+            </div>
+            <button
+              type="button"
+              aria-label="Fechar"
+              onClick={() => setBannerMotivo(null)}
+              className="-mr-1 rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
 
         <BlocoAula semana={semana.numero} />
 

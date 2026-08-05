@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 
 import { registrarLoginDiario } from "@/lib/gamificacao";
+import { diasDesdeUltimoLogin } from "@/lib/motivo";
 import { supabase } from "@/lib/supabase";
 import type { Perfil } from "@/lib/types";
 
@@ -18,6 +19,8 @@ interface EstadoAuth {
   fase: FaseAuth;
   user: User | null;
   perfil: Perfil | null;
+  /** Dias desde o último login antes do login de hoje (null quando não dá pra saber). */
+  ausenteDias: number | null;
 }
 
 export function useAuth(recarregar = 0): EstadoAuth {
@@ -25,6 +28,7 @@ export function useAuth(recarregar = 0): EstadoAuth {
     fase: "carregando",
     user: null,
     perfil: null,
+    ausenteDias: null,
   });
 
   useEffect(() => {
@@ -38,7 +42,7 @@ export function useAuth(recarregar = 0): EstadoAuth {
     async function processarUsuario(user: User | null) {
       if (!ativo) return;
       if (!user) {
-        setEstado({ fase: "deslogado", user: null, perfil: null });
+        setEstado({ fase: "deslogado", user: null, perfil: null, ausenteDias: null });
         return;
       }
       try {
@@ -49,7 +53,7 @@ export function useAuth(recarregar = 0): EstadoAuth {
           .maybeSingle();
 
         if (!perfil) {
-          setEstado({ fase: "onboarding", user, perfil: null });
+          setEstado({ fase: "onboarding", user, perfil: null, ausenteDias: null });
           return;
         }
         const { data: acesso } = await supabase
@@ -60,11 +64,11 @@ export function useAuth(recarregar = 0): EstadoAuth {
 
         if (!ativo) return;
         if (!acesso) {
-          setEstado({ fase: "sem_acesso", user, perfil });
+          setEstado({ fase: "sem_acesso", user, perfil, ausenteDias: null });
           return;
         }
         if (!acesso.ativo) {
-          setEstado({ fase: "acesso_inativo", user, perfil });
+          setEstado({ fase: "acesso_inativo", user, perfil, ausenteDias: null });
           return;
         }
 
@@ -77,11 +81,28 @@ export function useAuth(recarregar = 0): EstadoAuth {
 
         if (!ativo) return;
         if (!diagnostico) {
-          setEstado({ fase: "onboarding", user, perfil });
+          setEstado({ fase: "onboarding", user, perfil, ausenteDias: null });
           return;
         }
 
-        setEstado({ fase: "logado", user, perfil });
+        // Lê o último login ANTES do registrar_login_diario atualizá-lo —
+        // é o que permite detectar retorno após ausência na Sala de Guerra.
+        let ausenteDias: number | null = null;
+        try {
+          const { data: gamificacao } = await supabase
+            .from("gamificacao_usuario")
+            .select("ultimo_login")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          const ultimoLogin = (gamificacao as { ultimo_login: string | null } | null)
+            ?.ultimo_login;
+          ausenteDias = diasDesdeUltimoLogin(ultimoLogin ?? null);
+        } catch {
+          ausenteDias = null;
+        }
+
+        if (!ativo) return;
+        setEstado({ fase: "logado", user, perfil, ausenteDias });
         // Registra no servidor o login diário (streak + XP). Fogo-e-esquece:
         // se falhar, apenas não pontua hoje.
         void registrarLoginDiario().catch(() => undefined);
@@ -89,7 +110,7 @@ export function useAuth(recarregar = 0): EstadoAuth {
         // Erro de rede/servidor: mantém o usuário com sessão, mas mostra
         // uma tela de erro com opção de tentar novamente (em vez de
         // tratar como deslogado e mostrar a tela de login).
-        if (ativo) setEstado({ fase: "erro", user, perfil: null });
+        if (ativo) setEstado({ fase: "erro", user, perfil: null, ausenteDias: null });
       }
     }
 

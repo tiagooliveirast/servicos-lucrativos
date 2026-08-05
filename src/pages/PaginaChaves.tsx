@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
+  Anchor,
   ArrowLeft,
   Check,
   KeyRound,
@@ -23,6 +24,7 @@ import {
   type ProgressoChaves,
   type StatusPorChave,
 } from "@/lib/chaves";
+import { carregarMotivoPessoal, textoMotivo, type MotivoPessoal } from "@/lib/motivo";
 import type { Chave, ChaveUsuario, StatusChaveFisica } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -64,6 +66,17 @@ export function PaginaChaves({
   const [tentativa, setTentativa] = useState(0);
   const [solicitando, setSolicitando] = useState<string | null>(null);
   const [cerimonia, setCerimonia] = useState<ChaveUsuario | null>(null);
+  const [motivo, setMotivo] = useState<MotivoPessoal | null>(null);
+
+  useEffect(() => {
+    let ativo = true;
+    void carregarMotivoPessoal(userId).then((m) => {
+      if (ativo) setMotivo(m);
+    });
+    return () => {
+      ativo = false;
+    };
+  }, [userId]);
 
   useEffect(() => {
     let ativo = true;
@@ -234,6 +247,7 @@ export function PaginaChaves({
       {cerimonia && (
         <CerimoniaDesbloqueio
           chaveUsuario={cerimonia}
+          motivo={motivo}
           solicitando={solicitando === cerimonia.id}
           aoSolicitar={aoSolicitar}
           aoFechar={fecharCerimonia}
@@ -493,11 +507,13 @@ function CartaoChave({
 
 function CerimoniaDesbloqueio({
   chaveUsuario,
+  motivo,
   solicitando,
   aoSolicitar,
   aoFechar,
 }: {
   chaveUsuario: ChaveUsuario;
+  motivo: MotivoPessoal | null;
   solicitando: boolean;
   aoSolicitar: (cu: ChaveUsuario, c: Chave) => void;
   aoFechar: () => void;
@@ -505,6 +521,7 @@ function CerimoniaDesbloqueio({
   const chave = chaveUsuario.chaves;
   if (!chave) return null;
   const cor = chave.cor_hex;
+  const motivoTexto = textoMotivo(motivo);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -535,6 +552,17 @@ function CerimoniaDesbloqueio({
           Você completou os quatro pilares — faturamento, IME, IE e missões da
           jornada. Essa conquista vale uma chave física.
         </p>
+
+        {motivoTexto && (
+          <p className="mt-4 flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2.5 text-left text-sm leading-relaxed text-foreground/85">
+            <Anchor className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <span>
+              Você começou porque queria:{" "}
+              <span className="font-medium text-primary">{motivoTexto}</span>. Essa chave prova
+              que você está no caminho certo.
+            </span>
+          </p>
+        )}
 
         <div className="mt-5 flex flex-col gap-2">
           <Button

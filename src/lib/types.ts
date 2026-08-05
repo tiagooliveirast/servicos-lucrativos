@@ -31,6 +31,8 @@ export interface DiagnosticoInicial {
   qtd_clientes: number | null;
   ticket_medio: number | null;
   numero_orcamentos: number | null;
+  motivo_categoria: string | null;
+  motivo_detalhe: string | null;
   created_at: string;
 }
 

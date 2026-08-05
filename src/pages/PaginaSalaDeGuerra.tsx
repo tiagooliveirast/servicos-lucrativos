@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   AlertTriangle,
@@ -6,6 +6,7 @@ import {
   Award,
   CalendarDays,
   Flame,
+  Heart,
   KeyRound,
   Loader2,
   MessagesSquare,
@@ -13,6 +14,7 @@ import {
   Shield,
   Target,
   TrendingUp,
+  X,
 } from "lucide-react";
 
 import { Layout } from "@/components/Layout";
@@ -20,6 +22,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { buscarAnaliseIa, type AnaliseIa } from "@/lib/analise-ia";
+import {
+  carregarMotivoPessoal,
+  registrarMotivoExibido,
+  textoMotivo,
+} from "@/lib/motivo";
 import type { AlertaRadar } from "@/lib/regras-radar";
 import {
   carregarSalaDeGuerra,
@@ -33,13 +40,24 @@ import { cn } from "@/lib/utils";
 // Edge Function continuam existindo e funcionando.
 const ANALISE_DIARIA_ATIVA = false;
 
-export function PaginaSalaDeGuerra({ perfilId }: { perfilId: string }) {
+// A partir de quantos dias sem login o retorno ganha a tela de boas-vindas.
+const DIAS_MINIMOS_PARA_RETORNO = 7;
+
+export function PaginaSalaDeGuerra({
+  perfilId,
+  ausenteDias,
+}: {
+  perfilId: string;
+  ausenteDias: number | null;
+}) {
   const [dados, setDados] = useState<DadosSala | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(false);
   const [tentativa, setTentativa] = useState(0);
   const [analiseMentor, setAnaliseMentor] = useState<AnaliseIa | null>(null);
   const [analiseCarregando, setAnaliseCarregando] = useState(true);
+  const [retornoMotivo, setRetornoMotivo] = useState<string | null>(null);
+  const retornoRegistradoRef = useRef(false);
 
   useEffect(() => {
     let ativo = true;
@@ -70,6 +88,34 @@ export function PaginaSalaDeGuerra({ perfilId }: { perfilId: string }) {
     };
   }, [perfilId, tentativa]);
 
+  // Retorno após ausência (≥7 dias sem login): substitui o card do mentor
+  // pausado por uma tela de boas-vindas com o motivo pessoal. Registra em
+  // motivo_exibicoes 1x por dia — em remontagens do mesmo dia o ausenteDias
+  // já vem zerado (o RPC de login rodou no primeiro acesso do dia).
+  useEffect(() => {
+    if (
+      ausenteDias === null ||
+      ausenteDias < DIAS_MINIMOS_PARA_RETORNO ||
+      retornoRegistradoRef.current
+    ) {
+      return;
+    }
+    let ativo = true;
+    async function prepararRetorno() {
+      const motivo = await carregarMotivoPessoal(perfilId);
+      if (!ativo) return;
+      const texto = textoMotivo(motivo);
+      if (!texto) return;
+      retornoRegistradoRef.current = true;
+      setRetornoMotivo(texto);
+      void registrarMotivoExibido(perfilId, "retorno_apos_ausencia");
+    }
+    void prepararRetorno();
+    return () => {
+      ativo = false;
+    };
+  }, [ausenteDias, perfilId]);
+
   if (carregando) {
     return (
       <Layout>
@@ -93,6 +139,48 @@ export function PaginaSalaDeGuerra({ perfilId }: { perfilId: string }) {
           <Button variant="outline" onClick={() => setTentativa((t) => t + 1)}>
             Tentar novamente
           </Button>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Boas-vindas de retorno: exibida no lugar do card do mentor quando o
+  // aluno volta depois de 7+ dias fora e tem motivo pessoal registrado.
+  if (retornoMotivo) {
+    return (
+      <Layout>
+        <div className="flex flex-col gap-3">
+          <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight sm:text-2xl">
+            <Radar className="h-6 w-6 text-primary" />
+            Sala de Guerra
+          </h1>
+          <div className="rounded-2xl border border-primary/50 bg-gradient-to-b from-primary/20 via-card to-card p-6">
+            <div className="flex items-start justify-between gap-2">
+              <p className="flex items-center gap-2 text-sm font-semibold text-primary">
+                <Heart className="h-4 w-4" />
+                Que bom te ver de volta!
+              </p>
+              <button
+                type="button"
+                aria-label="Fechar"
+                onClick={() => setRetornoMotivo(null)}
+                className="-mr-1 -mt-1 rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="mt-3 text-sm leading-relaxed text-foreground/90">
+              Você começou esse plano porque queria:{" "}
+              <span className="font-medium text-primary">{retornoMotivo}</span>. Sua missão da
+              Semana {dados.semanaAtual} ainda está esperando.
+            </p>
+            <Button asChild className="mt-5">
+              <Link to={`/semana/${dados.semanaAtual}`}>
+                Continuar de onde parei
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
         </div>
       </Layout>
     );

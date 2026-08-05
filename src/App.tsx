@@ -129,7 +129,7 @@ function TelaErroSessao({ aoTentar }: { aoTentar: () => void }) {
 
 export default function App() {
   const [recarregar, setRecarregar] = useState(0);
-  const { fase, user, perfil } = useAuth(recarregar);
+  const { fase, user, perfil, ausenteDias } = useAuth(recarregar);
   const location = useLocation();
 
   // Página pública da empresa: funciona sem sessão (e enquanto a sessão é
@@ -176,7 +176,7 @@ export default function App() {
             ) : fase === "onboarding" ? (
               <PaginaOnboarding aoConcluir={() => setRecarregar((r) => r + 1)} />
             ) : (
-              <PaginaSalaDeGuerra perfilId={perfil!.id} />
+              <PaginaSalaDeGuerra perfilId={perfil!.id} ausenteDias={ausenteDias} />
             )
           }
         />

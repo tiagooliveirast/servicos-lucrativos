@@ -19,7 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { COMO_USAR_ESTE_PLANO, ESTADOS, PARA_QUEM_E_ESTE_PLANO, TEMPO_MERCADO_OPCOES } from "@/lib/conteudo";
+import { MOTIVOS } from "@/lib/motivo";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
@@ -41,6 +43,8 @@ interface DadosOnboarding {
   qtd_clientes: string;
   ticket_medio: string;
   numero_orcamentos: string;
+  motivo_categoria: string;
+  motivo_detalhe: string;
 }
 
 const INICIAL: DadosOnboarding = {
@@ -61,6 +65,8 @@ const INICIAL: DadosOnboarding = {
   qtd_clientes: "",
   ticket_medio: "",
   numero_orcamentos: "",
+  motivo_categoria: "",
+  motivo_detalhe: "",
 };
 
 const PASSOS = [
@@ -68,6 +74,7 @@ const PASSOS = [
   { titulo: "Seus dados", descricao: "Como você quer ser chamado e como entramos em contato." },
   { titulo: "Sua empresa", descricao: "O básico do seu negócio para o diagnóstico." },
   { titulo: "Situação financeira", descricao: "Os números de hoje — honestos, sem vergonha." },
+  { titulo: "Seu motivo", descricao: "O porquê que vai te lembrar de continuar nos dias difíceis." },
 ];
 
 function BotaoSimNao({
@@ -123,8 +130,8 @@ export function PaginaOnboarding({ aoConcluir }: { aoConcluir: () => void }) {
   }
 
   async function concluir() {
-    if (!validarPasso(3, dados)) {
-      setErro("Preencha os campos obrigatórios antes de começar.");
+    if (!validarPasso(PASSOS.length - 1, dados)) {
+      setErro("Escolha o motivo que mais combina com você antes de começar.");
       return;
     }
     setErro(null);
@@ -161,6 +168,9 @@ export function PaginaOnboarding({ aoConcluir }: { aoConcluir: () => void }) {
         qtd_clientes: inteiro(dados.qtd_clientes),
         ticket_medio: numero(dados.ticket_medio),
         numero_orcamentos: inteiro(dados.numero_orcamentos),
+        motivo_categoria: dados.motivo_categoria === "" ? null : dados.motivo_categoria,
+        motivo_detalhe:
+          dados.motivo_detalhe.trim() === "" ? null : dados.motivo_detalhe.trim(),
       };
       const { error: erroDiag } = await supabase
         .from("diagnostico_inicial")
@@ -446,6 +456,45 @@ export function PaginaOnboarding({ aoConcluir }: { aoConcluir: () => void }) {
             </div>
           )}
 
+          {passo === 4 && (
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <p className="text-sm font-semibold text-foreground/90">
+                  Por que você quer organizar sua empresa agora?
+                </p>
+                <div className="flex flex-col gap-2">
+                  {MOTIVOS.map((motivo) => (
+                    <button
+                      key={motivo.valor}
+                      type="button"
+                      onClick={() => atualizar("motivo_categoria", motivo.valor)}
+                      className={cn(
+                        "rounded-lg border px-4 py-3 text-left text-sm font-medium transition-colors",
+                        dados.motivo_categoria === motivo.valor
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-input text-foreground/90 hover:bg-accent"
+                      )}
+                    >
+                      {motivo.rotulo}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {dados.motivo_categoria !== "" && (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="motivo_detalhe">Quer contar um pouco mais? (opcional)</Label>
+                  <Textarea
+                    id="motivo_detalhe"
+                    rows={3}
+                    value={dados.motivo_detalhe}
+                    onChange={(e) => atualizar("motivo_detalhe", e.target.value)}
+                    placeholder="Conte com as suas palavras o que mais pesa hoje…"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
           {erro && (
             <p className="mt-4 flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive-foreground">
               <AlertCircle className="h-4 w-4 shrink-0" />
@@ -463,7 +512,7 @@ export function PaginaOnboarding({ aoConcluir }: { aoConcluir: () => void }) {
               <ArrowLeft />
               Voltar
             </Button>
-            {passo < 3 ? (
+            {passo < PASSOS.length - 1 ? (
               <Button type="button" onClick={passar}>
                 Continuar
                 <ArrowRight />
@@ -495,6 +544,9 @@ function validarPasso(passo: number, dados: DadosOnboarding): boolean {
   }
   if (passo === 3) {
     return dados.faturamento_atual !== "";
+  }
+  if (passo === 4) {
+    return dados.motivo_categoria !== "";
   }
   return true;
 }
