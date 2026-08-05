@@ -213,7 +213,6 @@ export function PaginaEmpresa({ userId }: { userId: string }) {
                   />
                   {ITENS_AVATAR.map((item) => {
                     const liberado = desbloqueadas.has(item.conquistaCodigo);
-                    const Icone = item.icone;
                     return (
                       <ImagemComFallback
                         key={item.conquistaCodigo}
@@ -223,16 +222,7 @@ export function PaginaEmpresa({ userId }: { userId: string }) {
                         className={cn("absolute h-14 w-14", item.classe)}
                         imgClassName={cn(!liberado && "opacity-25 grayscale")}
                         fallback={
-                          <div
-                            className={cn(
-                              "flex h-full w-full items-center justify-center rounded-full border bg-card/60",
-                              liberado
-                                ? "border-primary/50 text-primary"
-                                : "border-input text-muted-foreground/50"
-                            )}
-                          >
-                            <Icone className="h-6 w-6" />
-                          </div>
+                          <div className="flex h-full w-full items-center justify-center rounded-full bg-muted/40" />
                         }
                       />
                     );
