@@ -60,12 +60,12 @@ async function carregarDadosCompartilhar(userId: string): Promise<DadosCompartil
   const [resPerfil, resEmpresa, resIme, resFat, resChave, resAcesso] = await Promise.all([
     supabase
       .from("perfis")
-      .select("pagina_publica_ativa, pagina_publica_mostrar_faturamento")
+      .select("pagina_publica_ativa, pagina_publica_mostrar_faturamento, cidade, estado")
       .eq("id", userId)
       .maybeSingle(),
     supabase
       .from("diagnostico_inicial")
-      .select("nome_empresa, cidade, estado")
+      .select("nome_empresa")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -106,6 +106,8 @@ async function carregarDadosCompartilhar(userId: string): Promise<DadosCompartil
   const perfil = resPerfil.data as {
     pagina_publica_ativa: boolean;
     pagina_publica_mostrar_faturamento: boolean;
+    cidade: string | null;
+    estado: string | null;
   } | null;
   const empresa = resEmpresa.data as
     | { nome_empresa: string | null; cidade: string | null; estado: string | null }
@@ -132,8 +134,8 @@ async function carregarDadosCompartilhar(userId: string): Promise<DadosCompartil
 
   return {
     empresaNome: empresa?.nome_empresa ?? null,
-    cidade: empresa?.cidade ?? null,
-    estado: empresa?.estado ?? null,
+    cidade: perfil?.cidade ?? null,
+    estado: perfil?.estado ?? null,
     paginaAtiva: Boolean(perfil?.pagina_publica_ativa),
     mostrarFaturamento: Boolean(perfil?.pagina_publica_mostrar_faturamento),
     imeInicial: ime.length > 0 ? Number(ime[0].score_total) : null,

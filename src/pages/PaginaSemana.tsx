@@ -254,7 +254,8 @@ function ConteudoSemana({
     const missao = semana.missoes[indice];
     if (!missao || missao.tipo !== tipo) return;
     const chave = `${tipo}:${indice}`;
-    const novo = !missoes[chave];
+    if (missoes[chave]) return;
+    const novo = true;
     setMissoes((m) => ({ ...m, [chave]: novo }));
     const { error } = await supabase
       .from("missoes")
