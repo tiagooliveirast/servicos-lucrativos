@@ -11,13 +11,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { obterClassificacaoIme } from "@/lib/estagio-empresa";
+import { OURO, PRETO } from "@/lib/pdf-estilos";
 import { slugificar } from "@/lib/slug";
 import { supabase } from "@/lib/supabase";
 import type { NivelConfiancaFaturamento } from "@/lib/types";
 import { formatBRL } from "@/lib/utils";
-
-const OURO = "#C9A227";
-const PRETO = "#0A0A0A";
 
 interface DadosCompartilhar {
   empresaNome: string | null;

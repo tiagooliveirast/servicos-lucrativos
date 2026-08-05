@@ -20,15 +20,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  gerarCertificadoPdf,
-  montarDadosCertificado,
   verificarElegibilidade,
 } from "@/lib/certificado-implantacao";
-import { baixarPdf, slug } from "@/lib/pdf";
 import {
-  gerarRelatorioPdf,
-  montarDadosRelatorio,
-} from "@/lib/relatorio-implantacao";
+  exportarCertificadoPDF,
+  exportarRelatorioPDF,
+} from "@/lib/exportacao-pdf";
 import { carregarDadosTransformacao, type DadosTransformacao } from "@/lib/transformacao";
 
 export function PaginaRelatorios({ userId }: { userId: string }) {
@@ -67,17 +64,13 @@ export function PaginaRelatorios({ userId }: { userId: string }) {
     );
   }
 
-  const relatorio = dados ? montarDadosRelatorio(dados) : null;
-  const certificado = dados ? montarDadosCertificado(dados) : null;
   const elegibilidade = dados ? verificarElegibilidade(dados) : null;
 
   async function exportarRelatorio() {
-    if (!relatorio) return;
     setErro(false);
     setGerando("relatorio");
     try {
-      const blob = await gerarRelatorioPdf(relatorio);
-      baixarPdf(blob, `relatorio-implantacao-${slug(relatorio.empresaNome ?? "empresa")}.pdf`);
+      await exportarRelatorioPDF(userId);
     } catch {
       setErro(true);
     } finally {
@@ -86,12 +79,11 @@ export function PaginaRelatorios({ userId }: { userId: string }) {
   }
 
   async function exportarCertificado() {
-    if (!certificado || !elegibilidade?.elegivel) return;
+    if (!elegibilidade?.elegivel) return;
     setErro(false);
     setGerando("certificado");
     try {
-      const blob = await gerarCertificadoPdf(certificado);
-      baixarPdf(blob, `certificado-implantacao-${slug(certificado.alunoNome ?? "aluno")}.pdf`);
+      await exportarCertificadoPDF(userId);
     } catch {
       setErro(true);
     } finally {

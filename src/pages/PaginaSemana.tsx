@@ -61,7 +61,7 @@ import type {
   MissaoAnexo,
   ProgressoSemana,
 } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, extrairVideoId } from "@/lib/utils";
 
 export function PaginaSemana({ userId }: { userId: string }) {
   const { numero } = useParams();
@@ -1019,13 +1019,6 @@ function CampoForm({
       />
     </div>
   );
-}
-
-function extrairVideoId(url: string): string | null {
-  const match = url.match(
-    /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/))([\w-]{11})/
-  );
-  return match ? match[1] : null;
 }
 
 function BlocoAula({ semana }: { semana: number }) {

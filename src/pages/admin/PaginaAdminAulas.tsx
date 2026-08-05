@@ -15,16 +15,10 @@ import { Label } from "@/components/ui/label";
 import { SEMANA_POR_NUMERO } from "@/lib/conteudo";
 import { supabase } from "@/lib/supabase";
 import type { AulaSemana } from "@/lib/types";
+import { extrairVideoId } from "@/lib/utils";
 
 interface LinhaAula extends AulaSemana {
   temVideo: boolean;
-}
-
-function extrairVideoId(url: string): string | null {
-  const match = url.match(
-    /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{11})/
-  );
-  return match ? match[1] : null;
 }
 
 export function PaginaAdminAulas() {

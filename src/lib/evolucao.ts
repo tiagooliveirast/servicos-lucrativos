@@ -10,7 +10,6 @@ import type {
  * Todas usam a cor Ouro Sheik (#C9A227) na UI.
  */
 
-export const OURO = "#C9A227";
 export const PONTOS_MINIMOS = 2;
 
 export interface PontoEvolucao {

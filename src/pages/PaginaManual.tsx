@@ -15,6 +15,7 @@ import {
 import { gerarManualPdf, montarDadosManual } from "@/lib/manual";
 import { supabase } from "@/lib/supabase";
 import type { DiagnosticoInicial, PainelMensal, ProgressoSemana } from "@/lib/types";
+import { slug } from "@/lib/utils";
 
 export function PaginaManual({ userId }: { userId: string }) {
   const [liberado, setLiberado] = useState<boolean | null>(null);
@@ -138,11 +139,3 @@ export function PaginaManual({ userId }: { userId: string }) {
   );
 }
 
-function slug(texto: string): string {
-  return texto
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}

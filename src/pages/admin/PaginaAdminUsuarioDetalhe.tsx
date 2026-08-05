@@ -29,21 +29,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  gerarCertificadoPdf,
-  montarDadosCertificado,
   verificarElegibilidade,
 } from "@/lib/certificado-implantacao";
-import { baixarPdf, slug } from "@/lib/pdf";
 import { carregarChavesAdmin, marcarChaveEnviada } from "@/lib/chaves";
 import {
-  gerarRelatorioPdf,
-  montarDadosRelatorio,
-} from "@/lib/relatorio-implantacao";
+  exportarCertificadoPDF,
+  exportarRelatorioPDF,
+} from "@/lib/exportacao-pdf";
 import { supabase } from "@/lib/supabase";
-import {
-  carregarDadosTransformacao,
-  type DadosTransformacao,
-} from "@/lib/transformacao";
+import type { DadosTransformacao } from "@/lib/transformacao";
 import type {
   Acesso,
   ChaveUsuario,
@@ -325,10 +319,7 @@ export function PaginaAdminUsuarioDetalhe() {
     setErroAcao(null);
     setGerando("relatorio");
     try {
-      const completos = await carregarDadosTransformacao(id);
-      const dadosRelatorio = montarDadosRelatorio(completos);
-      const blob = await gerarRelatorioPdf(dadosRelatorio);
-      baixarPdf(blob, `relatorio-implantacao-${slug(dadosRelatorio.empresaNome ?? "empresa")}.pdf`);
+      await exportarRelatorioPDF(id);
     } catch {
       setErroAcao("Não foi possível gerar o Relatório de Implantação.");
     } finally {
@@ -341,10 +332,7 @@ export function PaginaAdminUsuarioDetalhe() {
     setErroAcao(null);
     setGerando("certificado");
     try {
-      const completos = await carregarDadosTransformacao(id);
-      const dadosCertificado = montarDadosCertificado(completos);
-      const blob = await gerarCertificadoPdf(dadosCertificado);
-      baixarPdf(blob, `certificado-implantacao-${slug(dadosCertificado.alunoNome ?? "aluno")}.pdf`);
+      await exportarCertificadoPDF(id);
     } catch {
       setErroAcao("Não foi possível gerar o Certificado de Implantação.");
     } finally {

@@ -10,18 +10,15 @@ import {
   serieTicket,
 } from "@/lib/evolucao";
 import { PILARES_IME } from "@/lib/ime";
+import { CINZA, FONTE_PDF, OURO, PRETO } from "@/lib/pdf-estilos";
 import type { DadosTransformacao } from "@/lib/transformacao";
 import type { ImeHistorico } from "@/lib/types";
 import { formatBRL, formatData } from "@/lib/utils";
 
-const OURO = "#C9A227";
-const PRETO = "#0A0A0A";
-const CINZA = "#6B6559";
-
 const estilos = StyleSheet.create({
   pagina: {
     padding: 40,
-    fontFamily: "Helvetica",
+    fontFamily: FONTE_PDF,
     color: PRETO,
     fontSize: 10,
     lineHeight: 1.5,

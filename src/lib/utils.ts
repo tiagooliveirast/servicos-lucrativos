@@ -59,3 +59,19 @@ export function semanaAtualDe(concluidas: number[]): number {
   const ultima = Math.max(...concluidas);
   return ultima >= 12 ? 12 : ultima + 1;
 }
+
+export function slug(texto: string): string {
+  return texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export function extrairVideoId(url: string): string | null {
+  const match = url.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/))([\w-]{11})/
+  );
+  return match ? match[1] : null;
+}

@@ -3,12 +3,9 @@ import type { ReactElement } from "react";
 
 import { contarAtivosCriados, listarAtivos } from "@/lib/ativos";
 import { serieFaturamento, serieLucro, serieTicket } from "@/lib/evolucao";
+import { CINZA, FONTE_PDF, OURO, PRETO } from "@/lib/pdf-estilos";
 import type { DadosTransformacao } from "@/lib/transformacao";
 import { formatData } from "@/lib/utils";
-
-const OURO = "#C9A227";
-const PRETO = "#0A0A0A";
-const CINZA = "#6B6559";
 
 /** IME mínimo para obtenção do Certificado de Implantação. */
 export const IME_MINIMO_CERTIFICADO = 70;
@@ -16,7 +13,7 @@ export const IME_MINIMO_CERTIFICADO = 70;
 const estilos = StyleSheet.create({
   pagina: {
     padding: 32,
-    fontFamily: "Helvetica",
+    fontFamily: FONTE_PDF,
     color: PRETO,
   },
   molduraExterna: {

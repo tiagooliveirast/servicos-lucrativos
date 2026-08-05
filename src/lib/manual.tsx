@@ -2,17 +2,14 @@ import { Document, Page, StyleSheet, Text, View, pdf } from "@react-pdf/renderer
 import type { ReactElement } from "react";
 
 import { SEMANAS, TEXTO_FECHAMENTO, type SemanaConteudo } from "@/lib/conteudo";
+import { CINZA, FONTE_PDF, OURO, PRETO } from "@/lib/pdf-estilos";
 import type { DiagnosticoInicial, PainelMensal, ProgressoSemana } from "@/lib/types";
 import { formatBRL } from "@/lib/utils";
-
-const OURO = "#C9A227";
-const PRETO = "#0A0A0A";
-const CINZA = "#6B6559";
 
 const estilos = StyleSheet.create({
   pagina: {
     padding: 40,
-    fontFamily: "Helvetica",
+    fontFamily: FONTE_PDF,
     color: PRETO,
     fontSize: 10,
     lineHeight: 1.5,

@@ -16,7 +16,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { OURO, type SerieEvolucao } from "@/lib/evolucao";
+import { OURO } from "@/lib/pdf-estilos";
+import type { SerieEvolucao } from "@/lib/evolucao";
 
 /**
  * Gráfico de linha da página de Evolução, reutilizado em versão somente

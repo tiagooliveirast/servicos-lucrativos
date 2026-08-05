@@ -6,12 +6,3 @@ export function baixarPdf(blob: Blob, nomeArquivo: string): void {
   a.click();
   URL.revokeObjectURL(url);
 }
-
-export function slug(texto: string): string {
-  return texto
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
