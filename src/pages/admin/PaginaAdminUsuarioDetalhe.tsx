@@ -4,11 +4,9 @@ import {
   BadgeCheck,
   FileDown,
   FileText,
-  KeyRound,
   Loader2,
   MessageCircle,
   OctagonAlert,
-  PackageCheck,
   ShieldBan,
   TrendingUp,
   UserX,
@@ -33,7 +31,6 @@ import { Label } from "@/components/ui/label";
 import {
   verificarElegibilidade,
 } from "@/lib/certificado-implantacao";
-import { carregarChavesAdmin, marcarChaveEnviada } from "@/lib/chaves";
 import {
   exportarCertificadoPDF,
   exportarRelatorioPDF,
@@ -42,7 +39,6 @@ import { supabase } from "@/lib/supabase";
 import type { DadosTransformacao } from "@/lib/transformacao";
 import type {
   Acesso,
-  ChaveUsuario,
   DiagnosticoInicial,
   ImeHistorico,
   IndicadorSemana,
@@ -76,8 +72,6 @@ interface DadosDetalhe {
   radar: RadarEvento[];
   acesso: Acesso | null;
   ime: ImeHistorico[];
-  chaves: ChaveUsuario[];
-  faturamentoAutodeclarado: boolean;
 }
 
 export function PaginaAdminUsuarioDetalhe() {
@@ -90,8 +84,6 @@ export function PaginaAdminUsuarioDetalhe() {
   const [salvando, setSalvando] = useState(false);
   const [erroAcao, setErroAcao] = useState<string | null>(null);
   const [gerando, setGerando] = useState<"relatorio" | "certificado" | null>(null);
-  const [marcandoEnviada, setMarcandoEnviada] = useState<string | null>(null);
-  const [erroChaves, setErroChaves] = useState<string | null>(null);
   const [whatsapp, setWhatsapp] = useState("");
   const [salvandoWhatsApp, setSalvandoWhatsApp] = useState(false);
   const [erroWhatsApp, setErroWhatsApp] = useState<string | null>(null);
@@ -107,7 +99,7 @@ export function PaginaAdminUsuarioDetalhe() {
     setDados(null);
     async function carregar() {
       if (!id) return;
-      const [resPerfil, resDiagnostico, resProgresso, resIndicadores, resPaineis, resRadar, resAcesso, resIme, chaves, resFaturamento] =
+      const [resPerfil, resDiagnostico, resProgresso, resIndicadores, resPaineis, resRadar, resAcesso, resIme] =
         await Promise.all([
           supabase.from("perfis").select("*").eq("id", id).maybeSingle(),
           supabase
@@ -142,14 +134,6 @@ export function PaginaAdminUsuarioDetalhe() {
             .select("*")
             .eq("user_id", id)
             .order("data_calculo", { ascending: true }),
-          carregarChavesAdmin(id).catch(() => []),
-          supabase
-            .from("faturamento_validado")
-            .select("nivel_confianca")
-            .eq("user_id", id)
-            .order("data_referencia", { ascending: false })
-            .limit(1)
-            .maybeSingle(),
         ]);
       if (!ativo) return;
       if (
@@ -160,8 +144,7 @@ export function PaginaAdminUsuarioDetalhe() {
         resPaineis.error ||
         resRadar.error ||
         resAcesso.error ||
-        resIme.error ||
-        resFaturamento.error
+        resIme.error
       ) {
         setErro(true);
         return;
@@ -175,10 +158,6 @@ export function PaginaAdminUsuarioDetalhe() {
         radar: resRadar.data as RadarEvento[],
         acesso: (resAcesso.data as Acesso | null) ?? null,
         ime: (resIme.data ?? []) as ImeHistorico[],
-        chaves: chaves,
-        faturamentoAutodeclarado:
-          (resFaturamento.data as { nivel_confianca?: string } | null)
-            ?.nivel_confianca === "autodeclarado",
       });
     }
     void carregar();
@@ -281,30 +260,6 @@ export function PaginaAdminUsuarioDetalhe() {
         ? { ...d, perfil: { ...d.perfil, whatsapp: whatsapp.trim() || null } }
         : d
     );
-  }
-
-  async function marcarEnviada(chaveUsuarioId: string) {
-    setMarcandoEnviada(chaveUsuarioId);
-    setErroChaves(null);
-    try {
-      await marcarChaveEnviada(chaveUsuarioId);
-      setDados((d) =>
-        d
-          ? {
-              ...d,
-              chaves: d.chaves.map((c) =>
-                c.id === chaveUsuarioId
-                  ? { ...c, solicitacao_fisica_status: "enviada" }
-                  : c
-              ),
-            }
-          : d
-      );
-    } catch {
-      setErroChaves("Não foi possível atualizar o status da chave.");
-    } finally {
-      setMarcandoEnviada(null);
-    }
   }
 
   async function exportarRelatorio() {
@@ -568,104 +523,6 @@ export function PaginaAdminUsuarioDetalhe() {
               );
             })}
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <KeyRound className="h-4 w-4 text-primary" />
-            Chaves da jornada
-          </CardTitle>
-          <CardDescription>
-            Chaves desbloqueadas pelos 4 pilares e o status da chave física.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {dados.chaves.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Nenhuma chave desbloqueada ainda.
-            </p>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {dados.chaves.map((chaveUsuario) => {
-                const chave = chaveUsuario.chaves;
-                if (!chave) return null;
-                return (
-                  <div
-                    key={chaveUsuario.id}
-                    className="flex flex-col gap-3 rounded-lg border border-input p-4 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border bg-card"
-                        style={{ borderColor: chave.cor_hex }}
-                      >
-                        <KeyRound className="h-5 w-5" style={{ color: chave.cor_hex }} />
-                      </div>
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-sm font-semibold">{chave.titulo}</p>
-                          {dados.faturamentoAutodeclarado && (
-                            <Badge
-                              variant="outline"
-                              className="font-medium text-muted-foreground"
-                            >
-                              Faturamento autodeclarado
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Desbloqueada em {formatData(chaveUsuario.desbloqueada_em)}
-                          {chaveUsuario.solicitacao_fisica_em
-                            ? ` · solicitada em ${formatData(chaveUsuario.solicitacao_fisica_em)}`
-                            : ""}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge
-                        variant={
-                          chaveUsuario.solicitacao_fisica_status === "enviada"
-                            ? "sucesso"
-                            : chaveUsuario.solicitacao_fisica_status === "solicitada"
-                              ? "pendente"
-                              : "outline"
-                        }
-                      >
-                        {chaveUsuario.solicitacao_fisica_status === "nao_solicitada"
-                          ? "Não solicitada"
-                          : chaveUsuario.solicitacao_fisica_status === "solicitada"
-                            ? "Solicitada"
-                            : "Enviada"}
-                      </Badge>
-                      {chaveUsuario.solicitacao_fisica_status === "solicitada" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => void marcarEnviada(chaveUsuario.id)}
-                          disabled={marcandoEnviada === chaveUsuario.id}
-                        >
-                          {marcandoEnviada === chaveUsuario.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <PackageCheck className="h-4 w-4" />
-                          )}
-                          Marcar como enviada
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-              {erroChaves && (
-                <p className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive-foreground">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  {erroChaves}
-                </p>
-              )}
-            </div>
-          )}
         </CardContent>
       </Card>
 

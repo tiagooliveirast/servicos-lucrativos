@@ -1,5 +1,4 @@
 import { supabase } from "@/lib/supabase";
-import type { NivelConfiancaFaturamento } from "@/lib/types";
 
 /**
  * Dados expostos pela página pública. A leitura é feita por UMA função
@@ -8,17 +7,8 @@ import type { NivelConfiancaFaturamento } from "@/lib/types";
  * quando o aluno ativou o toggle específico.
  */
 
-export interface ChavePublica {
-  codigo: string;
-  titulo: string;
-  cor_hex: string;
-  ordem: number;
-  desbloqueada_em: string;
-}
-
 export interface FaturamentoPublico {
   valor: number;
-  nivel_confianca: NivelConfiancaFaturamento;
   data_referencia: string;
 }
 
@@ -34,7 +24,6 @@ export interface PaginaPublica {
   estado: string | null;
   ime_atual: number | null;
   ime_historico: PontoImePublico[];
-  chave: ChavePublica | null;
   faturamento: FaturamentoPublico | null;
   certificado_disponivel: boolean;
 }

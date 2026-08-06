@@ -350,7 +350,7 @@ export function PaginaAdminTurma() {
               Candidatos a case
             </CardTitle>
             <CardDescription>
-              Chave alta (Vermelho ou acima) desbloqueada + certificado disponível.
+              Certificado de Implantação disponível (12 semanas + IME 70+ + 3 painéis).
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -368,14 +368,14 @@ export function PaginaAdminTurma() {
                     >
                       <span className="flex min-w-0 items-center gap-2">
                         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded border bg-card">
-                          <Star className="h-3.5 w-3.5" style={{ color: c.chave_cor_hex ?? undefined }} />
+                          <Star className="h-3.5 w-3.5 text-yellow-400" />
                         </span>
                         <span className="min-w-0 text-sm">
                           <span className="truncate font-medium">
                             {c.nome ?? c.email ?? "Aluno(a)"}
                           </span>
                           <span className="block text-xs text-muted-foreground">
-                            {c.chave_titulo ?? "Chave alta"} · IME {c.ime_atual ?? "—"}
+                            {c.nome_empresa ?? "Case de implantação"} · IME {c.ime_atual ?? "—"}
                           </span>
                         </span>
                       </span>

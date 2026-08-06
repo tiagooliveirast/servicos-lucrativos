@@ -2,29 +2,31 @@
 
 Plataforma web do "Serviços Lucrativos: O Plano de 90 Dias" — as 12 semanas do plano em
 formato guiado, com desbloqueio sequencial, gamificação completa (XP, níveis, streak,
-conquistas e baús), IME (Índice de Maturidade Empresarial), Sala de Guerra, sistema de
-Chaves (6 níveis), relatório/certificado de implantação em PDF e painel administrativo
-com CRM determinístico.
+conquistas e baús), IME (Índice de Maturidade Empresarial), Sala de Guerra,
+relatório/certificado de implantação em PDF e painel administrativo com CRM
+determinístico.
+
+> **Nota:** o sistema de **Chaves** (faturamento + IME + missões + IE, 6 chaves de
+> Branco a Preto) foi **descontinuado nesta plataforma** — não fazia sentido num
+> programa de 90 dias. O conceito passa a ser um recurso **planejado da Liga
+> Refriclube** (produto separado, fora deste escopo). O IE (Índice de Engajamento)
+> continua calculado nos bastidores, sem UI.
 
 ## O que existe hoje
 
 - **Auth + onboarding** — login/recuperação de senha, acesso liberado manualmente pelo
   admin, onboarding com diagnóstico inicial e captura do **motivo pessoal** do aluno
-  (reapresentado em início de módulo, cerimônia de chave e retorno após ausência).
+  (reapresentado em início de módulo e retorno após ausência).
 - **Jornada de 12 semanas / 3 módulos** — missões, indicadores semanais, check-in
   semanal, painéis mensais e desbloqueio sequencial (Semana N libera N+1).
 - **IME (0-100)** — cálculo por 8 pilares com histórico, gráficos de evolução
   (faturamento, lucro, ticket médio, conversão) e página dedicada.
-- **IE (Índice de Engajamento, 0-100)** — composto usado no gate das chaves.
+- **IE (Índice de Engajamento, 0-100)** — métrica própria de comprometimento,
+  calculada e registrada nos bastidores (sem tela dedicada).
 - **Gamificação** — XP, nível, streak (dias consecutivos), conquistas, baús e
   celebração automática ao melhorar indicador (semana, check-in, painel mensal).
 - **Sala de Guerra** — tela central pós-login: missão do dia, indicador prioritário,
   dias consecutivos, % de implantação e próxima conquista.
-- **Sistema de Chaves v2** — 6 chaves (Branco, Alumínio, Vermelho, Azul, Cinza, Preto)
-  desbloqueadas pelo gate de 4 pilares (faturamento + IME + missões obrigatórias + IE),
-  com escudo e solicitação da versão física via WhatsApp.
-- **Faturamento autodeclarado** — provisório e marcado como tal na UI. A integração real
-  com o RefriClube está **adiada por decisão do Tiago** (não construída).
 - **Avatares** — empresa em 5 estágios por faixa de IME + avatar do usuário com itens
   desbloqueáveis por conquista.
 - **Documentos em PDF** — Relatório de Implantação e Certificado (elegibilidade por
@@ -41,6 +43,8 @@ com CRM determinístico.
 
 ### Fora do escopo atual
 
+- Sistema de **Chaves** (descontinuado aqui; conceito planejado para a **Liga
+  Refriclube**, produto separado).
 - Integração real com o RefriClube (adiada por decisão do Tiago).
 - Ranking entre alunos (adiado até haver volume de usuários).
 - IA como mentor sob pergunta e gerador de documentos via IA (Níveis 2 e 3 da visão
@@ -63,7 +67,7 @@ com CRM determinístico.
 ## Rodando localmente
 
 1. Crie um projeto **novo** no Supabase.
-2. Aplique as migrations `supabase/migrations/` em ordem numérica (0001 → 0031) — ou, com
+2. Aplique as migrations `supabase/migrations/` em ordem numérica (0001 → 0033) — ou, com
    o CLI: `supabase link --project-ref <ref>` e `supabase db push --linked`.
 3. Publique as Edge Functions no Supabase (as que você for usar):
 
@@ -93,7 +97,7 @@ com CRM determinístico.
 
 ## Migrations e numeração
 
-As migrations vão de `0001` até `0031`. A migration `0006` **nunca existiu** (gap
+As migrations vão de `0001` até `0033`. A migration `0006` **nunca existiu** (gap
 presente desde o início do projeto) — é conhecido e não foi corrigido de propósito;
 veja o comentário no início de `0007_fix_policy_admin.sql`. Não renumerar migrations já
 aplicadas: isso quebraria o histórico de `supabase_migrations.schema_migrations`.
@@ -101,17 +105,17 @@ aplicadas: isso quebraria o histórico de `supabase_migrations.schema_migrations
 ## Estrutura
 
 ```
-supabase/migrations/        → SQL do banco (schema + RLS), 0001–0031
+supabase/migrations/        → SQL do banco (schema + RLS), 0001–0033
 supabase/functions/         → Edge Functions (criar-acesso, dicas, lembretes, análise IA)
 src/
   components/               → UI reutilizável (Layout com navegação, CartaoCarregando,
   │                            CartaoErro, SemanaIndisponivel, RadarEmpresa, graficos…)
   hooks/                    → AuthContext (sessão+perfil+acesso em 1 round-trip), useEhAdmin
-  lib/                      → lógica: conteudo.ts (12 semanas), gamificacao.ts, chaves.ts,
+  lib/                      → lógica: conteudo.ts (12 semanas), gamificacao.ts,
   │                            transformacao.ts, exportacao-pdf.ts, pdf-estilos.ts,
   │                            regras-radar.ts, utils.ts (erros amigáveis, formatadores), …
   pages/                    → telas (auth, onboarding, sala-de-guerra, dashboard, semana,
-  │                            painel, ime, evolucao, relatorios, chaves, conquistas, bauis,
+  │                            painel, ime, evolucao, relatorios, conquistas, bauis,
   │                            empresa, duvidas, manual, preferencias) + admin/
   main.tsx / App.tsx        → bootstrap e rotas
 ```
@@ -130,7 +134,7 @@ insert into admins (user_id) values ('uuid-do-seu-usuario');
    - **Visão geral** — total de usuários, ativos nos últimos 7 dias, progresso médio,
      quem concluiu os 90 dias e o feed de atividade.
    - **Usuários** — lista com semana atual, % concluído e último acesso; o detalhe mostra
-     diagnóstico, progresso, indicadores, painéis, IME e chaves (base para a garantia do curso).
+     diagnóstico, progresso, indicadores, painéis e IME (base para a garantia do curso).
    - **Novo acesso** — cria a conta do aluno na hora (Edge Function `criar-acesso`), com
      senha temporária para copiar e enviar.
    - **Aulas** — cadastra o link do YouTube de cada semana (`youtu.be`, `watch`, `/embed`,

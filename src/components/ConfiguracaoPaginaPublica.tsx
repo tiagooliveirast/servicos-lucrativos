@@ -165,9 +165,9 @@ export function ConfiguracaoPaginaPublica({ userId }: { userId: string }) {
           {ativa && <Badge variant="sucesso">Ativa</Badge>}
         </div>
         <CardDescription>
-          Uma vitrine com o nome da sua empresa, a chave conquistada e a evolução do IME —
-          perfeita para compartilhar com clientes e no Instagram. Nada fica público sem
-          você ativar.
+          Uma vitrine com o nome da sua empresa, a classificação do IME e a evolução da
+          jornada — perfeita para compartilhar com clientes e no Instagram. Nada fica
+          público sem você ativar.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">

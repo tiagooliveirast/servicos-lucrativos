@@ -3,9 +3,7 @@ import { carregarRadarEAtualizar } from "@/lib/radar-nucleo";
 import type { AlertaRadar } from "@/lib/regras-radar";
 import { supabase } from "@/lib/supabase";
 import type {
-  Chave,
   Conquista,
-  EscudoAtual,
   GamificacaoUsuario,
   ImeHistorico,
   Missao,
@@ -43,9 +41,6 @@ export interface SalaDeGuerra {
   // Motivação
   streak: number;
   proximaConquista: Conquista | null;
-  chaves: Chave[];
-  proximaChave: Chave | null;
-  escudoAtual: EscudoAtual | null;
   imeAtual: number | null;
 }
 
@@ -77,9 +72,6 @@ export async function carregarSalaDeGuerra(
     resConquistas,
     resDesbloqueadas,
     resIme,
-    resChaves,
-    resChavesUsuario,
-    resEscudo,
     radar,
   ] = await Promise.all([
     supabase.from("acessos").select("created_at").eq("user_id", userId).maybeSingle(),
@@ -95,13 +87,6 @@ export async function carregarSalaDeGuerra(
       .order("data_calculo", { ascending: false })
       .limit(1)
       .maybeSingle(),
-    supabase.from("chaves").select("*").order("ordem"),
-    supabase.from("chaves_usuario").select("chave_id").eq("user_id", userId),
-    supabase
-      .from("escudo_atual_usuario")
-      .select("*")
-      .eq("user_id", userId)
-      .maybeSingle(),
     carregarRadarEAtualizar(userId),
   ]);
 
@@ -113,9 +98,6 @@ export async function carregarSalaDeGuerra(
     resConquistas.error,
     resDesbloqueadas.error,
     resIme.error,
-    resChaves.error,
-    resChavesUsuario.error,
-    resEscudo.error,
     radar.erro,
   ].some(Boolean);
 
@@ -153,13 +135,6 @@ export async function carregarSalaDeGuerra(
   const imeAtualRaw = resIme.data as Pick<ImeHistorico, "score_total"> | null;
   const imeAtual = imeAtualRaw !== null ? Number(imeAtualRaw.score_total) : null;
 
-  const chaves = (resChaves.data ?? []) as Chave[];
-  const chavesDesbloqueadas = new Set(
-    ((resChavesUsuario.data ?? []) as { chave_id: string }[]).map((d) => d.chave_id)
-  );
-  const proximaChave = chaves.find((c) => !chavesDesbloqueadas.has(c.id)) ?? null;
-  const escudoAtual = (resEscudo.data as EscudoAtual | null) ?? null;
-
   const alertaPrioritario = radar.alertas[0] ?? null;
   const recomendacaoRadar =
     alertaPrioritario && alertaPrioritario.missaoSugerida !== null
@@ -184,9 +159,6 @@ export async function carregarSalaDeGuerra(
       recomendacaoRadar,
       streak,
       proximaConquista,
-      chaves,
-      proximaChave,
-      escudoAtual,
       imeAtual,
     },
     erro: false,
@@ -204,9 +176,6 @@ function salaVazia(): SalaDeGuerra {
     recomendacaoRadar: null,
     streak: 0,
     proximaConquista: null,
-    chaves: [],
-    proximaChave: null,
-    escudoAtual: null,
     imeAtual: null,
   };
 }

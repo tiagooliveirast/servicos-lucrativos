@@ -3,7 +3,7 @@
 //
 // Nível 1 da visão de IA: um único parágrafo diário que REESCREVE
 // em linguagem natural o que o motor de regras já calculou
-// (IME, IE, Radar, missão do dia, próxima chave). A IA não toma
+// (IME, IE, Radar, missão do dia). A IA não toma
 // nenhuma decisão nova: o system prompt proíbe inventar números,
 // sugerir ações fora dos dados ou mencionar escopo não informado.
 //
@@ -167,7 +167,7 @@ Deno.serve(async (req) => {
     const atingiuTeto = (count ?? 0) >= LIMITE_ANALISES_DIARIAS_TOTAL;
 
     // ---- 4) Dados estruturados já existentes (motor de regras) ----
-    const [resIme, resIe, resRadar, resSemanas, resMissoes, resChaves, resChavesUsuario, resFaturamento] =
+    const [resIme, resIe, resRadar, resSemanas, resMissoes] =
       await Promise.all([
         admin
           .from("ime_historico")
@@ -199,18 +199,6 @@ Deno.serve(async (req) => {
           .from("missoes")
           .select("semana, tipo, indice, descricao, concluida")
           .eq("user_id", userId),
-        admin.from("chaves").select("id, titulo, ordem, ime_minimo, ie_minimo, faturamento_minimo").order("ordem"),
-        admin
-          .from("chaves_usuario")
-          .select("chave_id")
-          .eq("user_id", userId),
-        admin
-          .from("faturamento_validado")
-          .select("valor")
-          .eq("user_id", userId)
-          .order("data_referencia", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
       ]);
 
     const imeAtual =
@@ -247,35 +235,6 @@ Deno.serve(async (req) => {
       .sort((a, b) => (a.tipo === "principal" ? 0 : 1) - (b.tipo === "principal" ? 0 : 1) || a.indice - b.indice);
     const missaoDoDia = pendentes[0] ?? null;
 
-    // Próxima chave + progresso dos pilares (só status, sem valores sensíveis)
-    const chaves = (resChaves.data ?? []) as {
-      id: string;
-      titulo: string;
-      ordem: number;
-      ime_minimo: number;
-      ie_minimo: number;
-      faturamento_minimo: number;
-    }[];
-    const desbloqueadas = new Set(
-      ((resChavesUsuario.data ?? []) as { chave_id: string }[]).map((c) => c.chave_id)
-    );
-    const proximaChave = chaves.find((c) => !desbloqueadas.has(c.id)) ?? null;
-    const faturamentoValidadoAtual =
-      resFaturamento.data && typeof resFaturamento.data.valor === "number"
-        ? resFaturamento.data.valor
-        : null;
-    const progressoChave = proximaChave
-      ? {
-          titulo: proximaChave.titulo,
-          ordem: proximaChave.ordem,
-          pilar_ime_ok: imeAtual !== null && imeAtual >= Number(proximaChave.ime_minimo),
-          pilar_ie_ok: ieAtual !== null && ieAtual >= Number(proximaChave.ie_minimo),
-          pilar_faturamento_ok:
-            faturamentoValidadoAtual !== null &&
-            faturamentoValidadoAtual >= Number(proximaChave.faturamento_minimo),
-        }
-      : null;
-
     const textoFallback = textoEstatico(radar, missaoDoDia);
 
     // ---- 5) Teto atingido: fallback estático, sem chamar a OpenAI ----
@@ -295,7 +254,6 @@ Deno.serve(async (req) => {
         semana_atual: semanaAtual,
         recomendacao_radar: radar,
         missao_do_dia: missaoDoDia ? missaoDoDia.descricao : null,
-        proxima_chave: progressoChave,
       });
     } catch (erro) {
       console.error("gerar-analise-diaria: falha na OpenAI, usando fallback", erro);

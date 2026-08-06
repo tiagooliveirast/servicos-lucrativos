@@ -30,11 +30,15 @@
 - **Sala de Guerra** — tela central pós-login (missão do dia, indicador prioritário,
   dias consecutivos, % de implantação, próxima conquista)
 
-### Onda 4 — Reconhecimento físico (chaves + escudos) ✅ entregue (v2)
+### Onda 4 — Reconhecimento físico (chaves + escudos) ❌ descontinuado
 - **Chaves v2** — 6 chaves (Branco, Alumínio, Vermelho, Azul, Cinza, Preto) com gate de
   4 pilares: faturamento + IME + missões obrigatórias + IE (Índice de Engajamento)
 - Escudo acumulado conforme a chave mais alta
 - "Solicitar Chave Física" abre o WhatsApp com mensagem pré-preenchida
+- **Descontinuado por decisão do Tiago** (migration 0033): não fazia sentido num
+  programa de 90 dias. O conceito passa a ser um recurso **planejado da Liga
+  Refriclube** (produto separado, fora deste repositório). O IE continua calculado
+  nos bastidores; Avatar/Estágio da Empresa (Onda 5) não usa chaves e não mudou.
 - Ranking/hall da fama — **adiado** até haver volume real de usuários
 
 ### Onda 5 — Avatar + evolução visual da empresa ✅ entregue
@@ -66,7 +70,8 @@
 - **Faturamento autodeclarado** — provisório (marcado como tal na UI); integração real
   com o RefriClube **adiada por decisão do Tiago**, não construída
 - **Âncora de motivo pessoal** — capturada no onboarding e reexibida em início de
-  módulo, cerimônia de chave e retorno após ausência
+  módulo e retorno após ausência (a exibição na cerimônia de chave saiu junto com o
+  sistema de Chaves)
 - **Lembretes de inatividade** — agendamento semanal e cancelamento via Edge Functions
   (`enviar-lembretes-semanais`, `cancelar-lembretes`) + envio manual no admin
 - **Celebração automática** ao melhorar indicador (semana, check-in, painel mensal)
@@ -76,6 +81,8 @@
 
 ## Fora do escopo atual (decisões do Tiago)
 
+- Sistema de **Chaves** (descontinuado nesta plataforma na migration 0033; conceito
+  planejado para a **Liga Refriclube**, produto separado)
 - Integração real com o RefriClube (adiada)
 - Ranking entre alunos (adiado até volume de usuários)
 - IA mentor sob pergunta e gerador de documentos via IA (Níveis 2 e 3)
@@ -83,5 +90,5 @@
 
 ## Nota técnica: numeração de migrations
 
-As migrations vão de `0001` a `0031`. A `0006` **nunca existiu** (gap desde o início) e
+As migrations vão de `0001` a `0033`. A `0006` **nunca existiu** (gap desde o início) e
 não será renumerada — ver comentário em `0007_fix_policy_admin.sql`.

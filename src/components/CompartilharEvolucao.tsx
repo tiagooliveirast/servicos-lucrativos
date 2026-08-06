@@ -10,12 +10,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { IconeChave } from "@/components/IconeChave";
 import { obterClassificacaoIme } from "@/lib/estagio-empresa";
+import { faturamentoMaisRecente } from "@/lib/evolucao";
 import { OURO, PRETO } from "@/lib/pdf-estilos";
 import { slugificar } from "@/lib/slug";
 import { supabase } from "@/lib/supabase";
-import type { NivelConfiancaFaturamento } from "@/lib/types";
 import { formatBRL } from "@/lib/utils";
 
 interface DadosCompartilhar {
@@ -26,53 +25,52 @@ interface DadosCompartilhar {
   mostrarFaturamento: boolean;
   imeInicial: number | null;
   imeFinal: number | null;
-  chave: { titulo: string; cor_hex: string } | null;
-  faturamento: { valor: number; nivel_confianca: NivelConfiancaFaturamento } | null;
+  faturamento: { valor: number; data_referencia: string } | null;
   diasJornada: number | null;
 }
 
 async function carregarDadosCompartilhar(userId: string): Promise<DadosCompartilhar> {
-  const [resPerfil, resEmpresa, resIme, resFat, resChave, resAcesso] = await Promise.all([
-    supabase
-      .from("perfis")
-      .select("pagina_publica_ativa, pagina_publica_mostrar_faturamento, cidade, estado")
-      .eq("id", userId)
-      .maybeSingle(),
-    supabase
-      .from("diagnostico_inicial")
-      .select("nome_empresa")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("ime_historico")
-      .select("score_total")
-      .eq("user_id", userId)
-      .order("data_calculo", { ascending: true }),
-    supabase
-      .from("faturamento_validado")
-      .select("valor, nivel_confianca")
-      .eq("user_id", userId)
-      .order("data_referencia", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("chaves_usuario")
-      .select("chaves(titulo, cor_hex)")
-      .eq("user_id", userId)
-      .order("desbloqueada_em", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase.from("acessos").select("created_at").eq("user_id", userId).maybeSingle(),
-  ]);
+  const [resPerfil, resEmpresa, resIme, resPaineis, resCheckins, resIndicadores, resAcesso] =
+    await Promise.all([
+      supabase
+        .from("perfis")
+        .select("pagina_publica_ativa, pagina_publica_mostrar_faturamento, cidade, estado")
+        .eq("id", userId)
+        .maybeSingle(),
+      supabase
+        .from("diagnostico_inicial")
+        .select("nome_empresa")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("ime_historico")
+        .select("score_total")
+        .eq("user_id", userId)
+        .order("data_calculo", { ascending: true }),
+      supabase
+        .from("paineis_mensais")
+        .select("faturamento_atual, preenchido_em")
+        .eq("user_id", userId),
+      supabase
+        .from("checkins_semanais")
+        .select("faturamento_semana, data_checkin")
+        .eq("user_id", userId),
+      supabase
+        .from("indicadores_semana")
+        .select("nome_indicador, valor_antes, valor_depois, atualizado_em")
+        .eq("user_id", userId),
+      supabase.from("acessos").select("created_at").eq("user_id", userId).maybeSingle(),
+    ]);
 
   if (
     resPerfil.error ||
     resEmpresa.error ||
     resIme.error ||
-    resFat.error ||
-    resChave.error ||
+    resPaineis.error ||
+    resCheckins.error ||
+    resIndicadores.error ||
     resAcesso.error
   ) {
     throw new Error("Falha ao carregar os dados da evolução.");
@@ -88,12 +86,16 @@ async function carregarDadosCompartilhar(userId: string): Promise<DadosCompartil
     | { nome_empresa: string | null; cidade: string | null; estado: string | null }
     | null;
   const ime = (resIme.data ?? []) as { score_total: number }[];
-  const faturamento = resFat.data as
-    | { valor: number; nivel_confianca: NivelConfiancaFaturamento }
-    | null;
-  const chave = (resChave.data as
-    | { chaves: { titulo: string; cor_hex: string } | null }
-    | null)?.chaves;
+  const faturamento = faturamentoMaisRecente(
+    (resIndicadores.data ?? []) as {
+      nome_indicador: string;
+      valor_antes: number | null;
+      valor_depois: number | null;
+      atualizado_em: string;
+    }[],
+    (resPaineis.data ?? []) as { faturamento_atual: number | null; preenchido_em: string }[],
+    (resCheckins.data ?? []) as { faturamento_semana: number | null; data_checkin: string }[]
+  );
 
   const inicio = resAcesso.data as { created_at: string } | null;
   let diasJornada: number | null = null;
@@ -115,11 +117,8 @@ async function carregarDadosCompartilhar(userId: string): Promise<DadosCompartil
     mostrarFaturamento: Boolean(perfil?.pagina_publica_mostrar_faturamento),
     imeInicial: ime.length > 0 ? Number(ime[0].score_total) : null,
     imeFinal: ime.length > 0 ? Number(ime[ime.length - 1].score_total) : null,
-    chave: chave ?? null,
     faturamento:
-      faturamento && Number(faturamento.valor) > 0
-        ? { valor: Number(faturamento.valor), nivel_confianca: faturamento.nivel_confianca }
-        : null,
+      faturamento && Number(faturamento.valor) > 0 ? faturamento : null,
     diasJornada,
   };
 }
@@ -268,36 +267,6 @@ export function CompartilharEvolucao({ userId }: { userId: string }) {
                 </p>
               )}
   
-              {/* Chave atual */}
-              {dados.chave && (
-                <div
-                  className="mt-5 flex items-center gap-3 rounded-xl border px-3.5 py-2.5"
-                  style={{
-                    borderColor: `${dados.chave.cor_hex}55`,
-                    background: `${dados.chave.cor_hex}14`,
-                  }}
-                >
-                  <span
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border"
-                    style={{
-                      borderColor: dados.chave.cor_hex,
-                      boxShadow: `0 0 18px -4px ${dados.chave.cor_hex}`,
-                      background: PRETO,
-                    }}
-                  >
-                    <IconeChave color={dados.chave.cor_hex} className="h-5 w-5" />
-                  </span>
-                  <span>
-                    <span className="block text-[10px] uppercase tracking-wider text-white/50">
-                      Chave atual
-                    </span>
-                    <span className="block text-sm font-semibold" style={{ color: dados.chave.cor_hex }}>
-                      {dados.chave.titulo}
-                    </span>
-                  </span>
-                </div>
-              )}
-  
               {/* Evolução do IME */}
               <div className="mt-5 flex items-end justify-between">
                 <span className="text-[10px] uppercase tracking-wider text-white/50">
@@ -331,14 +300,6 @@ export function CompartilharEvolucao({ userId }: { userId: string }) {
                     <span className="text-sm font-bold" style={{ color: OURO }}>
                       {formatBRL(dados.faturamento.valor)}
                     </span>
-                    {dados.faturamento.nivel_confianca === "autodeclarado" && (
-                      <span
-                        className="rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-wide"
-                        style={{ borderColor: `${OURO}44`, color: "#a89f8f" }}
-                      >
-                        Autodeclarado
-                      </span>
-                    )}
                   </span>
                 </div>
               )}

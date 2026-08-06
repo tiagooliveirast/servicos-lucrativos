@@ -7,11 +7,9 @@ import {
   CalendarDays,
   Flame,
   Heart,
-  KeyRound,
   Loader2,
   MessagesSquare,
   Radar,
-  Shield,
   Target,
   TrendingUp,
   X,
@@ -188,19 +186,6 @@ export function PaginaSalaDeGuerra({
             Sala de Guerra
           </h1>
           <div className="flex items-center gap-2">
-            {dados.escudoAtual && (
-              <Badge
-                variant="outline"
-                className="gap-1.5"
-                style={{
-                  borderColor: `${dados.escudoAtual.cor_hex}66`,
-                  color: dados.escudoAtual.cor_hex,
-                }}
-              >
-                <Shield className="h-3.5 w-3.5" style={{ color: dados.escudoAtual.cor_hex }} />
-                {dados.escudoAtual.titulo}
-              </Badge>
-            )}
             <Badge variant="outline" className="border-primary/50 text-primary">
               Semana {dados.semanaAtual} de 12
             </Badge>
@@ -251,8 +236,8 @@ export function PaginaSalaDeGuerra({
           )}
         </section>
 
-        {/* Base: motivação — streak, conquista, chave */}
-        <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {/* Base: motivação — streak e conquista */}
+        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <CartaoMotivacao
             icone={<Flame className="h-4 w-4 text-orange-400" />}
             rotulo="Streak"
@@ -265,17 +250,9 @@ export function PaginaSalaDeGuerra({
             valor={dados.proximaConquista ? "Próxima" : "—"}
             sufixo={dados.proximaConquista?.titulo ?? "Todas desbloqueadas"}
           />
-          <CartaoProximaChave
-            proxima={dados.proximaChave}
-            ultimaChave={[...dados.chaves].sort((a, b) => b.ordem - a.ordem)[0]}
-          />
         </section>
 
         <div className="pt-1">
-          <Link to="/chaves" className="text-sm text-primary hover:underline">
-            <span className="mr-1">Ver minhas chaves e escudo</span>
-          </Link>
-          <span className="mx-2 text-muted-foreground/40">·</span>
           <Link to="/minha-empresa" className="text-sm text-primary hover:underline">
             Minha Empresa
           </Link>
@@ -420,31 +397,6 @@ function CartaoMotivacao({
       </p>
       <p className={cn("text-xl font-bold leading-tight text-foreground")}>{valor}</p>
       <p className="line-clamp-3 text-xs leading-snug text-muted-foreground">{sufixo}</p>
-    </div>
-  );
-}
-
-function CartaoProximaChave({
-  proxima,
-  ultimaChave,
-}: {
-  proxima: DadosSala["proximaChave"];
-  ultimaChave: DadosSala["chaves"][number] | undefined;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5 rounded-2xl border border-primary/40 bg-card p-3">
-      <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-        <KeyRound className="h-4 w-4 text-primary" />
-        Próxima chave
-      </p>
-      <p className="text-xl font-bold leading-tight text-primary">{proxima?.titulo ?? "—"}</p>
-      <p className="line-clamp-3 text-xs leading-snug text-muted-foreground">
-        {proxima
-          ? "Alcance os 4 pilares: faturamento validado, IME, IE e missões."
-          : ultimaChave
-            ? `Você conquistou todas as chaves, até a ${ultimaChave.titulo}!`
-            : "Complete os 4 pilares para destravar chaves."}
-      </p>
     </div>
   );
 }

@@ -5,7 +5,6 @@ import { Award, Loader2, MapPin, ShieldCheck, Store } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { GraficoEvolucaoVitrine } from "@/components/GraficoEvolucaoVitrine";
-import { IconeChave } from "@/components/IconeChave";
 import { Logo } from "@/components/Logo";
 import { obterClassificacaoIme } from "@/lib/estagio-empresa";
 import { serieIme } from "@/lib/evolucao";
@@ -147,84 +146,33 @@ function VitrineEmpresa({ dados }: { dados: PaginaPublica }) {
         </div>
       </section>
 
-      <div className="grid gap-5 sm:grid-cols-2">
-        {/* Chave atual — o "troféu", sempre visível quando a página está ativa */}
-        <section
-          className="rounded-2xl border bg-card p-6"
-          style={
-            dados.chave
-              ? {
-                  borderColor: `${dados.chave.cor_hex}66`,
-                  background: `linear-gradient(120deg, ${dados.chave.cor_hex}1f, transparent 70%), var(--card)`,
-                }
-              : undefined
-          }
-        >
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Chave atual
-          </p>
-          {dados.chave ? (
-            <>
-                <span className="mt-4 flex h-16 w-16 items-center justify-center rounded-full border bg-card"
-                  style={{
-                    borderColor: dados.chave.cor_hex,
-                    boxShadow: `0 0 28px -8px ${dados.chave.cor_hex}`,
-                  }}
-                >
-                  <IconeChave color={dados.chave.cor_hex} className="h-8 w-8" />
-                </span>
-              <h2
-                className="mt-4 text-xl font-bold"
-                style={{ color: dados.chave.cor_hex }}
-              >
-                {dados.chave.titulo}
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Desbloqueada em {formatData(dados.chave.desbloqueada_em)}
-              </p>
-            </>
-          ) : (
-            <p className="mt-4 text-sm text-muted-foreground">
-              Ainda em construção na jornada.
+      {/* Classificação do IME — mostra a faixa, não o número exato */}
+      <section className="rounded-2xl border border-primary/40 bg-card p-6">
+        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          Maturidade empresarial
+        </p>
+        {classificacao ? (
+          <>
+            <Badge variant="default" className="mt-4 w-fit text-sm">
+              {classificacao.nome}
+            </Badge>
+            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+              Empresa classificada pelo Índice de Maturidade Empresarial
+              (IME) do método Serviços Lucrativos.
             </p>
-          )}
-        </section>
-
-        {/* Classificação do IME — mostra a faixa, não o número exato */}
-        <section className="rounded-2xl border border-primary/40 bg-card p-6">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Maturidade empresarial
+          </>
+        ) : (
+          <p className="mt-4 text-sm text-muted-foreground">
+            A classificação aparece depois dos primeiros passos da jornada.
           </p>
-          {classificacao ? (
-            <>
-              <Badge variant="default" className="mt-4 w-fit text-sm">
-                {classificacao.nome}
-              </Badge>
-              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-                Empresa classificada pelo Índice de Maturidade Empresarial
-                (IME) do método Serviços Lucrativos.
-              </p>
-            </>
-          ) : (
-            <p className="mt-4 text-sm text-muted-foreground">
-              A classificação aparece depois dos primeiros passos da jornada.
-            </p>
-          )}
-        </section>
-      </div>
+        )}
+      </section>
 
       {dados.faturamento && (
         <section className="rounded-2xl border border-primary/40 bg-card p-6">
-          <div className="flex flex-wrap items-center gap-3">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Faturamento recente
-            </p>
-            {dados.faturamento.nivel_confianca === "autodeclarado" && (
-              <Badge variant="outline" className="text-muted-foreground">
-                Faturamento autodeclarado
-              </Badge>
-            )}
-          </div>
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Faturamento recente
+          </p>
           <p className="mt-3 text-2xl font-bold text-primary">
             {formatBRL(dados.faturamento.valor)}
           </p>

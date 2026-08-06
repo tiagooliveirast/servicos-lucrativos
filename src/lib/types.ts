@@ -166,18 +166,6 @@ export interface IeHistorico {
   score_indicadores_atualizados: number;
 }
 
-export type NivelConfiancaFaturamento = "autodeclarado" | "refriclube" | "verificado";
-
-export interface FaturamentoValidado {
-  id: string;
-  user_id: string;
-  valor: number;
-  data_referencia: string;
-  fonte: string;
-  nivel_confianca: NivelConfiancaFaturamento;
-  sincronizado_em: string;
-}
-
 export interface GamificacaoUsuario {
   user_id: string;
   xp_total: number;
@@ -224,40 +212,6 @@ export interface BauUsuario {
   desbloqueado_em: string;
   aberto_em: string | null;
   bauis: Bau | null;
-}
-
-export type StatusChaveFisica = "nao_solicitada" | "solicitada" | "enviada";
-
-export interface Chave {
-  id: string;
-  codigo: string;
-  titulo: string;
-  cor_hex: string;
-  ime_minimo: number;
-  faturamento_minimo: number;
-  ie_minimo: number;
-  missoes_obrigatorias: string[];
-  ordem: number;
-  descricao: string | null;
-}
-
-export interface ChaveUsuario {
-  id: string;
-  user_id: string;
-  chave_id: string;
-  desbloqueada_em: string;
-  solicitacao_fisica_status: StatusChaveFisica;
-  solicitacao_fisica_em: string | null;
-  chaves: Chave | null;
-}
-
-export interface EscudoAtual {
-  user_id: string;
-  codigo: string;
-  titulo: string;
-  cor_hex: string;
-  ordem: number;
-  desbloqueada_em: string;
 }
 
 export type CategoriaDuvida =
@@ -327,11 +281,6 @@ export interface CrmCandidatoCase {
   nome: string | null;
   email: string | null;
   nome_empresa: string | null;
-  chave_codigo: string | null;
-  chave_titulo: string | null;
-  chave_cor_hex: string | null;
-  chave_ordem: number | null;
-  chave_desbloqueada_em: string | null;
   ime_atual: number | null;
   semanas_concluidas: number;
   paineis_preenchidos: number;

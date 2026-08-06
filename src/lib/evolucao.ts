@@ -27,6 +27,25 @@ export interface SerieEvolucao {
 
 type Fonte = { data: string; valor: number; prioridade: number };
 
+/** Fontes de faturamento na hierarquia da Onda 2: painel mensal (0) >
+ *  check-in (1) > indicador "Faturamento do último mês" (2). */
+function fontesFaturamento(
+  indicadores: Pick<
+    IndicadorSemana,
+    "nome_indicador" | "valor_antes" | "valor_depois" | "atualizado_em"
+  >[],
+  paineis: Pick<PainelMensal, "faturamento_atual" | "preenchido_em">[],
+  checkins: Pick<CheckinSemanal, "faturamento_semana" | "data_checkin">[]
+): Fonte[] {
+  return [
+    ...painelCampo(paineis, "faturamento_atual"),
+    ...checkins
+      .filter((c) => c.faturamento_semana !== null && c.data_checkin)
+      .map((c) => ({ data: c.data_checkin, valor: c.faturamento_semana as number, prioridade: 1 })),
+    ...indicador(indicadores, "Faturamento do último mês"),
+  ];
+}
+
 function valorNumero(v: number | string | null | undefined): number | null {
   if (v === null || v === undefined) return null;
   const n = typeof v === "number" ? v : Number(v);
@@ -62,7 +81,10 @@ function montarSerie(fontes: Fonte[]): SerieEvolucao {
 }
 
 function indicador(
-  indicadores: IndicadorSemana[],
+  indicadores: Pick<
+    IndicadorSemana,
+    "nome_indicador" | "valor_antes" | "valor_depois" | "atualizado_em"
+  >[],
   nome: string
 ): Fonte[] {
   return indicadores
@@ -75,9 +97,9 @@ function indicador(
     .filter((f): f is Fonte => f !== null);
 }
 
-function painelCampo(
-  paineis: PainelMensal[],
-  campo: "faturamento_atual" | "lucro" | "ticket_medio" | "taxa_conversao"
+function painelCampo<K extends keyof PainelMensal>(
+  paineis: Pick<PainelMensal, "preenchido_em" | K>[],
+  campo: K
 ): Fonte[] {
   return paineis
     .filter((p) => p.preenchido_em)
@@ -105,14 +127,25 @@ export function serieFaturamento(
   paineis: PainelMensal[],
   checkins: CheckinSemanal[]
 ): SerieEvolucao {
-  const fontes: Fonte[] = [
-    ...painelCampo(paineis, "faturamento_atual"),
-    ...checkins
-      .filter((c) => c.faturamento_semana !== null && c.data_checkin)
-      .map((c) => ({ data: c.data_checkin, valor: c.faturamento_semana as number, prioridade: 1 })),
-    ...indicador(indicadores, "Faturamento do último mês"),
-  ];
-  return montarSerie(fontes);
+  return montarSerie(fontesFaturamento(indicadores, paineis, checkins));
+}
+
+/** Faturamento "atual" exibido fora dos gráficos (card de compartilhar
+ *  evolução): a fonte mais confiável mais recente, na mesma hierarquia. */
+export function faturamentoMaisRecente(
+  indicadores: Pick<
+    IndicadorSemana,
+    "nome_indicador" | "valor_antes" | "valor_depois" | "atualizado_em"
+  >[],
+  paineis: Pick<PainelMensal, "faturamento_atual" | "preenchido_em">[],
+  checkins: Pick<CheckinSemanal, "faturamento_semana" | "data_checkin">[]
+): { valor: number; data_referencia: string } | null {
+  const fontes = fontesFaturamento(indicadores, paineis, checkins);
+  const melhor = fontes.sort(
+    (a, b) => a.prioridade - b.prioridade || b.data.localeCompare(a.data)
+  )[0];
+  if (!melhor || melhor.valor === null) return null;
+  return { valor: melhor.valor, data_referencia: melhor.data.slice(0, 10) };
 }
 
 /** Lucro: painéis + check-ins. */

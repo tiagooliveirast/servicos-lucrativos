@@ -100,7 +100,7 @@ export function PaginaAdminAnexos() {
         </h2>
         <p className="text-sm text-muted-foreground">
           Arquivos enviados pelos alunos nas semanas que pedem entrega. A aprovação é
-          feedback qualitativo — não libera nem bloqueia chave.
+          feedback qualitativo do progresso das missões.
         </p>
       </div>
 
