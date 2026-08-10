@@ -14,6 +14,8 @@ export interface Perfil {
   pagina_publica_slug: string | null;
   pagina_publica_mostrar_faturamento: boolean;
   receber_lembretes: boolean;
+  /** Tela de boas-vindas (vídeos institucionais) já vista — exibida automaticamente só 1x, após o onboarding. */
+  boas_vindas_vista: boolean;
   created_at: string;
 }
 

@@ -8,6 +8,7 @@ import {
   Mail,
   Menu,
   MessageCircle,
+  PlayCircle,
   Radar,
   ShieldCheck,
   Store,
@@ -164,6 +165,13 @@ export function Layout({
                   Suporte no WhatsApp
                 </a>
               )}
+              <Link
+                to="/boas-vindas"
+                className="flex items-center gap-1.5 hover:text-foreground"
+              >
+                <PlayCircle className="h-3.5 w-3.5" />
+                Como funciona a plataforma
+              </Link>
               {CONTATO_SUPORTE.email && (
                 <a
                   href={`mailto:${CONTATO_SUPORTE.email}`}

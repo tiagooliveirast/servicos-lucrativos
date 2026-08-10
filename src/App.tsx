@@ -46,6 +46,9 @@ const PaginaRelatorios = lazy(() =>
 const PaginaSalaDeGuerra = lazy(() =>
   import("@/pages/PaginaSalaDeGuerra").then((m) => ({ default: m.PaginaSalaDeGuerra }))
 );
+const PaginaBoasVindas = lazy(() =>
+  import("@/pages/PaginaBoasVindas").then((m) => ({ default: m.PaginaBoasVindas }))
+);
 const PaginaConquistas = lazy(() =>
   import("@/pages/PaginaConquistas").then((m) => ({ default: m.PaginaConquistas }))
 );
@@ -172,8 +175,23 @@ export default function App() {
               <PaginaAcessoInativo />
             ) : fase === "onboarding" ? (
               <PaginaOnboarding aoConcluir={reavaliar} />
+            ) : perfil && !perfil.boas_vindas_vista ? (
+              // Primeira vez: tela de boas-vindas (vídeos institucionais)
+              // antes da primeira visita à Sala de Guerra. Só 1x.
+              <Navigate to="/boas-vindas" replace />
             ) : (
               <PaginaSalaDeGuerra perfilId={perfil!.id} ausenteDias={ausenteDias} />
+            )
+          }
+        />
+
+        <Route
+          path="/boas-vindas"
+          element={
+            fase === "logado" ? (
+              <PaginaBoasVindas userId={user!.id} />
+            ) : (
+              <Navigate to="/" replace />
             )
           }
         />

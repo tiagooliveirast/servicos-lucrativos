@@ -9,6 +9,7 @@ import {
   Info,
   Loader2,
   Lock,
+  PlayCircle,
   RefreshCw,
   Rocket,
   Sparkles,
@@ -59,6 +60,7 @@ import {
   textoMotivo,
 } from "@/lib/motivo";
 import { supabase } from "@/lib/supabase";
+import { VIDEOS_ABERTURA_MODULO } from "@/lib/videos-institucionais";
 import {
   dataInicioPlano,
   dataLiberacaoSemana,
@@ -542,6 +544,8 @@ function ConteudoSemana({
             </button>
           </div>
         )}
+
+        <BlocoAberturaModulo modulo={semana.modulo} titulo={modulo.titulo} />
 
         <BlocoAula semana={semana.numero} />
 
@@ -1136,6 +1140,39 @@ function CampoForm({
         className={ehCalculado ? "cursor-not-allowed opacity-80" : undefined}
       />
     </div>
+  );
+}
+
+// Vídeo de abertura do módulo (semanas 1, 5, 9) — URL fixa no código,
+// fora do admin. Enquanto a URL do módulo não estiver preenchida, o
+// card simplesmente não aparece (sem quebrar layout nem mostrar erro).
+function BlocoAberturaModulo({ modulo, titulo }: { modulo: number; titulo: string }) {
+  const url = VIDEOS_ABERTURA_MODULO[modulo];
+  const videoId = url ? extrairVideoId(url) : null;
+  if (!videoId) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <PlayCircle className="h-4 w-4 text-primary" />
+          Abertura do Módulo {modulo}
+        </CardTitle>
+        <CardDescription>{titulo}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="aspect-video w-full overflow-hidden rounded-lg border border-input">
+          <iframe
+            src={`https://www.youtube.com/embed/${videoId}`}
+            title={`Abertura do Módulo ${modulo}`}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerPolicy="strict-origin-when-cross-origin"
+            allowFullScreen
+            className="h-full w-full"
+          />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
