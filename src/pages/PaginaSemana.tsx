@@ -21,6 +21,7 @@ import {
 import { CabecalhoPagina } from "@/components/CabecalhoPagina";
 import { CartaoCarregando } from "@/components/CartaoCarregando";
 import { CartaoErro } from "@/components/CartaoErro";
+import { ListaItensComSoma } from "@/components/ListaItensComSoma";
 import { SemanaIndisponivel } from "@/components/SemanaIndisponivel";
 import { Layout } from "@/components/Layout";
 import { CelebracaoMelhoria, type MensagemCelebracao } from "@/components/CelebracaoMelhoria";
@@ -43,7 +44,7 @@ import {
   enviarAnexo,
   listarMeusAnexos,
 } from "@/lib/anexos-missoes";
-import { MODULOS, SEMANA_POR_NUMERO, type Campo, type SemanaConteudo } from "@/lib/conteudo";
+import { MODULOS, SEMANA_POR_NUMERO, type Campo, type ItemLista, type SemanaConteudo } from "@/lib/conteudo";
 import { buscarDicaSemana, gerarDicaSemana } from "@/lib/dicas-semana";
 import {
   DIRECAO_INDICADORES_SEMANA,
@@ -199,6 +200,9 @@ function ConteudoSemana({
   const [concluida, setConcluida] = useState(progresso.status === "concluida");
   const [celebracao, setCelebracao] = useState<MensagemCelebracao | null>(null);
   const [bannerMotivo, setBannerMotivo] = useState<string | null>(null);
+  const [mostrarMigracao, setMostrarMigracao] = useState(
+    semana.numero === 1 && temFormatoAntigoS1(progresso.respostas ?? {})
+  );
 
   // Banner "Lembra por que você começou?" — 1x por módulo (semanas 1, 5, 9).
   useEffect(() => {
@@ -540,6 +544,42 @@ function ConteudoSemana({
         )}
 
         <BlocoDicaSemana semana={semana} userId={userId} visualizacao={visualizacao} />
+
+        {mostrarMigracao && !visualizacao && (
+          <div className="flex flex-col gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
+            <div className="flex items-start gap-3">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+              <p className="flex-1 text-sm leading-relaxed text-foreground/90">
+                Você preencheu esta semana no formato antigo. Pode continuar usando os valores
+                calculados, ou refazer no novo formato de lista abaixo.
+              </p>
+              <button
+                type="button"
+                aria-label="Fechar"
+                onClick={() => setMostrarMigracao(false)}
+                className="-mr-1 rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setRespostas((r) => migrarFormatoAntigoS1(r));
+                  setMostrarMigracao(false);
+                }}
+              >
+                Migrar meus valores para as listas
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                Cria um item "Valor anterior" com o número que você já tinha salvo — depois você
+                pode editar.
+              </span>
+            </div>
+          </div>
+        )}
 
         <Card>
           <CardHeader>
@@ -991,6 +1031,20 @@ function CampoForm({
   const ehCalculado = campo.id in calculados;
   const valorCalculado = ehCalculado ? calculados[campo.id] : null;
 
+  if (campo.tipo === "lista_itens") {
+    return (
+      <div className="flex flex-col gap-2">
+        <CampoRotulo campo={campo} obrigatorio={obrigatorio} />
+        <ListaItensComSoma
+          valor={respostas[campo.id]}
+          rotuloItem={campo.rotuloItem}
+          rotuloValor={campo.rotuloValor}
+          aoMudar={(itens) => aoMudar(campo.id, itens)}
+        />
+      </div>
+    );
+  }
+
   if (campo.tipo === "textarea") {
     return (
       <div className="flex flex-col gap-2">
@@ -1428,6 +1482,9 @@ function CampoRotulo({ campo, obrigatorio }: { campo: Campo; obrigatorio: boolea
       {"dica" in campo && campo.dica && (
         <p className="text-xs text-muted-foreground">{campo.dica}</p>
       )}
+      {"exemplo" in campo && campo.exemplo && (
+        <p className="text-xs italic text-muted-foreground/75">{campo.exemplo}</p>
+      )}
     </div>
   );
 }
@@ -1442,10 +1499,30 @@ function calcularValores(semana: number, respostas: Record<string, unknown>): Re
   };
 
   if (semana === 1) {
-    const custoVida = num("f1_custo_vida");
-    const custoNegocio = num("f1_custo_negocio");
+    const somaItens = (id: string): number | null => {
+      const v = respostas[id];
+      if (!Array.isArray(v)) return null;
+      let total = 0;
+      for (const item of v) {
+        const valor = Number((item as Partial<ItemLista> | null)?.valor);
+        if (Number.isFinite(valor) && valor > 0) total += valor;
+      }
+      return Math.round(total * 100) / 100;
+    };
+    // Soma automática das listas; cai no valor digitado no formato antigo
+    // enquanto o aluno ainda não migrou (dado preservado, nunca sobrescrito).
+    // O campo é sempre calculado (somente leitura) — sem dado, mostra 0.
+    const custoVida = somaItens("custo_vida_itens") ?? num("f1_custo_vida") ?? 0;
+    const fixas = somaItens("despesas_fixas");
+    const variaveis = somaItens("despesas_variaveis");
+    const custoNegocio =
+      fixas !== null || variaveis !== null
+        ? Math.round(((fixas ?? 0) + (variaveis ?? 0)) * 100) / 100
+        : (num("f1_custo_negocio") ?? 0);
+    resultado.f1_custo_vida = custoVida;
+    resultado.f1_custo_negocio = custoNegocio;
     const lucro = num("f1_lucro_desejado");
-    if (custoVida !== null && custoNegocio !== null && lucro !== null) {
+    if (lucro !== null) {
       resultado.f1_meta_minima =
         Math.round((custoVida + custoNegocio + lucro) * 100) / 100;
     }
@@ -1470,6 +1547,50 @@ function calcularValores(semana: number, respostas: Record<string, unknown>): Re
   }
 
   return resultado;
+}
+
+const CHAVES_LEGADO_S1 = ["custo_vida_pessoal", "custos_fixos_negocio"] as const;
+
+function temFormatoAntigoS1(respostas: Record<string, unknown>): boolean {
+  const texto = (v: unknown) => typeof v === "string" && v.trim() !== "";
+  return (
+    CHAVES_LEGADO_S1.some((chave) => texto(respostas[chave])) ||
+    texto(respostas.f1_custo_vida) ||
+    texto(respostas.f1_custo_negocio)
+  );
+}
+
+/**
+ * Converte dados da Semana 1 no formato antigo (texto livre + valores digitados)
+ * para o formato novo de listas. Não destrutivo: só cria itens a partir de
+ * números que já estavam salvos e remove as chaves antigas quando migradas.
+ */
+function migrarFormatoAntigoS1(
+  respostas: Record<string, unknown>
+): Record<string, unknown> {
+  const proximo = { ...respostas };
+  const numeroLegado = (id: string): number | null => {
+    const v = proximo[id];
+    if (typeof v === "number") return v;
+    if (typeof v === "string" && v.trim() !== "") {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    }
+    return null;
+  };
+  const criarItem = (listaId: string, fonte: string, textareaId: string | null) => {
+    const valor = numeroLegado(fonte);
+    if (valor === null || valor <= 0) return;
+    const existentes = Array.isArray(proximo[listaId])
+      ? (proximo[listaId] as ItemLista[])
+      : [];
+    proximo[listaId] = [...existentes, { descricao: "Valor anterior", valor }];
+    delete proximo[fonte];
+    if (textareaId) delete proximo[textareaId];
+  };
+  criarItem("custo_vida_itens", "f1_custo_vida", "custo_vida_pessoal");
+  criarItem("despesas_fixas", "f1_custo_negocio", "custos_fixos_negocio");
+  return proximo;
 }
 
 function validarCampos(
@@ -1507,6 +1628,24 @@ function validarCampos(
       });
       if (incompleta)
         return `Preencha todos os itens da "${campo.rotulo}" antes de concluir.`;
+      continue;
+    }
+
+    if (campo.tipo === "lista_itens") {
+      const linhas = Array.isArray(respostas[campo.id])
+        ? (respostas[campo.id] as ItemLista[])
+        : [];
+      const temAlguma = linhas.some(
+        (l) => (l.descricao ?? "").trim() !== "" || (typeof l.valor === "number" && l.valor > 0)
+      );
+      if (!temAlguma) return `Preencha o campo "${campo.rotulo}".`;
+      const incompleta = linhas.some((l) => {
+        const temDescricao = (l.descricao ?? "").trim() !== "";
+        const temValor = typeof l.valor === "number" && l.valor > 0;
+        return (temDescricao || temValor) && (!temDescricao || !temValor);
+      });
+      if (incompleta)
+        return `Preencha descrição e valor em todas as linhas de "${campo.rotulo}".`;
       continue;
     }
 

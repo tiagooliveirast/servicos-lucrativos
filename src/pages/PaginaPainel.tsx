@@ -46,15 +46,15 @@ const CONFIG_PAINEIS: Record<number, { rotulo: string; semanaChave: number }> = 
 };
 
 const CAMPOS_PAINEL = [
-  { id: "meta_mensal", rotulo: "Meta mensal (R$)", tipo: "numero" as const, mascara: formatBRL },
-  { id: "faturamento_atual", rotulo: "Faturamento atual (R$)", tipo: "numero" as const, mascara: formatBRL },
-  { id: "lucro", rotulo: "Lucro (R$)", tipo: "numero" as const, mascara: formatBRL },
-  { id: "ticket_medio", rotulo: "Ticket médio (R$)", tipo: "numero" as const, mascara: formatBRL },
-  { id: "numero_clientes", rotulo: "Nº de clientes atendidos", tipo: "inteiro" as const, mascara: formatNumero },
-  { id: "numero_orcamentos", rotulo: "Nº de orçamentos enviados", tipo: "inteiro" as const, mascara: formatNumero },
-  { id: "taxa_conversao", rotulo: "Taxa de conversão (%)", tipo: "numero" as const, mascara: formatPorcento },
-  { id: "avaliacoes_google", rotulo: "Avaliações no Google", tipo: "inteiro" as const, mascara: formatNumero },
-  { id: "reserva_emergencia", rotulo: "Reserva de emergência (R$)", tipo: "numero" as const, mascara: formatBRL },
+  { id: "meta_mensal", rotulo: "Meta mensal (R$)", tipo: "numero" as const, mascara: formatBRL, dica: "Sua meta mínima da Semana 1 — já preenchida pra você, pode ajustar." },
+  { id: "faturamento_atual", rotulo: "Faturamento atual (R$)", tipo: "numero" as const, mascara: formatBRL, dica: "Quanto você faturou no mês, de tudo que entrou." },
+  { id: "lucro", rotulo: "Lucro (R$)", tipo: "numero" as const, mascara: formatBRL, dica: "O que sobrou depois de pagar custos e despesas." },
+  { id: "ticket_medio", rotulo: "Ticket médio (R$)", tipo: "numero" as const, mascara: formatBRL, dica: "Faturamento ÷ número de atendimentos.", exemplo: "R$ 4.000 ÷ 20 atendimentos = R$ 200" },
+  { id: "numero_clientes", rotulo: "Nº de clientes atendidos", tipo: "inteiro" as const, mascara: formatNumero, dica: "Clientes atendidos no mês, sem repetir o mesmo cliente." },
+  { id: "numero_orcamentos", rotulo: "Nº de orçamentos enviados", tipo: "inteiro" as const, mascara: formatNumero, dica: "Orçamentos enviados no mês, mesmo os que não fecharam." },
+  { id: "taxa_conversao", rotulo: "Taxa de conversão (%)", tipo: "numero" as const, mascara: formatPorcento, dica: "Orçamentos fechados ÷ orçamentos enviados × 100.", exemplo: "4 fechados de 10 enviados = 40%" },
+  { id: "avaliacoes_google", rotulo: "Avaliações no Google", tipo: "inteiro" as const, mascara: formatNumero, dica: "Total de avaliações no seu perfil do Google." },
+  { id: "reserva_emergencia", rotulo: "Reserva de emergência (R$)", tipo: "numero" as const, mascara: formatBRL, dica: "O que você tem guardado pra momentos de aperto." },
 ] as const;
 
 export function PaginaPainel({ userId }: { userId: string }) {
@@ -202,6 +202,43 @@ function PainelForm({
   const estadoInicialRef = useRef<string>(
     JSON.stringify({ ...inicializar(painel), observacao: painel?.observacao ?? "" })
   );
+
+  // Pré-preenche a "Meta mensal" com o valor que o aluno já definiu no plano
+  // (Semana 4) ou no diagnóstico financeiro (Semana 1) — só quando o painel é
+  // novo e o campo está vazio. Não destrutivo: o aluno pode ajustar.
+  useEffect(() => {
+    if (painel !== null) return;
+    let ativo = true;
+    async function sugerirMeta() {
+      const numeros = (
+        await Promise.all([
+          supabase.from("progresso_semanas").select("respostas").eq("user_id", userId).eq("semana", 4).maybeSingle(),
+          supabase.from("progresso_semanas").select("respostas").eq("user_id", userId).eq("semana", 1).maybeSingle(),
+        ])
+      ).map((r) => {
+        const respostas = (r.data?.respostas ?? {}) as Record<string, unknown>;
+        const v = respostas["p4_meta_mensal"] ?? respostas["f1_meta_minima"];
+        const n = typeof v === "number" ? v : typeof v === "string" && v.trim() !== "" ? Number(v) : null;
+        return Number.isFinite(n) ? n : null;
+      });
+      const meta = numeros[0] ?? numeros[1];
+      if (ativo && meta !== null && meta > 0) {
+        setValores((v) => {
+          if ((v.meta_mensal ?? "") !== "") return v;
+          const novo = { ...v, meta_mensal: String(meta) };
+          estadoInicialRef.current = JSON.stringify({
+            ...novo,
+            observacao: painel?.observacao ?? "",
+          });
+          return novo;
+        });
+      }
+    }
+    void sugerirMeta();
+    return () => {
+      ativo = false;
+    };
+  }, [userId, painel]);
 
   useEffect(() => {
     let ativo = true;
@@ -356,7 +393,15 @@ function PainelForm({
               <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
                 {CAMPOS_PAINEL.map((campo) => (
                   <div key={campo.id} className="flex flex-col gap-2">
-                    <Label htmlFor={campo.id}>{campo.rotulo}</Label>
+                    <div className="flex flex-col gap-0.5">
+                      <Label htmlFor={campo.id}>{campo.rotulo}</Label>
+                      {campo.dica && (
+                        <p className="text-xs text-muted-foreground">{campo.dica}</p>
+                      )}
+                      {"exemplo" in campo && campo.exemplo && (
+                        <p className="text-xs italic text-muted-foreground/75">{campo.exemplo}</p>
+                      )}
+                    </div>
                     <Input
                       id={campo.id}
                       type="number"

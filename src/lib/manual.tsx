@@ -186,6 +186,19 @@ function textoCampo(semana: SemanaConteudo, campoId: string, respostas: Record<s
     return linhas.length > 0 ? linhas.join("\n") : null;
   }
 
+  if (campo?.tipo === "lista_itens") {
+    if (!Array.isArray(v) || v.length === 0) return null;
+    const linhas = (v as { descricao?: unknown; valor?: unknown }[])
+      .map((item) => {
+        const descricao = String(item?.descricao ?? "").trim();
+        const valor = typeof item?.valor === "number" && item.valor > 0 ? formatBRL(item.valor) : null;
+        if (!descricao && !valor) return null;
+        return valor ? `${descricao} — ${valor}` : descricao;
+      })
+      .filter(Boolean);
+    return linhas.length > 0 ? linhas.join("\n") : null;
+  }
+
   if (v === null || v === undefined || String(v).trim() === "") return null;
   if (campo?.tipo === "data") return formatarData(String(v));
   if (campo?.tipo === "numero" || typeof v === "number") return formatarNumero(campoId, Number(v));

@@ -387,6 +387,9 @@ export function PaginaOnboarding({ aoConcluir }: { aoConcluir: () => void }) {
                   <Label htmlFor="faturamento_atual">
                     Faturamento atual (R$/mês) <span className="text-primary">*</span>
                   </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Quanto você fatura por mês, em média.
+                  </p>
                   <Input
                     id="faturamento_atual"
                     type="number"
@@ -400,6 +403,9 @@ export function PaginaOnboarding({ aoConcluir }: { aoConcluir: () => void }) {
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="lucro_atual">Lucro atual (R$/mês)</Label>
+                  <p className="text-xs text-muted-foreground">
+                    O que sobra pra você depois de pagar custos e despesas.
+                  </p>
                   <Input
                     id="lucro_atual"
                     type="number"
@@ -413,6 +419,9 @@ export function PaginaOnboarding({ aoConcluir }: { aoConcluir: () => void }) {
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="qtd_clientes">Quantidade de clientes</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Clientes que você atendeu no último mês.
+                  </p>
                   <Input
                     id="qtd_clientes"
                     type="number"
@@ -426,6 +435,12 @@ export function PaginaOnboarding({ aoConcluir }: { aoConcluir: () => void }) {
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="ticket_medio">Ticket médio (R$)</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Faturamento ÷ nº de clientes.
+                  </p>
+                  <p className="text-xs italic text-muted-foreground/75">
+                    R$ 4.000 ÷ 20 clientes = R$ 200
+                  </p>
                   <Input
                     id="ticket_medio"
                     type="number"
@@ -440,6 +455,9 @@ export function PaginaOnboarding({ aoConcluir }: { aoConcluir: () => void }) {
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="numero_orcamentos">Número de orçamentos no último mês</Label>
+                <p className="text-xs text-muted-foreground">
+                  Orçamentos que você enviou no último mês, mesmo os sem resposta.
+                </p>
                 <Input
                   id="numero_orcamentos"
                   type="number"

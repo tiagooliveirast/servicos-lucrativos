@@ -1,4 +1,5 @@
 import { SEMANA_POR_NUMERO } from "@/lib/conteudo";
+import type { ItemLista } from "@/lib/conteudo";
 import type {
   DiagnosticoInicial,
   IndicadorSemana,
@@ -36,7 +37,7 @@ const PESO_CATEGORIA: Record<CategoriaRadar, number> = {
   verde: 2,
 };
 
-const CAMPOS_CALCULADOS = new Set(["f1_meta_minima", "p4_meta_semanal", "p4_meta_diaria", "p10_taxa_conversao"]);
+const CAMPOS_CALCULADOS = new Set(["f1_custo_vida", "f1_custo_negocio", "f1_meta_minima", "p4_meta_semanal", "p4_meta_diaria", "p10_taxa_conversao"]);
 
 function diasEntre(agora: Date, data: string | null): number | null {
   if (!data) return null;
@@ -307,6 +308,17 @@ function contarTarefasSemanaAtual(d: DadosRadar): number {
         return v !== undefined && v !== null && String(v).trim() !== "";
       });
       if (!completo) tarefas++;
+    } else if (campo.tipo === "lista_itens") {
+      const linhas = Array.isArray(r[campo.id]) ? (r[campo.id] as ItemLista[]) : [];
+      const temAlguma = linhas.some(
+        (l) => (l.descricao ?? "").trim() !== "" || (typeof l.valor === "number" && l.valor > 0)
+      );
+      const semParcial = linhas.every((l) => {
+        const temDescricao = (l.descricao ?? "").trim() !== "";
+        const temValor = typeof l.valor === "number" && l.valor > 0;
+        return !(temDescricao || temValor) || (temDescricao && temValor);
+      });
+      if (!temAlguma || !semParcial) tarefas++;
     } else if (!CAMPOS_CALCULADOS.has(campo.id)) {
       const v = r[campo.id];
       if (v === undefined || v === null || String(v).trim() === "") tarefas++;

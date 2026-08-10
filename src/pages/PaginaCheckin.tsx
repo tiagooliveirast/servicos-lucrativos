@@ -31,13 +31,13 @@ import type { CheckinSemanal } from "@/lib/types";
 import { formatBRL, semanaAtualDe } from "@/lib/utils";
 
 const CAMPOS_CHECKIN = [
-  { id: "faturamento_semana", rotulo: "Faturamento da semana (R$)", tipo: "numero" },
-  { id: "lucro_semana", rotulo: "Lucro da semana (R$)", tipo: "numero" },
-  { id: "atendimentos", rotulo: "Atendimentos realizados", tipo: "inteiro" },
-  { id: "orcamentos_enviados", rotulo: "Orçamentos enviados", tipo: "inteiro" },
-  { id: "orcamentos_fechados", rotulo: "Orçamentos fechados", tipo: "inteiro" },
-  { id: "avaliacoes_recebidas", rotulo: "Avaliações recebidas", tipo: "inteiro" },
-  { id: "horas_trabalhadas", rotulo: "Horas trabalhadas na semana", tipo: "numero" },
+  { id: "faturamento_semana", rotulo: "Faturamento da semana (R$)", tipo: "numero", dica: "Quanto entrou nessa semana, de tudo que você faturou." },
+  { id: "lucro_semana", rotulo: "Lucro da semana (R$)", tipo: "numero", dica: "O que sobrou depois de pagar os custos da semana." },
+  { id: "atendimentos", rotulo: "Atendimentos realizados", tipo: "inteiro", dica: "Quantos serviços você executou na semana." },
+  { id: "orcamentos_enviados", rotulo: "Orçamentos enviados", tipo: "inteiro", dica: "Orçamentos enviados na semana, mesmo os sem resposta." },
+  { id: "orcamentos_fechados", rotulo: "Orçamentos fechados", tipo: "inteiro", dica: "Quantos desses orçamentos viraram serviço fechado." },
+  { id: "avaliacoes_recebidas", rotulo: "Avaliações recebidas", tipo: "inteiro", dica: "Avaliações de clientes recebidas na semana." },
+  { id: "horas_trabalhadas", rotulo: "Horas trabalhadas na semana", tipo: "numero", dica: "Total de horas que você dedicou ao trabalho." },
 ] as const;
 
 type IdCampo = (typeof CAMPOS_CHECKIN)[number]["id"];
@@ -276,7 +276,12 @@ export function PaginaCheckin({ userId }: { userId: string }) {
               <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
                 {CAMPOS_CHECKIN.map((campo) => (
                   <div key={campo.id} className="flex flex-col gap-2">
-                    <Label htmlFor={campo.id}>{campo.rotulo}</Label>
+                    <div className="flex flex-col gap-0.5">
+                      <Label htmlFor={campo.id}>{campo.rotulo}</Label>
+                      {campo.dica && (
+                        <p className="text-xs text-muted-foreground">{campo.dica}</p>
+                      )}
+                    </div>
                     <Input
                       id={campo.id}
                       type="number"
