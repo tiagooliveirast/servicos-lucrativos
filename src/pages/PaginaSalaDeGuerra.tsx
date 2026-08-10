@@ -5,11 +5,13 @@ import {
   ArrowRight,
   Award,
   CalendarDays,
+  CheckCircle2,
   Flame,
   Heart,
   Loader2,
   MessagesSquare,
   Radar,
+  Sparkles,
   Target,
   TrendingUp,
   X,
@@ -20,8 +22,13 @@ import { CartaoErro } from "@/components/CartaoErro";
 import { Layout } from "@/components/Layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { buscarAnaliseIa, type AnaliseIa } from "@/lib/analise-ia";
+import {
+  marcarAtividadeDeHoje,
+  XP_ATIVIDADE_DIARIA,
+} from "@/lib/atividades-diarias";
 import {
   carregarMotivoPessoal,
   registrarMotivoExibido,
@@ -230,6 +237,12 @@ export function PaginaSalaDeGuerra({
             emDia={dados.todasMissoesConcluidas}
             numero={dados.semanaAtual}
           />
+          {dados.atividadeDeHoje && (
+            <CartaoAtividadeDeHoje
+              atividade={dados.atividadeDeHoje}
+              userId={perfilId}
+            />
+          )}
           {dados.recomendacaoRadar && <CartaoRecomendacao alerta={dados.recomendacaoRadar} />}
           {dados.alertaPrioritario && !dados.recomendacaoRadar && (
             <CartaoAlerta alerta={dados.alertaPrioritario} />
@@ -340,6 +353,90 @@ function CartaoMissaoDoDia({
         aria-label={`Continuar a Semana ${numero}`}
         className="after:absolute after:inset-0 after:rounded-2xl"
       />
+    </div>
+  );
+}
+
+function CartaoAtividadeDeHoje({
+  atividade,
+  userId,
+}: {
+  atividade: NonNullable<DadosSala["atividadeDeHoje"]>;
+  userId: string;
+}) {
+  const [marcada, setMarcada] = useState(atividade.marcada);
+  const [marcando, setMarcando] = useState(false);
+  const [erro, setErro] = useState(false);
+
+  async function marcar() {
+    if (marcada || marcando) return;
+    setMarcando(true);
+    setErro(false);
+    const ok = await marcarAtividadeDeHoje(userId, atividade.atividade.id);
+    setMarcando(false);
+    if (ok) {
+      setMarcada(true);
+    } else {
+      setErro(true);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-primary/40 bg-card p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="flex items-center gap-2 text-sm font-semibold text-primary">
+          <Sparkles className="h-4 w-4" />
+          Atividade de hoje
+        </p>
+        <Badge variant="outline" className="text-muted-foreground">
+          Semana {atividade.semanaEfetiva} · Dia {atividade.diaDoPlano}
+        </Badge>
+      </div>
+      <p className="mt-2 text-sm font-medium leading-relaxed">{atividade.atividade.titulo}</p>
+      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+        {atividade.atividade.descricao}
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <label
+          className={cn(
+            "flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
+            marcada
+              ? "border-emerald-500/50 bg-emerald-500/5 text-emerald-400"
+              : "border-input hover:bg-accent"
+          )}
+        >
+          <Checkbox
+            checked={marcada}
+            disabled={marcando}
+            onCheckedChange={() => void marcar()}
+          />
+          {marcada ? (
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-4 w-4" />
+              Feita hoje!
+            </span>
+          ) : marcando ? (
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Marcando…
+            </span>
+          ) : (
+            <span>Marcar como feita</span>
+          )}
+        </label>
+        {marcada ? (
+          <span className="text-sm font-medium text-emerald-400">+{XP_ATIVIDADE_DIARIA} XP</span>
+        ) : (
+          <span className="text-xs text-muted-foreground">
+            Vale +{XP_ATIVIDADE_DIARIA} XP — uma ação leve pra avançar todo dia.
+          </span>
+        )}
+      </div>
+      {erro && (
+        <p className="mt-2 text-xs text-red-400">
+          Não foi possível marcar agora. Verifique sua conexão e tente de novo.
+        </p>
+      )}
     </div>
   );
 }

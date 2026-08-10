@@ -91,6 +91,8 @@ export interface Acesso {
   ativo: boolean;
   motivo_inativacao: string | null;
   inativado_em: string | null;
+  /** Marco do "dia 1" do plano — preenchida na ativação do acesso (não no onboarding). */
+  data_primeiro_acesso: string | null;
   created_at: string | null;
 }
 
@@ -293,4 +295,19 @@ export interface DicaPreenchimentoSemana {
   texto: string;
   modelo: string;
   gerado_em: string;
+}
+
+export interface AtividadeDiaria {
+  id: string;
+  semana_numero: number;
+  dia_da_semana: number;
+  titulo: string;
+  descricao: string;
+}
+
+export interface AtividadeDiariaUsuario {
+  id: string;
+  user_id: string;
+  atividade_id: string;
+  concluida_em: string;
 }

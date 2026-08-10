@@ -113,9 +113,27 @@ Deno.serve(async (req) => {
       return responder(500, { erro: "Erro ao gravar o perfil. Tente novamente." });
     }
 
+    // Acesso novo ganha o marco do "dia 1" (trava de tempo entre semanas e
+    // atividade diária). Acesso já existente (reativação) NÃO reinicia o
+    // relógio dos 90 dias — só religa o ativo.
+    const { data: acessoExistente } = await clienteAdmin
+      .from("acessos")
+      .select("user_id")
+      .eq("user_id", usuarioId)
+      .maybeSingle();
+
+    const dadosAcesso = acessoExistente
+      ? { user_id: usuarioId, email, ativo: true }
+      : {
+          user_id: usuarioId,
+          email,
+          ativo: true,
+          data_primeiro_acesso: new Date().toISOString(),
+        };
+
     const { error: erroAcesso } = await clienteAdmin
       .from("acessos")
-      .upsert({ user_id: usuarioId, email, ativo: true }, { onConflict: "user_id" });
+      .upsert(dadosAcesso, { onConflict: "user_id" });
     if (erroAcesso) {
       console.error("criar-acesso: falha ao liberar acesso", erroAcesso.message);
       await clienteAdmin.auth.admin.deleteUser(usuarioId);

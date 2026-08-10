@@ -36,6 +36,7 @@ import { MODULOS, SEMANAS } from "@/lib/conteudo";
 import { contarMinhasDuvidasRespondidas } from "@/lib/duvidas";
 import { carregarPerfilGamificacao } from "@/lib/gamificacao";
 import { supabase } from "@/lib/supabase";
+import { liberarSemanasPorTempo } from "@/lib/trava-semanas";
 import type { GamificacaoUsuario, PainelMensal, Perfil, ProgressoSemana } from "@/lib/types";
 import { cn, formatBRL, formatNumero } from "@/lib/utils";
 const STATUS_INFO = {
@@ -61,6 +62,10 @@ export function PaginaDashboard({ perfil }: { perfil: Perfil }) {
     setCarregando(true);
     setErro(false);
     async function carregar() {
+      // Trava de tempo: desbloqueia sozinha as semanas cujo tempo mínimo
+      // já passou, para os cards refletirem a liberação no dia certo.
+      await liberarSemanasPorTempo();
+
       const [resSemanas, resPaineis, resGamificacao, resDuvidas] = await Promise.all([
         supabase
           .from("progresso_semanas")

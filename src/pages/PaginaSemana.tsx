@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   AlertCircle,
+  CalendarClock,
   CheckCircle2,
   FileUp,
   Heart,
@@ -58,6 +59,12 @@ import {
   textoMotivo,
 } from "@/lib/motivo";
 import { supabase } from "@/lib/supabase";
+import {
+  dataInicioPlano,
+  dataLiberacaoSemana,
+  diasAteLiberacao,
+  liberarSemanasPorTempo,
+} from "@/lib/trava-semanas";
 import type {
   AulaSemana,
   DicaPreenchimentoSemana,
@@ -74,6 +81,8 @@ export function PaginaSemana({ userId }: { userId: string }) {
   const { ehAdmin, carregando: checandoAdmin } = useEhAdmin();
 
   const [progresso, setProgresso] = useState<ProgressoSemana | null>(null);
+  const [dataPrimeiroAcesso, setDataPrimeiroAcesso] = useState<string | null>(null);
+  const [anteriorConcluida, setAnteriorConcluida] = useState(false);
   const [carregando, setCarregando] = useState(true);
   const [naoEncontrada, setNaoEncontrada] = useState(false);
   const [erro, setErro] = useState(false);
@@ -84,20 +93,46 @@ export function PaginaSemana({ userId }: { userId: string }) {
     setCarregando(true);
     setErro(false);
     async function carregar() {
-      const { data, error } = await supabase
-        .from("progresso_semanas")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("semana", n)
-        .maybeSingle();
+      // Trava de tempo: desbloqueia sozinha esta semana se o tempo mínimo
+      // já passou (ex.: Semana 2 no dia 7) — sem ação manual do aluno.
+      await liberarSemanasPorTempo();
+
+      const [resSemana, resAcesso, resAnterior] = await Promise.all([
+        supabase
+          .from("progresso_semanas")
+          .select("*")
+          .eq("user_id", userId)
+          .eq("semana", n)
+          .maybeSingle(),
+        supabase
+          .from("acessos")
+          .select("data_primeiro_acesso, created_at")
+          .eq("user_id", userId)
+          .maybeSingle(),
+        n > 1
+          ? supabase
+              .from("progresso_semanas")
+              .select("status")
+              .eq("user_id", userId)
+              .eq("semana", n - 1)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+      ]);
       if (!ativo) return;
-      if (error) {
+      if (resSemana.error || resAcesso.error || resAnterior.error) {
         setErro(true);
         setCarregando(false);
         return;
       }
-      if (!data) setNaoEncontrada(true);
-      else setProgresso(data);
+      if (!resSemana.data) setNaoEncontrada(true);
+      else setProgresso(resSemana.data);
+      setDataPrimeiroAcesso(
+        dataInicioPlano(
+          (resAcesso.data as { data_primeiro_acesso: string | null; created_at: string | null } | null) ??
+            null
+        )
+      );
+      setAnteriorConcluida((resAnterior.data as { status: string } | null)?.status === "concluida");
       setCarregando(false);
     }
     void carregar();
@@ -138,6 +173,21 @@ export function PaginaSemana({ userId }: { userId: string }) {
   const visualizacao = ehAdmin && (!progresso || progresso.status === "bloqueada");
   if (!visualizacao) {
     if (naoEncontrada || progresso?.status === "bloqueada") {
+      // Trava de tempo: semana anterior concluída, mas o tempo mínimo pra
+      // próxima ainda não passou → mensagem clara e positiva, com a data
+      // exata de liberação (em vez do bloqueio genérico).
+      const diasEspera =
+        n > 1 && anteriorConcluida ? diasAteLiberacao(dataPrimeiroAcesso, n) : null;
+      if (diasEspera !== null && diasEspera > 0) {
+        return (
+          <Layout>
+            <AguardandoTempoSemana
+              proximaSemana={n}
+              dataPrimeiroAcesso={dataPrimeiroAcesso}
+            />
+          </Layout>
+        );
+      }
       return (
         <Layout>
           <SemanaIndisponivel
@@ -1485,6 +1535,53 @@ function CampoRotulo({ campo, obrigatorio }: { campo: Campo; obrigatorio: boolea
       {"exemplo" in campo && campo.exemplo && (
         <p className="text-xs italic text-muted-foreground/75">{campo.exemplo}</p>
       )}
+    </div>
+  );
+}
+
+/**
+ * Trava de tempo entre semanas: o aluno concluiu a Semana N-1, mas o tempo
+ * mínimo pra Semana N ainda não passou. Em vez do bloqueio genérico, mostra
+ * uma mensagem clara e positiva com a data exata de liberação.
+ */
+function AguardandoTempoSemana({
+  proximaSemana,
+  dataPrimeiroAcesso,
+}: {
+  proximaSemana: number;
+  dataPrimeiroAcesso: string | null;
+}) {
+  const dias = diasAteLiberacao(dataPrimeiroAcesso, proximaSemana) ?? 0;
+  const liberacao = dataLiberacaoSemana(dataPrimeiroAcesso, proximaSemana);
+  const dataTexto = liberacao
+    ? liberacao.toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+    : null;
+
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-xl border border-primary/40 bg-gradient-to-b from-primary/15 via-card to-card px-4 py-12 text-center">
+      <div className="rounded-full bg-primary/15 p-3">
+        <CalendarClock className="h-7 w-7 text-primary" />
+      </div>
+      <h2 className="text-base font-semibold">
+        Você já terminou o conteúdo da Semana {proximaSemana - 1}!
+      </h2>
+      <p className="max-w-md text-sm leading-relaxed text-foreground/90">
+        A Semana {proximaSemana} libera em {dias} {dias === 1 ? "dia" : "dias"}
+        {dataTexto ? `, no dia ${dataTexto}` : ""}. Esse tempo é importante pra você aplicar o
+        que aprendeu antes de seguir — aproveite pra revisar ou repetir alguma missão.
+      </p>
+      <div className="mt-2 flex flex-wrap justify-center gap-2">
+        <Button asChild variant="outline">
+          <Link to={`/semana/${proximaSemana - 1}`}>Revisar a Semana {proximaSemana - 1}</Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link to="/dashboard">Ver meu painel de semanas</Link>
+        </Button>
+      </div>
     </div>
   );
 }

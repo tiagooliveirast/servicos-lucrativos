@@ -1,8 +1,11 @@
 import { SEMANA_POR_NUMERO } from "@/lib/conteudo";
 import { carregarRadarEAtualizar } from "@/lib/radar-nucleo";
 import type { AlertaRadar } from "@/lib/regras-radar";
+import { calcularAtividadeDeHoje, type AtividadeDeHoje } from "@/lib/atividades-diarias";
 import { supabase } from "@/lib/supabase";
+import { dataInicioPlano, liberarSemanasPorTempo } from "@/lib/trava-semanas";
 import type {
+  AtividadeDiaria,
   Conquista,
   GamificacaoUsuario,
   ImeHistorico,
@@ -36,6 +39,7 @@ export interface SalaDeGuerra {
   // O que fazer hoje
   missaoDoDia: Missao | null;
   todasMissoesConcluidas: boolean;
+  atividadeDeHoje: AtividadeDeHoje | null;
   alertaPrioritario: AlertaRadar | null;
   recomendacaoRadar: AlertaRadar | null;
   // Motivação
@@ -64,6 +68,11 @@ function missaoDaSemana(semanaNumero: number, indice: number): Missao {
 export async function carregarSalaDeGuerra(
   userId: string
 ): Promise<{ dados: SalaDeGuerra; erro: boolean }> {
+  // Trava de tempo: desbloqueia sozinha as semanas cujo tempo mínimo já
+  // passou (ex.: Semana 2 no dia 7). Idempotente e segura — se falhar,
+  // seguimos com os dados atuais.
+  await liberarSemanasPorTempo();
+
   const [
     resAcesso,
     resSemanas,
@@ -72,9 +81,15 @@ export async function carregarSalaDeGuerra(
     resConquistas,
     resDesbloqueadas,
     resIme,
+    resAtividades,
+    resAtividadesMarcadas,
     radar,
   ] = await Promise.all([
-    supabase.from("acessos").select("created_at").eq("user_id", userId).maybeSingle(),
+    supabase
+      .from("acessos")
+      .select("data_primeiro_acesso, created_at")
+      .eq("user_id", userId)
+      .maybeSingle(),
     supabase.from("progresso_semanas").select("semana, status").eq("user_id", userId),
     supabase.from("missoes").select("*").eq("user_id", userId),
     supabase.from("gamificacao_usuario").select("*").eq("user_id", userId).maybeSingle(),
@@ -87,6 +102,8 @@ export async function carregarSalaDeGuerra(
       .order("data_calculo", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    supabase.from("atividades_diarias").select("*").order("semana_numero, dia_da_semana"),
+    supabase.from("atividades_diarias_usuario").select("atividade_id").eq("user_id", userId),
     carregarRadarEAtualizar(userId),
   ]);
 
@@ -98,6 +115,8 @@ export async function carregarSalaDeGuerra(
     resConquistas.error,
     resDesbloqueadas.error,
     resIme.error,
+    resAtividades.error,
+    resAtividadesMarcadas.error,
     radar.erro,
   ].some(Boolean);
 
@@ -109,6 +128,16 @@ export async function carregarSalaDeGuerra(
   const concluidas = semanas.filter((s) => s.status === "concluida").map((s) => s.semana);
   const semanaAtual = semanaAtualDe(concluidas);
 
+  // Trava de tempo: se a semana que deveria ser a atual ainda está
+  // bloqueada (anterior concluída, mas tempo mínimo não passou), o
+  // aluno está "em dia" — a missão do dia vira a mensagem de revisão
+  // em vez de apontar para uma semana que ele não pode abrir.
+  const progressoPorNumero = new Map(semanas.map((s) => [s.semana, s.status]));
+  const aguardandoTempo =
+    semanaAtual < 12 &&
+    concluidas.length > 0 &&
+    progressoPorNumero.get(semanaAtual) === "bloqueada";
+
   const missoes = (resMissoes.data ?? []) as Missao[];
   const missoesSemanaAtual = missoes.filter((m) => m.semana === semanaAtual);
   const pendentes = missoesSemanaAtual
@@ -119,7 +148,8 @@ export async function carregarSalaDeGuerra(
     );
 
   const missaoDoDia: Missao = pendentes[0] ?? missaoDaSemana(semanaAtual, 0);
-  const todasMissoesConcluidas = missoesSemanaAtual.length > 0 && pendentes.length === 0;
+  const todasMissoesConcluidas =
+    aguardandoTempo || (missoesSemanaAtual.length > 0 && pendentes.length === 0);
 
   const gamificacao = (resGamificacao.data as GamificacaoUsuario | null) ?? null;
   const streak = gamificacao?.dias_consecutivos ?? 0;
@@ -141,10 +171,24 @@ export async function carregarSalaDeGuerra(
       ? alertaPrioritario
       : null;
 
-  const createdAt = (resAcesso.data as { created_at: string | null } | null)?.created_at ?? null;
+  // Atividade diária de hoje (dia calendário do aluno — mesma base da
+  // trava de tempo). Null para quem não tem data de início (ex.: admin).
+  const inicio = dataInicioPlano(
+    (resAcesso.data as { data_primeiro_acesso: string | null; created_at: string | null } | null) ??
+      null
+  );
+  const atividadeDeHoje = calcularAtividadeDeHoje({
+    inicio,
+    progresso: semanas,
+    catalogo: (resAtividades.data ?? []) as AtividadeDiaria[],
+    marcadas: ((resAtividadesMarcadas.data ?? []) as { atividade_id: string }[]).map(
+      (m) => m.atividade_id
+    ),
+  });
+
   let diasRestantes: number | null = null;
-  if (createdAt) {
-    const limite = new Date(new Date(createdAt).getTime() + 90 * MS_DIA);
+  if (inicio) {
+    const limite = new Date(new Date(inicio).getTime() + 90 * MS_DIA);
     diasRestantes = Math.max(0, Math.ceil((limite.getTime() - Date.now()) / MS_DIA));
   }
 
@@ -155,6 +199,7 @@ export async function carregarSalaDeGuerra(
       semanaAtual,
       missaoDoDia,
       todasMissoesConcluidas,
+      atividadeDeHoje,
       alertaPrioritario,
       recomendacaoRadar,
       streak,
@@ -172,6 +217,7 @@ function salaVazia(): SalaDeGuerra {
     semanaAtual: 1,
     missaoDoDia: null,
     todasMissoesConcluidas: false,
+    atividadeDeHoje: null,
     alertaPrioritario: null,
     recomendacaoRadar: null,
     streak: 0,
