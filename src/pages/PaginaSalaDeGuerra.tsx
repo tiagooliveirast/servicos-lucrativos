@@ -180,12 +180,12 @@ export function PaginaSalaDeGuerra({
   return (
     <Layout>
       <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight sm:text-2xl">
-            <Radar className="h-6 w-6 text-primary" />
+            <Radar className="h-6 w-6 shrink-0 text-primary" />
             Sala de Guerra
           </h1>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <Badge variant="outline" className="border-primary/50 text-primary">
               Semana {dados.semanaAtual} de 12
             </Badge>
@@ -285,7 +285,7 @@ function CartaoContexto({
         {icone}
         {rotulo}
       </p>
-      <div className="mt-2 flex items-baseline gap-1">
+      <div className="mt-2 flex flex-wrap items-baseline gap-1">
         <span className="text-3xl font-bold text-primary">{valor}</span>
         <span className="text-xs text-muted-foreground">{sufixo}</span>
       </div>
@@ -319,7 +319,7 @@ function CartaoMissaoDoDia({
   const destino = `/semana/${numero}`;
   return (
     <div className="relative rounded-2xl border border-primary/50 bg-gradient-to-b from-primary/20 to-transparent p-4">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="flex items-center gap-2 text-sm font-semibold text-primary">
           <Target className="h-4 w-4" />
           Missão do dia
@@ -429,7 +429,7 @@ function CartaoMentor({
 
   return (
     <div className="rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/15 via-card to-card p-4">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="flex items-center gap-2 text-sm font-semibold text-primary">
           <MessagesSquare className="h-4 w-4" />
           Mensagem do seu mentor
