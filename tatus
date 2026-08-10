@@ -1,0 +1,15 @@
+[33mf3d9d64[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m conteudo: atividades diarias definitivas do Modulo 3 (semanas 9-12)
+[33m00d3ddc[m conteudo: atividades diarias definitivas do Modulo 2 (semanas 5-8)
+[33m54bbd6c[m conteudo: atividades diarias definitivas do Modulo 1 (semanas 2-4)
+[33m0f99e06[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m feature: trava de tempo entre semanas (7 dias) + atividades diarias
+[33m9cab198[m fix: corrige estouro horizontal em mobile (375px) - Sala de Guerra e auditoria geral
+[33m93ca99b[m feat: campos financeiros da Semana 1 com soma automática + orientação inline em todas as semanas
+[33m4d341f0[m chore: remove sistema de Chaves da plataforma (movido para Liga Refriclube) - mantém IE e Avatar intactos
+[33m6132d3a[m chore: auditoria - itens 30-37 (limpeza final: código morto, responsividade, componentes duplicados, bundle, rotação de log)
+[33m06789aa[m docs: auditoria - itens 26-27 (atualiza README e Roadmap, documenta gap de migration)
+[33m0dc727c[m fix: auditoria - itens 21-25 (navegacao persistente, erros amigaveis, componentes unicos, redirects explicados)
+[33m6fa6faa[m perf: auditoria - itens 17-20 (AuthContext global, slug em 1 query, lazy-load recharts público, índices)
+[33mac2b6d6[m refactor: auditoria - itens 14-16 (remove schema acidental, centraliza exportação PDF e helpers duplicados)
+[33mf913027[m fix: auditoria - itens de seguranca 6-13 (teto faturamento, grants anon, eh_admin, CORS restrito, payload OpenAI minimo, CORS 204 corrigido)
+[33m2782a54[m feat: add base avatar image to public assets
+[33md19de55[m feat: add avatar customization system based on user achievements to the company page
