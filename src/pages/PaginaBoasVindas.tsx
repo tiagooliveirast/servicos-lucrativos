@@ -5,6 +5,7 @@ import { ArrowRight, Loader2, PlayCircle, Video } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { extrairVideoId } from "@/lib/utils";
 import {
@@ -17,17 +18,22 @@ import {
 // pelo link "Como funciona a plataforma" no rodapé.
 export function PaginaBoasVindas({ userId }: { userId: string }) {
   const navigate = useNavigate();
+  const { atualizarPerfil } = useAuth();
   const [indo, setIndo] = useState(false);
 
-  async function irParaSalaDeGuerra() {
+  function irParaSalaDeGuerra() {
     setIndo(true);
-    // Best-effort: marca como vista pra nunca mais exibir automaticamente.
+    // Atualiza o perfil em memória ANTES de navegar: a rota "/" decide se
+    // mostra a Sala de Guerra com base no perfil do contexto — se ficar
+    // desatualizado, o usuário volta pra cá num loop.
+    atualizarPerfil({ boas_vindas_vista: true });
+    navigate("/");
+    // Best-effort: persiste no banco pra nunca mais exibir automaticamente.
     // Se falhar, o aluno ainda é levado à Sala de Guerra.
-    await supabase
+    void supabase
       .from("perfis")
       .update({ boas_vindas_vista: true })
       .eq("id", userId);
-    navigate("/");
   }
 
   return (
@@ -79,7 +85,7 @@ export function PaginaBoasVindas({ userId }: { userId: string }) {
           <p className="text-sm font-semibold text-primary">
             Tudo pronto? Sua missão da Semana 1 já está esperando.
           </p>
-          <Button onClick={() => void irParaSalaDeGuerra()} disabled={indo} className="h-11">
+          <Button onClick={irParaSalaDeGuerra} disabled={indo} className="h-11">
             {indo && <Loader2 className="animate-spin" />}
             Ir para a Sala de Guerra
             <ArrowRight className="h-4 w-4" />

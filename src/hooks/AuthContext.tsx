@@ -29,6 +29,8 @@ export interface ContextoAuth extends EstadoAuth {
   ehAdminCarregando: boolean;
   /** Reavalia sessão + perfil + admin (retry de erro / pós-onboarding). */
   reavaliar: () => void;
+  /** Atualiza campos do perfil em memória (ex.: após gravar no banco). */
+  atualizarPerfil: (parcial: Partial<Perfil>) => void;
 }
 
 export const AuthContexto = createContext<ContextoAuth | null>(null);
@@ -148,9 +150,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const reavaliar = useCallback(() => setVersao((v) => v + 1), []);
 
+  const atualizarPerfil = useCallback((parcial: Partial<Perfil>) => {
+    setEstado((prev) =>
+      prev.perfil ? { ...prev, perfil: { ...prev.perfil, ...parcial } } : prev
+    );
+  }, []);
+
   const valor = useMemo<ContextoAuth>(
-    () => ({ ...estado, ehAdmin, ehAdminCarregando, reavaliar }),
-    [estado, ehAdmin, ehAdminCarregando, reavaliar]
+    () => ({ ...estado, ehAdmin, ehAdminCarregando, reavaliar, atualizarPerfil }),
+    [estado, ehAdmin, ehAdminCarregando, reavaliar, atualizarPerfil]
   );
 
   return <AuthContexto.Provider value={valor}>{children}</AuthContexto.Provider>;
