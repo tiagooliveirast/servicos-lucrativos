@@ -46,7 +46,7 @@ import {
   enviarAnexo,
   listarMeusAnexos,
 } from "@/lib/anexos-missoes";
-import { MODULOS, SEMANA_POR_NUMERO, type Campo, type ItemLista, type SemanaConteudo } from "@/lib/conteudo";
+import { MODULOS, SEMANA_POR_NUMERO, type Campo, type ItemLista, type SemanaConteudo, type TipoItem } from "@/lib/conteudo";
 import { buscarDicaSemana, gerarDicaSemana } from "@/lib/dicas-semana";
 import {
   DIRECAO_INDICADORES_SEMANA,
@@ -604,8 +604,8 @@ function ConteudoSemana({
             <div className="flex items-start gap-3">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
               <p className="flex-1 text-sm leading-relaxed text-foreground/90">
-                Você preencheu esta semana no formato antigo. Pode continuar usando os valores
-                calculados, ou refazer no novo formato de lista abaixo.
+                Você preencheu esta semana num formato antigo. Pode continuar usando os
+                valores calculados, ou migrar tudo para a nova lista única de gastos abaixo.
               </p>
               <button
                 type="button"
@@ -625,10 +625,10 @@ function ConteudoSemana({
                   setMostrarMigracao(false);
                 }}
               >
-                Migrar meus valores para as listas
+                Migrar meus valores para a lista única
               </Button>
               <span className="text-xs text-muted-foreground">
-                Cria um item "Valor anterior" com o número que você já tinha salvo — depois você
+                Junta seus gastos antigos numa lista só, cada um com seu tipo — depois você
                 pode editar.
               </span>
             </div>
@@ -1093,6 +1093,8 @@ function CampoForm({
           valor={respostas[campo.id]}
           rotuloItem={campo.rotuloItem}
           rotuloValor={campo.rotuloValor}
+          tiposItem={campo.tiposItem}
+          rotuloTipo={campo.rotuloTipo}
           aoMudar={(itens) => aoMudar(campo.id, itens)}
         />
       </div>
@@ -1635,7 +1637,7 @@ function calcularValores(semana: number, respostas: Record<string, unknown>): Re
   if (semana === 1) {
     const somaItens = (id: string): number | null => {
       const v = respostas[id];
-      if (!Array.isArray(v)) return null;
+      if (!Array.isArray(v) || v.length === 0) return null;
       let total = 0;
       for (const item of v) {
         const valor = Number((item as Partial<ItemLista> | null)?.valor);
@@ -1643,12 +1645,25 @@ function calcularValores(semana: number, respostas: Record<string, unknown>): Re
       }
       return Math.round(total * 100) / 100;
     };
-    // Soma automática das listas; cai no valor digitado no formato antigo
-    // enquanto o aluno ainda não migrou (dado preservado, nunca sobrescrito).
+    const somaPorTipo = (id: string, tipos: TipoItem[]): number | null => {
+      const v = respostas[id];
+      if (!Array.isArray(v) || v.length === 0) return null;
+      let total = 0;
+      for (const item of v) {
+        const itemLista = item as Partial<ItemLista> | null;
+        const tipo = itemLista?.tipo ?? "pessoal";
+        if (!tipos.includes(tipo)) continue;
+        const valor = Number(itemLista?.valor);
+        if (Number.isFinite(valor) && valor > 0) total += valor;
+      }
+      return Math.round(total * 100) / 100;
+    };
+    // Lista única de gastos (formato atual), com fallback para as listas
+    // antigas separadas e para os valores digitados do formato antigo.
     // O campo é sempre calculado (somente leitura) — sem dado, mostra 0.
-    const custoVida = somaItens("custo_vida_itens") ?? num("f1_custo_vida") ?? 0;
-    const fixas = somaItens("despesas_fixas");
-    const variaveis = somaItens("despesas_variaveis");
+    const custoVida = somaPorTipo("gastos_itens", ["pessoal"]) ?? somaItens("custo_vida_itens") ?? num("f1_custo_vida") ?? 0;
+    const fixas = somaPorTipo("gastos_itens", ["fixa"]) ?? somaItens("despesas_fixas");
+    const variaveis = somaPorTipo("gastos_itens", ["variavel"]) ?? somaItens("despesas_variaveis");
     const custoNegocio =
       fixas !== null || variaveis !== null
         ? Math.round(((fixas ?? 0) + (variaveis ?? 0)) * 100) / 100
@@ -1684,20 +1699,28 @@ function calcularValores(semana: number, respostas: Record<string, unknown>): Re
 }
 
 const CHAVES_LEGADO_S1 = ["custo_vida_pessoal", "custos_fixos_negocio"] as const;
+const CHAVES_LISTAS_ANTIGAS_S1 = ["custo_vida_itens", "despesas_fixas", "despesas_variaveis"] as const;
 
 function temFormatoAntigoS1(respostas: Record<string, unknown>): boolean {
   const texto = (v: unknown) => typeof v === "string" && v.trim() !== "";
+  const listaComConteudo = (id: string) =>
+    Array.isArray(respostas[id]) &&
+    (respostas[id] as ItemLista[]).some(
+      (l) => (l?.descricao ?? "").trim() !== "" || Number(l?.valor) > 0
+    );
   return (
     CHAVES_LEGADO_S1.some((chave) => texto(respostas[chave])) ||
     texto(respostas.f1_custo_vida) ||
-    texto(respostas.f1_custo_negocio)
+    texto(respostas.f1_custo_negocio) ||
+    CHAVES_LISTAS_ANTIGAS_S1.some(listaComConteudo)
   );
 }
 
 /**
- * Converte dados da Semana 1 no formato antigo (texto livre + valores digitados)
- * para o formato novo de listas. Não destrutivo: só cria itens a partir de
- * números que já estavam salvos e remove as chaves antigas quando migradas.
+ * Converte dados da Semana 1 dos formatos antigos (texto livre + valores
+ * digitados, e as três listas separadas de gastos) para a lista única de
+ * gastos com tipo. Não destrutivo: só cria itens a partir de números que já
+ * estavam salvos e remove as chaves antigas quando migradas.
  */
 function migrarFormatoAntigoS1(
   respostas: Record<string, unknown>
@@ -1712,18 +1735,41 @@ function migrarFormatoAntigoS1(
     }
     return null;
   };
-  const criarItem = (listaId: string, fonte: string, textareaId: string | null) => {
+  const itensAtuais = Array.isArray(proximo.gastos_itens)
+    ? [...(proximo.gastos_itens as ItemLista[])]
+    : [];
+  const pegarItens = (id: string, tipo: TipoItem) => {
+    const v = proximo[id];
+    if (!Array.isArray(v)) return;
+    for (const item of v as ItemLista[]) {
+      const valor = Number(item?.valor);
+      const descricao = String(item?.descricao ?? "").trim();
+      if (descricao || (Number.isFinite(valor) && valor > 0)) {
+        itensAtuais.push({
+          descricao: item?.descricao ?? "",
+          valor: Number.isFinite(valor) ? valor : 0,
+          tipo,
+        });
+      }
+    }
+    delete proximo[id];
+  };
+  pegarItens("custo_vida_itens", "pessoal");
+  pegarItens("despesas_fixas", "fixa");
+  pegarItens("despesas_variaveis", "variavel");
+  const adicionarItem = (fonte: string, textareaId: string | null, tipo: TipoItem) => {
     const valor = numeroLegado(fonte);
     if (valor === null || valor <= 0) return;
-    const existentes = Array.isArray(proximo[listaId])
-      ? (proximo[listaId] as ItemLista[])
-      : [];
-    proximo[listaId] = [...existentes, { descricao: "Valor anterior", valor }];
+    const jaTemItem = itensAtuais.some(
+      (i) => i.tipo === tipo && (i.descricao ?? "").trim() !== "" && Number(i.valor) > 0
+    );
+    if (!jaTemItem) itensAtuais.push({ descricao: "Valor anterior", valor, tipo });
     delete proximo[fonte];
     if (textareaId) delete proximo[textareaId];
   };
-  criarItem("custo_vida_itens", "f1_custo_vida", "custo_vida_pessoal");
-  criarItem("despesas_fixas", "f1_custo_negocio", "custos_fixos_negocio");
+  adicionarItem("f1_custo_vida", "custo_vida_pessoal", "pessoal");
+  adicionarItem("f1_custo_negocio", "custos_fixos_negocio", "fixa");
+  if (itensAtuais.length > 0) proximo.gastos_itens = itensAtuais;
   return proximo;
 }
 

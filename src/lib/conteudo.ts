@@ -81,16 +81,31 @@ export type Campo =
       rotuloItem?: string;
       /** Rótulo do campo de valor de cada linha (ex: "Valor (R$)"). */
       rotuloValor?: string;
+      /** Se definido, cada linha ganha um seletor de tipo com estas opções. */
+      tiposItem?: TipoItem[];
+      /** Rótulo do seletor de tipo de cada linha (ex: "Tipo"). */
+      rotuloTipo?: string;
       /** Campos com o mesmo `lado` consecutivo são renderizados lado a lado. */
       lado?: string;
       /** Número de colunas da grade quando `lado` estiver definido. */
       grade?: number;
     };
 
+/** Categoria de um item de gasto da Semana 1 (lista única de gastos). */
+export type TipoItem = "pessoal" | "fixa" | "variavel";
+
+export const TIPO_ITEM_ROTULOS: Record<TipoItem, string> = {
+  pessoal: "Pessoal",
+  fixa: "Fixa",
+  variavel: "Variável",
+};
+
 /** Item de um campo do tipo `lista_itens` — armazenado como array destes objetos. */
 export interface ItemLista {
   descricao: string;
   valor: number;
+  /** Categoria do item quando o campo tem `tiposItem` (padrão: "pessoal"). */
+  tipo?: TipoItem;
 }
 
 export interface MissaoConteudo {
@@ -176,13 +191,13 @@ export const SEMANAS: SemanaConteudo[] = [
     dicas: [
       {
         titulo: "Dica de preenchimento 1",
-        texto: "Liste tudo que você gasta por mês pra viver, sem contar nada do trabalho.",
+        texto: "Liste cada gasto uma única vez e escolha o tipo de cada um: Pessoal (sua vida), Fixa ou Variável (do negócio). Nada se repete.",
         exemplo:
-          "aluguel R$ 900 + mercado R$ 600 + luz/água/internet R$ 350 + transporte R$ 300 = R$ 2.150",
+          "Aluguel de casa R$ 900 (Pessoal) + mercado R$ 600 (Pessoal) + aluguel da oficina R$ 500 (Fixa) + combustível R$ 300 (Variável)",
       },
       {
         titulo: "Dica de preenchimento 2",
-        texto: "Agora liste o que você gasta só por causa do trabalho: ferramentas, combustível, materiais, manutenção, aluguel de sala, se tiver.",
+        texto: "Os gastos do negócio são só o que você gasta por causa do trabalho: ferramentas, combustível, materiais, manutenção, aluguel de sala, se tiver. Eles entram na mesma lista, marcados como Fixa ou Variável.",
       },
       {
         titulo: "Dica de preenchimento 3",
@@ -196,38 +211,16 @@ export const SEMANAS: SemanaConteudo[] = [
     ],
     campos: [
       {
-        id: "custo_vida_itens",
-        rotulo: "Meus gastos pessoais do mês",
+        id: "gastos_itens",
+        rotulo: "Meus gastos do mês",
         tipo: "lista_itens",
         obrigatorio: true,
-        dica: "Liste tudo que você gasta por mês pra viver, sem contar nada do trabalho.",
+        tiposItem: ["pessoal", "fixa", "variavel"],
+        rotuloTipo: "Tipo",
+        dica: "Cada gasto entra uma única vez — nada se repete. Escolha o tipo de cada item: Pessoal (sua vida), Fixa (do negócio, igual todo mês) ou Variável (do negócio, muda conforme o trabalho).",
         exemplo:
-          "Aluguel — R$ 900 · Mercado — R$ 600 · Luz/água/internet — R$ 350 · Transporte — R$ 300",
+          "Aluguel de casa — R$ 900 (Pessoal) · Aluguel da oficina — R$ 500 (Fixa) · Combustível — R$ 300 (Variável)",
         rotuloItem: "O que é o gasto",
-        rotuloValor: "Valor mensal",
-      },
-      {
-        id: "despesas_fixas",
-        rotulo: "Despesas fixas do mês",
-        tipo: "lista_itens",
-        obrigatorio: true,
-        lado: "despesas",
-        grade: 2,
-        dica: "Despesa fixa é o que você paga todo mês sem variar (aluguel, internet, seguro).",
-        exemplo: "Aluguel da oficina — R$ 500 · Internet — R$ 100",
-        rotuloItem: "O que é a despesa",
-        rotuloValor: "Valor mensal",
-      },
-      {
-        id: "despesas_variaveis",
-        rotulo: "Despesas variáveis do mês",
-        tipo: "lista_itens",
-        obrigatorio: true,
-        lado: "despesas",
-        grade: 2,
-        dica: "Despesa variável muda conforme o volume de trabalho (combustível, material usado por serviço).",
-        exemplo: "Combustível — R$ 300 · Material de serviço — R$ 200",
-        rotuloItem: "O que é a despesa",
         rotuloValor: "Valor mensal",
       },
       {
@@ -238,7 +231,7 @@ export const SEMANAS: SemanaConteudo[] = [
         placeholder: "R$",
         lado: "meta",
         grade: 4,
-        dica: "Soma automática dos seus gastos pessoais acima — não precisa digitar.",
+        dica: "Soma automática dos seus gastos Pessoais — não precisa digitar.",
       },
       {
         id: "f1_custo_negocio",
@@ -247,7 +240,7 @@ export const SEMANAS: SemanaConteudo[] = [
         obrigatorio: true,
         placeholder: "R$",
         lado: "meta",
-        dica: "Soma automática das despesas fixas + variáveis acima — não precisa digitar.",
+        dica: "Soma automática dos gastos Fixos + Variáveis do negócio — não precisa digitar.",
       },
       {
         id: "f1_lucro_desejado",
@@ -281,9 +274,7 @@ export const SEMANAS: SemanaConteudo[] = [
     },
     checklistFinal: "Preenchi meu diagnóstico com números reais, não estimativas no chute",
     camposManual: [
-      "custo_vida_itens",
-      "despesas_fixas",
-      "despesas_variaveis",
+      "gastos_itens",
       "f1_custo_vida",
       "f1_custo_negocio",
       "f1_lucro_desejado",

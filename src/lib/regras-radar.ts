@@ -318,7 +318,18 @@ function contarTarefasSemanaAtual(d: DadosRadar): number {
         const temValor = typeof l.valor === "number" && l.valor > 0;
         return !(temDescricao || temValor) || (temDescricao && temValor);
       });
-      if (!temAlguma || !semParcial) tarefas++;
+      // Formato antigo da Semana 1 (três listas separadas) ainda não migrado
+      // conta como preenchido para não penalizar quem ainda não migrou.
+      const temLegado =
+        campo.id === "gastos_itens" &&
+        ["custo_vida_itens", "despesas_fixas", "despesas_variaveis"].some((id) =>
+          Array.isArray(r[id]) &&
+          (r[id] as ItemLista[]).some(
+            (l) => (l.descricao ?? "").trim() !== "" || Number(l?.valor) > 0
+          )
+        );
+      if (!temAlguma && !temLegado) tarefas++;
+      else if (!semParcial) tarefas++;
     } else if (!CAMPOS_CALCULADOS.has(campo.id)) {
       const v = r[campo.id];
       if (v === undefined || v === null || String(v).trim() === "") tarefas++;

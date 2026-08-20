@@ -1,7 +1,7 @@
 import { Document, Page, StyleSheet, Text, View, pdf } from "@react-pdf/renderer";
 import type { ReactElement } from "react";
 
-import { SEMANAS, TEXTO_FECHAMENTO, type SemanaConteudo } from "@/lib/conteudo";
+import { SEMANAS, TEXTO_FECHAMENTO, TIPO_ITEM_ROTULOS, type SemanaConteudo } from "@/lib/conteudo";
 import { CINZA, FONTE_PDF, OURO, PRETO } from "@/lib/pdf-estilos";
 import type { DiagnosticoInicial, PainelMensal, ProgressoSemana } from "@/lib/types";
 import { formatBRL } from "@/lib/utils";
@@ -188,12 +188,14 @@ function textoCampo(semana: SemanaConteudo, campoId: string, respostas: Record<s
 
   if (campo?.tipo === "lista_itens") {
     if (!Array.isArray(v) || v.length === 0) return null;
-    const linhas = (v as { descricao?: unknown; valor?: unknown }[])
+    const linhas = (v as { descricao?: unknown; valor?: unknown; tipo?: string }[])
       .map((item) => {
         const descricao = String(item?.descricao ?? "").trim();
         const valor = typeof item?.valor === "number" && item.valor > 0 ? formatBRL(item.valor) : null;
         if (!descricao && !valor) return null;
-        return valor ? `${descricao} — ${valor}` : descricao;
+        const tipo = item?.tipo;
+        const prefixo = tipo && tipo in TIPO_ITEM_ROTULOS ? `[${TIPO_ITEM_ROTULOS[tipo as keyof typeof TIPO_ITEM_ROTULOS]}] ` : "";
+        return valor ? `${prefixo}${descricao} — ${valor}` : `${prefixo}${descricao}`;
       })
       .filter(Boolean);
     return linhas.length > 0 ? linhas.join("\n") : null;
