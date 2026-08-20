@@ -120,7 +120,7 @@ async function reconciliar(
       supabase
         .from("radar_eventos")
         .upsert(paraInserir, {
-          onConflict: "user_id,regra_id,((criado_em AT TIME ZONE 'UTC')::date)",
+          onConflict: "user_id,regra_id,criado_em_dia",
           ignoreDuplicates: true,
         })
         .then(() => undefined)

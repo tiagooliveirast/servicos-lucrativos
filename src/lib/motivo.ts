@@ -54,7 +54,7 @@ export async function registrarMotivoExibido(userId: string, contexto: string): 
     .upsert(
       { user_id: userId, contexto, exibido_em: new Date().toISOString() },
       {
-        onConflict: "user_id,contexto,((exibido_em AT TIME ZONE 'UTC')::date)",
+        onConflict: "user_id,contexto,exibido_em_dia",
         ignoreDuplicates: true,
       }
     );
