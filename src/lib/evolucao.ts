@@ -65,6 +65,9 @@ function rotuloCurto(iso: string): string {
 function montarSerie(fontes: Fonte[]): SerieEvolucao {
   const porData = new Map<string, { valor: number; prioridade: number }>();
   for (const fonte of fontes) {
+    // Pontos sem valor numérico derrubam o gráfico (Recharts quebra com
+    // "Cannot read properties of null" ao receber null no dataKey).
+    if (fonte.valor === null || fonte.valor === undefined) continue;
     const chave = fonte.data.slice(0, 10);
     const atual = porData.get(chave);
     if (!atual || fonte.prioridade < atual.prioridade) {
