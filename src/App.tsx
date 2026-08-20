@@ -179,8 +179,13 @@ export default function App() {
               // Primeira vez: tela de boas-vindas (vídeos institucionais)
               // antes da primeira visita à Sala de Guerra. Só 1x.
               <Navigate to="/boas-vindas" replace />
+            ) : perfil ? (
+              <PaginaSalaDeGuerra perfilId={perfil.id} ausenteDias={ausenteDias} />
             ) : (
-              <PaginaSalaDeGuerra perfilId={perfil!.id} ausenteDias={ausenteDias} />
+              // Ainda avaliando a sessão (carregando/erro) — em rotas
+              // públicas esse elemento é construído antecipadamente e não
+              // pode dereferenciar perfil nulo.
+              <TelaCarregando />
             )
           }
         />
